@@ -1,0 +1,4 @@
+# terraform.tfvars.example — 複製為 terraform.tfvars 後填入實際值
+region         = "us-east-1"
+my_ip          = "1.2.3.4/32"   # 改成你的公網 IP
+spot_max_price = null            # 可選，例如 "0.10"
