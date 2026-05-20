@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>My S3 Static Site</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 720px;
+      margin: 4rem auto;
+      padding: 0 1rem;
+      line-height: 1.6;
+      color: #222;
+    }
+    h1 { border-bottom: 2px solid #ff9900; padding-bottom: 0.5rem; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+    .badge { background: #ff9900; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1>Hello from S3 <span class="badge">Lab 03</span></h1>
+  <p>這個網頁是用 Terraform 部署到 <code>aws_s3_bucket</code> 的靜態網站。</p>
+  <p>如果你看到這頁，代表：</p>
+  <ul>
+    <li>✅ Bucket 建立成功</li>
+    <li>✅ Public Access Block 已正確開放</li>
+    <li>✅ Bucket Policy 允許所有人 GetObject</li>
+    <li>✅ Website Configuration 已設定 index document</li>
+    <li>✅ index.html 已上傳</li>
+  </ul>
+  <p>試著去 <code>/not-found</code> 看 error.html 是否正確顯示。</p>
+</body>
+</html>

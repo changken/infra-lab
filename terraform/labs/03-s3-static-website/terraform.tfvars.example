@@ -1,0 +1,7 @@
+region      = "us-east-1"
+project     = "s3-site-lab"
+environment = "dev"
+
+bucket_name_prefix = "my-static-site"
+index_document     = "index.html"
+error_document     = "error.html"
