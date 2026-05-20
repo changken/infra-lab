@@ -14,10 +14,11 @@
 | 階段 1（基礎設施）| ~$2 | 短時間開關 EC2、S3、VPC |
 | 階段 2（資料層）| ~$3 | RDS 限制 24h 內 destroy |
 | 階段 3（Serverless）| < $1 | 幾乎全在 Free Tier |
-| 階段 4（容器化，精簡）| ~$5 | 只做 ECR + App Runner |
+| 階段 4（容器化）| ~$5 | ECR + App Runner |
+| 階段 5（Kubernetes）| ~$10-15 | EKS (短期測試) |
 | 階段 6（監控/IAM）| < $2 | CloudWatch 低用量 |
 | **緩衝（誤操作）** | ~$10 | 預留犯錯空間 |
-| **總計** | **~$23** | 遠低於 $48 上限 |
+| **總計** | **~$35-40** | 仍控制在 $48 上限內 |
 
 ---
 
@@ -28,7 +29,6 @@
 | NAT Gateway（階段 2 含在 VPC）| 開著就 $32/月，極易爆預算 | 改做 **public subnet only VPC**，不建 NAT |
 | RDS 多日練習 | $15/月，忘關直接吃掉預算 | 單日內完成 + 立刻 destroy |
 | ECS Fargate（12-14）| 服務開著計費，故障排查容易拖時間 | App Runner（用完即停）替代 |
-| **EKS（階段 5 全部）** | Control Plane $72/月，光開著就破預算 | **用本 repo 既有的 `modules/aws-k3s` 替代** |
 | Elastic Beanstalk | 隱藏成本（EC2 + ELB）| 不需要 |
 
 ---
@@ -80,7 +80,7 @@ Lambda + API Gateway + DynamoDB 全在 Free Tier，幾乎免費。
 
 ---
 
-## 階段 4：容器化（精簡版，第 8-10 週）
+## 階段 4：容器化（第 8-10 週）
 
 **預算：~$5**
 
@@ -94,18 +94,25 @@ Lambda + API Gateway + DynamoDB 全在 Free Tier，幾乎免費。
 
 ---
 
-## ❌ 階段 5：Kubernetes（跳過）
+## 階段 5：Kubernetes（第 12-14 週）⭐ 進階挑戰
 
-**EKS 不在這個預算版裡。**
+**預算：~$10-15 (假設每次練習 2-4 小時)**
 
-替代方案：
-- 本 repo 已有 `terraform/modules/aws-k3s/`，用 EC2 跑 k3s
-- k3s = 輕量級 K8s，學習 Kubernetes 概念完全夠用
-- 一台 t3.small（~$15/月）就能跑，**但記得用完 destroy**
+| 編號 | 目錄 | 說明 | 預估花費 | 安全玩法 |
+|------|------|------|----------|----------|
+| 12 | `12-eks-basic` | EKS Control Plane + Node Group | ~$5 | **用完立刻 destroy**，Control Plane 每小時 $0.1 |
+| 13 | `13-eks-workloads` | Deployment + Service + Ingress | ~$5 | 練習 K8s 基本物件 |
+| 14 | `14-eks-irsa` | IAM Roles for Service Accounts | < $1 | 學習 Pod 權限控管 |
+
+**EKS 練習嚴格規則**：
+1. **Control Plane 費用**：約 $0.10/小時。光建立就要 15-20 分鐘，請留足連續時間。
+2. **Node Group**：使用 `t3.medium` 或 `t3.small`，數量維持 2 台。
+3. **立刻毀滅**：練習結束後的 `terraform destroy` 是唯一活路。
+4. **替代方案**：若預算極度吃緊，仍建議參考 `modules/aws-k3s` 用 EC2 跑 k3s。
 
 ---
 
-## 階段 6：DevOps & 監控（精簡，第 11-12 週）
+## 階段 6：DevOps & 監控（第 15-16 週）
 
 **預算：< $2**
 
@@ -149,10 +156,11 @@ terraform destroy -auto-approve
 週 3-4:   05 → 04               （先做便宜的 DynamoDB，再做 RDS）
 週 5-7:   06 → 07 → 08 → 09     （Serverless 馬拉松，幾乎免費）
 週 8-10:  10 → 11               （容器化精簡版）
-週 11-12: 19 → 21               （收尾）
+週 12-14: 12 → 13 → 14         （Kubernetes 進階挑戰）
+週 15-16: 19 → 21               （收尾）
 ```
 
-**12 週、$23 預估、$48 安全上限。**
+**16 週、$35-40 預估、$48 安全上限。**
 
 ---
 
@@ -169,6 +177,5 @@ terraform destroy -auto-approve
 預算解放後再考慮：
 - 階段 2 補做：完整 VPC + NAT Gateway
 - 階段 4 補做：ECS Fargate + ALB + RDS 整合
-- 階段 5：EKS（需要至少 $100/月預算）
 - Remote State (S3 + DynamoDB)
 - CI/CD (GitHub Actions + Terraform)
