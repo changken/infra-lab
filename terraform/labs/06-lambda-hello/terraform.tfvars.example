@@ -1,0 +1,4 @@
+region        = "us-east-1"
+project       = "lambda-lab"
+environment   = "dev"
+function_name = "hello-world"
