@@ -1,0 +1,31 @@
+services:
+  oradb_xe:
+    # gvenzl/oracle-xe（建議 pin 版本，不要用 latest）
+    image: gvenzl/oracle-xe:21.3.0-slim
+    container_name: oradb_xe
+    env_file:
+      - .env
+    ports:
+      - "${ORACLE_PORT}:1521"
+    environment:
+      # 第一次初始化必填：SYS/SYSTEM 密碼
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      # 可選：建立一個 app schema user
+      APP_USER: ${APP_USER:-}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:-}
+    volumes:
+      - oracle-xe-data:/opt/oracle/oradata
+      # 初始化腳本（只會在「第一次初始化 DB」時跑）
+      - ./oracle-init:/container-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  oracle-xe-data:
+    external: true
+    name: oraclexedb_oracle-xe-data

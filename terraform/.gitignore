@@ -1,0 +1,43 @@
+# Terraform 本地快取與工作目錄
+.terraform/
+hashicorp/
+
+# Terraform state 檔案（包含敏感資訊）
+*.tfstate
+*.tfstate.*
+
+# 變數檔案（可能包含敏感資訊）
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Crash log 檔案
+crash.log
+crash.*.log
+
+# Override 檔案（本地開發用）
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI 設定檔
+.terraformrc
+terraform.rc
+
+# 私鑰與敏感檔案
+*.pem
+*.key
+keys/
+
+# IDE / 編輯器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 環境變數檔案
+.env
+.env.*
