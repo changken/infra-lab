@@ -1,0 +1,7 @@
+region      = "us-east-1"
+project     = "rds-lab"
+environment = "dev"
+
+db_name     = "labdb"
+db_username = "labadmin"
+db_password = "ChangeMe1234!"   # 複製到 terraform.tfvars 後改掉，不要 commit
