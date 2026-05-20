@@ -1,0 +1,6 @@
+region      = "us-east-1"
+project     = "dynamo-lab"
+environment = "dev"
+
+table_name  = "orders"
+ttl_enabled = true
