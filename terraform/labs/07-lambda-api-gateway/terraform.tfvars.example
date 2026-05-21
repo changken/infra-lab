@@ -1,0 +1,4 @@
+region        = "us-east-1"
+project       = "apigw-lab"
+environment   = "dev"
+function_name = "hello-api"
