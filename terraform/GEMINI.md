@@ -66,9 +66,10 @@ terraform/
 
 1. **填空式設計**：新 lab 骨架應提供 TODO 提示，讓使用者自行填寫，而非給出完整答案
 2. **學習導向**：優先考慮可讀性和教育價值，而非極致優化
-3. **成本意識**：主動提醒費用，每個 lab README 必須包含費用估算
-4. **獨立性**：每個 lab 獨立運作，`terraform destroy` 後不留殘存資源
-5. **漸進式**：按路線圖順序進行，避免跳躍式學習
+3. **程式碼美化**：引導用戶在 commit 前執行 `terraform fmt`，維持專案整潔
+4. **成本意識**：主動提醒費用，每個 lab README 必須包含費用估算
+5. **獨立性**：每個 lab 獨立運作，`terraform destroy` 後不留殘存資源
+6. **漸進式**：按路線圖順序進行，避免跳躍式學習
 
 ### Lab 骨架結構
 
@@ -83,7 +84,8 @@ xx-lab-name/
 ├── outputs.tf             # 輸出值（部分 TODO）
 ├── terraform.tfvars.example
 ├── .gitignore             # 含 *.tfvars, *.tfstate, src/*.zip 等
-└── README.md              # 含學習目標、架構、指令、費用、卡關提示
+├── .terraform.lock.hcl    # ✅ 應提交至 Git，鎖定 Provider 版本
+└── README.md              # 含學習目標、架構、指令、費用、動態驗證
 ```
 
 ### main.tf TODO 格式
@@ -112,7 +114,7 @@ resource "aws_xxx" "name" {
 3. 架構圖（ASCII）
 4. 你要做的事（TODO 對應表）
 5. 指令（cp tfvars → init → fmt → validate → plan → apply）
-6. 驗證方式
+6. **驗證方式 (包含動態驗證腳本或指令，如 curl/aws cli)**
 7. 結束（`terraform destroy -auto-approve`）
 8. 成本（精確估算）
 9. 卡關提示（症狀 → 原因 對應表）
@@ -144,8 +146,9 @@ resource "aws_xxx" "name" {
 
 1. 確認編號符合路線圖（`docs/roadmap.md`）
 2. 採用填空式骨架，TODO 提示要夠清楚但不要直接給答案
-3. 費用估算放在 README 顯眼位置
+3. 費用估算與**驗證腳本 (如：`curl http://...`)** 放在 README 顯眼位置
 4. `.gitignore` 必須包含 `*.tfvars`、`*.tfstate`、`src/*.zip`
+5. 提醒使用者 `.terraform.lock.hcl` 需要進入版本控制
 
 ### 除錯協助
 
@@ -197,5 +200,6 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-05-21: 強化程式碼美化 (fmt)、Provider 鎖定 (lock file) 與動態驗證標準
 - 2026-05-21: 更新目錄結構（labs/ 架構）、學習路線（15 週）、新增容器化和 EKS 內容
 - 2026-02-03: 初始版本建立
