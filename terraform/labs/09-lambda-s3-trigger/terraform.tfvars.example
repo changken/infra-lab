@@ -1,0 +1,4 @@
+region        = "us-east-1"
+project       = "s3-trigger-lab"
+environment   = "dev"
+function_name = "s3-file-processor"
