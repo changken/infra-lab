@@ -1,0 +1,7 @@
+region        = "us-east-1"
+project       = "ecs-alb-lab"
+environment   = "dev"
+ecr_image_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/my-app:latest"
+desired_count = 1
+task_cpu      = 256
+task_memory   = 512
