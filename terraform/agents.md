@@ -30,10 +30,10 @@ terraform/
 │   ├── 07-lambda-api-gateway/     ✅ 完成
 │   ├── 08-lambda-dynamodb-crud/   ✅ 完成
 │   ├── 09-lambda-s3-trigger/      ✅ 完成
-│   ├── 10-ecr-repository/         （待做）
+│   ├── 10-ecr-repository/         ✅ 完成
 │   ├── 11-ecs-fargate/            （待做）
-│   ├── 12-ecs-fargate-alb/        （待做）
-│   ├── 13-app-runner/             （待做）
+│   ├── 12-ecs-fargate-alb/        （待做）    ← 骨架已建，等 Lab 11 完成後進行
+│   ├── 13-app-runner/             （待做）    ← 骨架已建
 │   ├── 14-ecs-fargate-rds/        （待做）
 │   ├── 15-eks-cluster/            （待做）
 │   ├── 16-eks-workloads/          （待做）
