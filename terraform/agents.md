@@ -31,10 +31,11 @@ terraform/
 │   ├── 08-lambda-dynamodb-crud/   ✅ 完成
 │   ├── 09-lambda-s3-trigger/      ✅ 完成
 │   ├── 10-ecr-repository/         ✅ 完成
-│   ├── 11-ecs-fargate/            （待做）
-│   ├── 12-ecs-fargate-alb/        （待做）    ← 骨架已建，等 Lab 11 完成後進行
-│   ├── 13-app-runner/             （待做）    ← 骨架已建
-│   ├── 14-ecs-fargate-rds/        （待做）
+│   ├── 11-ecs-fargate/            ✅ 完成
+│   ├── 12-ecs-fargate-alb/        ✅ 完成
+│   ├── 13-app-runner/             ✅ 完成
+│   ├── 13-ecs-express-gateway/    （待做）    ← 骨架已建，需 Provider ~> 6.0
+│   ├── 14-ecs-fargate-rds/        （待做）    ← 骨架已建，需先 build Flask image
 │   ├── 15-eks-cluster/            （待做）
 │   ├── 16-eks-workloads/          （待做）
 │   ├── 17-eks-irsa/               （待做）
