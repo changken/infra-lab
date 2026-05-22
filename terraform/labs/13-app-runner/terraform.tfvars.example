@@ -1,0 +1,7 @@
+region        = "us-east-1"
+project       = "apprunner-lab"
+environment   = "dev"
+ecr_image_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/my-app:latest"
+container_port = 80
+cpu           = "0.25 vCPU"
+memory        = "0.5 GB"
