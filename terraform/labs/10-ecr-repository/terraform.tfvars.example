@@ -1,0 +1,5 @@
+region          = "us-east-1"
+project         = "ecr-lab"
+environment     = "dev"
+repository_name = "my-app"
+max_image_count = 5
