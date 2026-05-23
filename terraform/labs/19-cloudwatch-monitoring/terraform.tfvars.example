@@ -1,0 +1,4 @@
+region      = "us-east-1"
+project     = "cw-lab"
+environment = "dev"
+alert_email = "your@email.com"   # 填入你的 Email，apply 後需到信箱確認訂閱
