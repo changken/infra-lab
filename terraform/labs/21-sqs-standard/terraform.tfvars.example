@@ -1,0 +1,6 @@
+region      = "us-east-1"
+project     = "sqs-lab"
+environment = "dev"
+
+# visibility_timeout_seconds = 30  # 預設值，通常不需要改
+# max_receive_count          = 3   # 失敗 3 次後移入 DLQ
