@@ -124,11 +124,11 @@ Lambda + API Gateway + DynamoDB 全在 Free Tier，**這一階段值得花最多
 
 | 編號 | 目錄 | 說明 | 預估花費 | 安全玩法 |
 |------|------|------|---------|---------|
-| 10 | `10-ecr-repository` | ECR + Docker image push | < $0.10 | 儲存便宜，可留著 |
-| 11 | `11-ecs-fargate` | ECS Fargate（無 ALB，公網 IP）| ~$0.10 | 理解 Cluster/Task/Service 概念 |
-| 12 | `12-ecs-fargate-alb` | ECS Fargate + ALB（完整生產架構）| ~$0.30 | **2 小時內 destroy**，ALB 開著計費 |
-| 13 | `13-app-runner` | App Runner（對比 ECS）| ~$0.50 | Scale to zero，相對安全 |
-| 14 | `14-ecs-fargate-rds` | ECS + RDS 整合（有狀態服務）| ~$0.80 | **同一天完成**，RDS 費用較高 |
+| 10 ✅ | `10-ecr-repository` | ECR + Docker image push | < $0.10 | 儲存便宜，可留著 |
+| 11 ✅ | `11-ecs-fargate` | ECS Fargate（無 ALB，公網 IP）| ~$0.10 | 理解 Cluster/Task/Service 概念 |
+| 12 ✅ | `12-ecs-fargate-alb` | ECS Fargate + ALB（完整生產架構）| ~$0.30 | **2 小時內 destroy**，ALB 開著計費 |
+| 13 ✅ | `13-app-runner` | App Runner（對比 ECS）| ~$0.50 | Scale to zero，相對安全 |
+| 14 ✅ | `14-ecs-fargate-rds` | ECS + RDS 整合（有狀態服務）| ~$0.80 | **同一天完成**，RDS 費用較高 |
 
 ### ECS vs App Runner
 
@@ -162,10 +162,10 @@ Lambda + API Gateway + DynamoDB 全在 Free Tier，**這一階段值得花最多
 
 | 編號 | 目錄 | 說明 | 預估花費 |
 |------|------|------|---------|
-| 15 | `15-eks-cluster` | EKS Control Plane + Managed Node Group | ~$0.50 |
-| 16 | `16-eks-workloads` | Deployment + Service + Ingress | ~$0.50 |
-| 17 | `17-eks-irsa` | IAM Roles for Service Accounts（IRSA）| ~$0.30 |
-| 18 | `18-eks-helm` | Helm Provider + 部署應用 | ~$0.20 |
+| 15 ✅ | `15-eks-cluster` | EKS Control Plane + Managed Node Group | ~$0.50 |
+| 16 ✅ | `16-eks-workloads` | Deployment + Service + Ingress | ~$0.50 |
+| 17 ✅ | `17-eks-irsa` | IAM Roles for Service Accounts（IRSA）| ~$0.30 |
+| 18 ✅ | `18-eks-helm` | Helm Provider + 部署應用 | ~$0.20 |
 
 ### EKS 一日 Sprint 規則
 
@@ -194,8 +194,8 @@ Lambda + API Gateway + DynamoDB 全在 Free Tier，**這一階段值得花最多
 
 | 編號 | 目錄 | 說明 | 預估花費 |
 |------|------|------|---------|
-| 19 | `19-cloudwatch-monitoring` | CloudWatch Metrics + Alarms + Dashboard | < $1 |
-| 20 | `20-iam-advanced` | IAM Policy 設計 + 最小權限實踐 | $0 |
+| 19 ✅ | `19-cloudwatch-monitoring` | CloudWatch Metrics + Alarms + Dashboard | < $1 |
+| 20 ✅ | `20-iam-advanced` | IAM Policy 設計 + 最小權限實踐 | $0 |
 
 ### 學習重點
 - CloudWatch：自訂 Metrics、Alarm、SNS 通知、Dashboard
