@@ -50,9 +50,9 @@ terraform/
     └── azure-k3s/
 ```
 
-## 學習路線（共 15 週）
+## 學習路線（共 15+ 週）
 
-完整路線圖請參考 `docs/roadmap.md`，共分為 6 個階段：
+完整路線圖請參考 `docs/roadmap.md`（核心）與 `docs/roadmap-v2.md`（進階），共分為多個階段：
 
 | 階段 | 主題 | 週數 | 難度 | 預算 |
 |------|------|------|------|------|
@@ -62,6 +62,7 @@ terraform/
 | 4 | 容器化（ECR, ECS, App Runner）| 第 8-11 週 | ★★★☆☆ | ~$2 |
 | 5 | Kubernetes（EKS）| 第 12-13 週 | ★★★★☆ | ~$1.50 |
 | 6 | DevOps & 監控（CloudWatch, IAM）| 第 14-15 週 | ★★★☆☆ | < $2 |
+| Phase 1-A | 訊息與事件（SQS, SNS, EventBridge）| 實作中 | ★★☆☆☆ | < $1 |
 
 ## AI 協作規範
 
