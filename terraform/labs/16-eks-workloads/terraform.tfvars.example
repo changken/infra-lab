@@ -1,0 +1,8 @@
+region       = "us-east-1"
+cluster_name = "eks-lab"   # 對應 Lab 15 的 var.project
+project      = "eks-workloads"
+environment  = "dev"
+
+namespace_name = "demo"
+app_image      = "nginx:alpine"
+replica_count  = 2
