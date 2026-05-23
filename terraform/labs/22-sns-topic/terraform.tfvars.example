@@ -1,0 +1,5 @@
+region      = "us-east-1"
+project     = "sns-lab"
+environment = "dev"
+
+notification_email = "your-email@example.com"
