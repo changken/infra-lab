@@ -41,7 +41,7 @@ terraform/
 │   ├── 17-eks-irsa/               （待做）    ← 骨架已建，需 Lab 15 ACTIVE
 │   ├── 18-eks-helm/               （待做）    ← 骨架已建，需 Lab 15 ACTIVE
 │   ├── 19-cloudwatch-monitoring/  （待做）    ← 骨架已建
-│   └── 20-iam-advanced/           （待做）
+│   └── 20-iam-advanced/           （待做）    ← 骨架已建
 └── modules/               # 可重用模組（參考用）
     ├── aws-k3s/           # 輕量 K8s（EKS 替代方案）
     ├── aws-windows-spot/
