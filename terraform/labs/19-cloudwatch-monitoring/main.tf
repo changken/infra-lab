@@ -108,6 +108,8 @@ resource "aws_lambda_function" "app" {
 
 resource "aws_sns_topic" "alerts" {
   # TODO
+  name = "${var.project}-alerts"
+  tags = local.common_tags
 }
 
 
@@ -128,6 +130,9 @@ resource "aws_sns_topic" "alerts" {
 
 resource "aws_sns_topic_subscription" "email" {
   # TODO
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
 }
 
 
@@ -162,6 +167,25 @@ resource "aws_sns_topic_subscription" "email" {
 
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   # TODO
+  alarm_name        = "${var.project}-lambda-errors"
+  alarm_description = "Lambda error rate too high"
+
+  namespace   = "AWS/Lambda"
+  metric_name = "Errors"
+  dimensions  = { FunctionName = aws_lambda_function.app.function_name }
+
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+
+  alarm_actions      = [aws_sns_topic.alerts.arn]
+  ok_actions         = [aws_sns_topic.alerts.arn]
+  treat_missing_data = "notBreaching"
+
+  tags = local.common_tags
+
 }
 
 
@@ -191,6 +215,16 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
 
 resource "aws_cloudwatch_log_metric_filter" "error_count" {
   # TODO
+  name           = "${var.project}-error-count"
+  log_group_name = aws_cloudwatch_log_group.lambda.name
+  pattern        = "ERROR"
+
+  metric_transformation {
+    name      = "ErrorCount"
+    namespace = "${var.project}/Custom"
+    value     = "1"
+  }
+
 }
 
 
@@ -209,7 +243,10 @@ resource "aws_cloudwatch_log_metric_filter" "error_count" {
 #     widgets = [
 #       {
 #         type   = "metric"    # 折線圖 Widget
-#         x      = 0; y = 0; width = 12; height = 6
+#         x      = 0
+#         y      = 0
+#         width  = 12
+#         height = 6
 #         properties = {
 #           title  = "Lambda Invocations & Errors"
 #           region = var.region
@@ -223,7 +260,10 @@ resource "aws_cloudwatch_log_metric_filter" "error_count" {
 #       },
 #       {
 #         type   = "alarm"    # Alarm 狀態 Widget
-#         x      = 12; y = 0; width = 12; height = 6
+#         x      = 12
+#         y      = 0
+#         width  = 12
+#         height = 6
 #         properties = {
 #           title  = "Active Alarms"
 #           alarms = [aws_cloudwatch_metric_alarm.lambda_errors.arn]
@@ -236,4 +276,37 @@ resource "aws_cloudwatch_log_metric_filter" "error_count" {
 
 resource "aws_cloudwatch_dashboard" "main" {
   # TODO
+  dashboard_name = var.project
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Lambda Invocations & Errors"
+          region = var.region
+          stat   = "Sum"
+          period = 60
+          metrics = [
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.app.function_name],
+            ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.app.function_name],
+          ]
+        }
+      },
+      {
+        type   = "alarm"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Active Alarms"
+          alarms = [aws_cloudwatch_metric_alarm.lambda_errors.arn]
+        }
+      }
+    ]
+  })
 }
