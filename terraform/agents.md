@@ -34,14 +34,14 @@ terraform/
 │   ├── 11-ecs-fargate/            ✅ 完成
 │   ├── 12-ecs-fargate-alb/        ✅ 完成
 │   ├── 13-app-runner/             ✅ 完成
-│   ├── 13-ecs-express-gateway/    （待做）    ← 骨架已建，需 Provider ~> 6.0
-│   ├── 14-ecs-fargate-rds/        （待做）    ← 骨架已建，需先 build Flask image
-│   ├── 15-eks-cluster/            （待做）    ← 骨架已建
-│   ├── 16-eks-workloads/          （待做）    ← 骨架已建，需 Lab 15 ACTIVE
-│   ├── 17-eks-irsa/               （待做）    ← 骨架已建，需 Lab 15 ACTIVE
-│   ├── 18-eks-helm/               （待做）    ← 骨架已建，需 Lab 15 ACTIVE
-│   ├── 19-cloudwatch-monitoring/  （待做）    ← 骨架已建
-│   └── 20-iam-advanced/           （待做）    ← 骨架已建
+│   ├── 13-ecs-express-gateway/    ✅ 完成
+│   ├── 14-ecs-fargate-rds/        ✅ 完成
+│   ├── 15-eks-cluster/            ✅ 完成
+│   ├── 16-eks-workloads/          ✅ 完成
+│   ├── 17-eks-irsa/               ✅ 完成
+│   ├── 18-eks-helm/               ✅ 完成
+│   ├── 19-cloudwatch-monitoring/  ✅ 完成
+│   └── 20-iam-advanced/           ✅ 完成
 └── modules/               # 可重用模組（參考用）
     ├── aws-k3s/           # 輕量 K8s（EKS 替代方案）
     ├── aws-windows-spot/
