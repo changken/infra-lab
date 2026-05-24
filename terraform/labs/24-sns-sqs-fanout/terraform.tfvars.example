@@ -1,0 +1,5 @@
+region      = "us-east-1"
+project     = "fanout-lab"
+environment = "dev"
+
+# max_receive_count = 3
