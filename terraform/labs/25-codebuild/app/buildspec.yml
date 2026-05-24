@@ -1,0 +1,42 @@
+version: 0.2
+
+# buildspec.yml 結構說明：
+#   phases.pre_build  → 建置前準備（登入 ECR、設定變數）
+#   phases.build      → 主要建置（docker build + tag）
+#   phases.post_build → 建置後（docker push、輸出 imagedefinitions.json）
+#
+# 環境變數（由 CodeBuild Project 注入）：
+#   ECR_REGISTRY      → ECR registry URL（帳號.dkr.ecr.region.amazonaws.com）
+#   ECR_REPOSITORY    → repository 名稱
+#   AWS_DEFAULT_REGION → 自動注入，不需手動設定
+#
+# CODEBUILD_RESOLVED_SOURCE_VERSION → CodeBuild 自動注入的 commit hash（S3 source 時為空，改用 BUILD_ID）
+
+phases:
+  pre_build:
+    commands:
+      - echo "=== 登入 Amazon ECR ==="
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+      - 'IMAGE_TAG=$(echo $CODEBUILD_BUILD_ID | cut -d: -f2 | cut -c1-8)'
+      - echo "Image tag = $IMAGE_TAG"
+
+  build:
+    commands:
+      - echo "=== 開始建置 Docker image ==="
+      - docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+      - docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+  post_build:
+    commands:
+      - echo "=== 推送到 ECR ==="
+      - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      - echo "=== 建置完成 ==="
+      - echo "Image URI = $ECR_REGISTRY/$ECR_REPOSITORY:latest"
+      # imagedefinitions.json 供 CodePipeline ECS Deploy 使用（Lab 26 會用到）
+      - |
+        printf '[{"name":"app","imageUri":"%s"}]' "$ECR_REGISTRY/$ECR_REPOSITORY:latest" > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
