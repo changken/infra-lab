@@ -1,0 +1,8 @@
+[
+  {
+    "EventBusName": "eventbridge-lab-bus",
+    "Source": "myapp.orders",
+    "DetailType": "order.created",
+    "Detail": "{\"order_id\":\"ORD-001\",\"status\":\"pending\",\"amount\":150}"
+  }
+]

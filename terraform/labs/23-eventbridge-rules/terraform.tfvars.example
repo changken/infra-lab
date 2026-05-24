@@ -1,0 +1,5 @@
+region      = "us-east-1"
+project     = "eventbridge-lab"
+environment = "dev"
+
+# schedule_expression = "rate(2 minutes)"   # 預設，測試完記得 destroy
