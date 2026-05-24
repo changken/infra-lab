@@ -81,7 +81,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 
 | 編號 | 目錄 | 說明 | 費用 | 認證對應 |
 |------|------|------|------|---------|
-| 25 | `25-codebuild` | CodeBuild Project + buildspec.yml + ECR image build | < $0.10 | DVA, SOA |
+| 25 ✅ | `25-codebuild` | CodeBuild Project + buildspec.yml + ECR image build | < $0.10 | DVA, SOA |
 | 26 | `26-codepipeline-ecs` | CodePipeline（Source → Build → Deploy to ECS）| ~$0.20 | DVA, SOA |
 | 27 | `27-github-actions-oidc` | GitHub Actions + OIDC → AWS（零 Access Key）| $0 | DVA |
 
