@@ -53,10 +53,10 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 
 | 編號 | 目錄 | 說明 | 費用 | 認證對應 |
 |------|------|------|------|---------|
-| 21 | `21-sqs-standard` | SQS Standard Queue + Dead Letter Queue + 可見性逾時 | $0 | DVA, SAA |
-| 22 | `22-sns-topic` | SNS Topic + Email / SQS / Lambda 訂閱類型 | $0 | DVA, SAA |
-| 23 | `23-eventbridge-rules` | EventBridge Rules + Schedule + 事件過濾 Pattern | $0 | DVA, SAA |
-| 24 | `24-sns-sqs-fanout` | SNS → 多個 SQS 的 Fan-out Pattern | $0 | DVA, SAA |
+| 21 ✅ | `21-sqs-standard` | SQS Standard Queue + Dead Letter Queue + 可見性逾時 | $0 | DVA, SAA |
+| 22 ✅ | `22-sns-topic` | SNS Topic + Email / SQS / Lambda 訂閱類型 | $0 | DVA, SAA |
+| 23 ✅ | `23-eventbridge-rules` | EventBridge Rules + Schedule + 事件過濾 Pattern | $0 | DVA, SAA |
+| 24 ✅ | `24-sns-sqs-fanout` | SNS → 多個 SQS 的 Fan-out Pattern | $0 | DVA, SAA |
 
 ### 學習重點
 - SQS：Standard vs FIFO、Visibility Timeout、Dead Letter Queue、Long Polling
