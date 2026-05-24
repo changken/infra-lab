@@ -1,0 +1,33 @@
+version: 0.2
+
+# CodePipeline 型 buildspec 和 Lab 25 的差異：
+#   - source 由 CodePipeline 傳入（不需要從 S3 自行讀取）
+#   - artifacts 會被 CodePipeline 收走，傳遞到下一個 Stage（ECS Deploy）
+#   - imagedefinitions.json 的 "name" 必須和 ECS Task Definition 的 container name 一致
+
+phases:
+  pre_build:
+    commands:
+      - echo "=== 登入 Amazon ECR ==="
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-8)
+      - echo "Image tag = $IMAGE_TAG"
+
+  build:
+    commands:
+      - echo "=== 建置 Docker image ==="
+      - docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+      - docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+  post_build:
+    commands:
+      - echo "=== 推送到 ECR ==="
+      - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      # ⚠️ container name "app" 必須和 ECS Task Definition 的 containerDefinitions[0].name 一致
+      - printf '[{"name":"app","imageUri":"%s"}]' "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

@@ -1,0 +1,7 @@
+region      = "us-east-1"
+project     = "pipeline-lab"
+environment = "dev"
+
+# container_port = 8080
+# task_cpu       = 256
+# task_memory    = 512
