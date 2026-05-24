@@ -48,7 +48,8 @@ terraform/
 │   ├── 24-sns-sqs-fanout/         ✅ 完成
 │   ├── 25-codebuild/              ✅ 完成
 │   ├── 26-codepipeline-ecs/       ✅ 完成
-│   └── 27-github-actions-oidc/    ✅ 完成
+│   ├── 27-github-actions-oidc/    ✅ 完成
+│   └── 28-cloudfront-s3/          ✅ 完成
 └── modules/               # 可重用模組（參考用）
     ├── aws-k3s/           # 輕量 K8s（EKS 替代方案）
     ├── aws-windows-spot/
