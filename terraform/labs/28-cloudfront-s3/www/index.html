@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab 28 - CloudFront + S3</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 720px;
+      margin: 80px auto;
+      padding: 0 24px;
+      color: #1a1a1a;
+      background: #f9f9f9;
+    }
+    h1 { color: #0066cc; }
+    .badge {
+      display: inline-block;
+      background: #0066cc;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      margin-bottom: 16px;
+    }
+    .info-box {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 24px;
+    }
+    .info-box p { margin: 6px 0; }
+    code { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <div class="badge">Lab 28</div>
+  <h1>CloudFront + S3 OAC</h1>
+  <p>這個頁面透過 <strong>CloudFront CDN</strong> 從私有 S3 Bucket 提供服務。</p>
+  <p>S3 Bucket 沒有開啟 Public Access，直連 S3 URL 會被拒絕存取。</p>
+
+  <div class="info-box">
+    <p><strong>架構</strong></p>
+    <p>你的瀏覽器 &rarr; CloudFront Edge &rarr; S3 (私有 Bucket)</p>
+    <p>&nbsp;</p>
+    <p><strong>安全機制</strong></p>
+    <p>OAC (Origin Access Control) 讓 CloudFront 用 <code>SigV4</code> 簽署請求存取 S3</p>
+    <p>Bucket Policy 限制只有這個 CloudFront Distribution 的 ARN 可以讀取</p>
+  </div>
+</body>
+</html>

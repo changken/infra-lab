@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - 找不到頁面</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 720px;
+      margin: 80px auto;
+      padding: 0 24px;
+      color: #1a1a1a;
+      text-align: center;
+    }
+    h1 { font-size: 4em; color: #cc3300; margin-bottom: 0; }
+    p { color: #666; }
+    a { color: #0066cc; }
+  </style>
+</head>
+<body>
+  <h1>404</h1>
+  <p>找不到這個頁面。</p>
+  <p>
+    <small>
+      注意：CloudFront + S3 OAC 架構下，不存在的檔案會回傳 S3 的 <code>403</code>，<br>
+      <code>custom_error_response</code> 把它 mapping 成 <code>404</code> 並顯示這個頁面。
+    </small>
+  </p>
+  <p><a href="/">回首頁</a></p>
+</body>
+</html>
