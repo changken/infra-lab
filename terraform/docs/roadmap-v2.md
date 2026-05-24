@@ -83,7 +83,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 |------|------|------|------|---------|
 | 25 ✅ | `25-codebuild` | CodeBuild Project + buildspec.yml + ECR image build | < $0.10 | DVA, SOA |
 | 26 ✅ | `26-codepipeline-ecs` | CodePipeline（Source → Build → Deploy to ECS）| ~$0.20 | DVA, SOA |
-| 27 | `27-github-actions-oidc` | GitHub Actions + OIDC → AWS（零 Access Key）| $0 | DVA |
+| 27 ✅ | `27-github-actions-oidc` | GitHub Actions + OIDC → AWS（零 Access Key）| $0 | DVA |
 
 ### 學習重點
 - CodeBuild：buildspec.yml 結構、環境變數、ECR 推送權限
