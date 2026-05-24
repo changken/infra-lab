@@ -1,0 +1,7 @@
+region      = "us-east-1"
+project     = "r53-lab"
+environment = "dev"
+
+# Health Check 的目標域名（必須是公開可連線的）
+# 預設 example.com，可換成你自己的域名或任何公開 HTTPS 站台
+health_check_fqdn = "example.com"
