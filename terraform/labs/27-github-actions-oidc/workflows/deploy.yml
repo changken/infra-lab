@@ -1,0 +1,74 @@
+# 使用方式：
+#   把這個檔案複製到你的 repo 根目錄：
+#   cp workflows/deploy.yml ../../.github/workflows/deploy.yml
+#
+# 需要先設定的 GitHub Repository Variables（Settings → Secrets and variables → Variables）：
+#   AWS_REGION       = us-east-1
+#   AWS_ROLE_ARN     = arn:aws:iam::ACCOUNT_ID:role/oidc-lab-github-actions-role  ← terraform output role_arn
+#   ECR_REPO_NAME    = your-ecr-repo-name
+
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main   # ⚠️ 必須和 Terraform variable github_branch 一致
+
+# OIDC 必要權限：允許 workflow 向 GitHub OIDC Provider 請求 JWT token
+permissions:
+  id-token: write   # ← 缺少這個 → AWS configure-aws-credentials 會失敗
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # OIDC 換取 AWS Credentials（零 Access Key）
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: GitHubActions-${{ github.run_id }}
+          # role-session-name 會出現在 CloudTrail，方便稽核是哪次 workflow 觸發的
+
+      # 驗證：確認已取得有效的 AWS Credentials
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
+      # 登入 ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 建置並推送 Docker image
+      - name: Build and Push to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPO_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+        id: build
+
+      # 產生 imagedefinitions.json（供 ECS Deploy 使用，概念同 Lab 26）
+      - name: Generate imagedefinitions.json
+        run: |
+          printf '[{"name":"app","imageUri":"%s"}]' \
+            "${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPO_NAME }}:${{ github.sha }}" \
+            > imagedefinitions.json
+
+      # 部署到 ECS（若有 ECS Service）
+      # - name: Deploy to ECS
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      #   with:
+      #     task-definition: task-definition.json
+      #     service: your-service-name
+      #     cluster: your-cluster-name
+      #     wait-for-service-stability: true

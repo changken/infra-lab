@@ -1,0 +1,11 @@
+region      = "us-east-1"
+project     = "oidc-lab"
+environment = "dev"
+
+# 必填：你的 GitHub 帳號和 repo
+github_org  = "your-github-username"
+github_repo = "your-repo-name"
+
+# 選填：限制允許的分支（預設 main）
+# github_branch = "main"     # 只允許 main 分支
+# github_branch = "*"        # 允許所有分支（測試用，不建議生產）
