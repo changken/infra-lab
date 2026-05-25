@@ -1,10 +1,13 @@
-# Terraform state
+# Terraform
 *.tfstate
-*.tfstate.*
+*.tfstate.backup
+*.tfstate.lock.info
 .terraform/
-*.tfvars
-!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
-# Sensitive
-*.pem
-*.key
+# 敏感設定
+*.tfvars
+!terraform.tfvars.example
