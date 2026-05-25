@@ -7,7 +7,8 @@ variable "region" {
 variable "project" {
   description = "Project name prefix"
   type        = string
-  default     = "cognito-lab"
+  default     = "auth-lab"
+  # ⚠️ 不能包含 "cognito" 等 AWS 保留字（會影響 User Pool Domain 名稱）
 }
 
 variable "environment" {

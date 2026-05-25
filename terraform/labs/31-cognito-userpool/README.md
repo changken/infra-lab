@@ -284,6 +284,7 @@ terraform destroy -auto-approve
 | `InvalidParameterException: USER_PASSWORD_AUTH flow not enabled` | App Client 的 `explicit_auth_flows` 未加 `ALLOW_USER_PASSWORD_AUTH` |
 | `InitiateAuth failed: MISSING_REQUIRED_AUTH_FLOW` | `explicit_auth_flows` 缺少 `ALLOW_REFRESH_TOKEN_AUTH` |
 | `DomainAlreadyExists` | Domain prefix 全域衝突，確認 `substr(account_id, -8, -1)` 已加入，或換一個 project 名稱 |
+| `InvalidParameterException: Domain cannot contain reserved word` | `var.project` 包含保留字（cognito / aws / amazon 等），改用 `auth-lab` 這類不含保留字的名稱 |
 | `terraform validate` 失敗 | 正常：resource body 還是 `# TODO`，填完所有欄位後再執行 |
 | base64 decode 出現亂碼 | JWT 用 base64url（`-` 和 `_`），需補 `=` padding，驗證腳本已處理 |
 | `UserNotFoundException` | 用戶建立失敗，確認 `--user-pool-id` 正確，或重新執行 `admin-create-user` |

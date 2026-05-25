@@ -67,6 +67,20 @@ data "aws_caller_identity" "current" {}
 
 resource "aws_cognito_user_pool" "main" {
   # TODO
+  name                     = "${var.project}-pool"
+  username_attributes      = ["email"]
+  auto_verified_attributes = ["email"]
+  password_policy {
+    minimum_length    = 8
+    require_uppercase = true
+    require_lowercase = true
+    require_numbers   = true
+    require_symbols   = true
+  }
+  admin_create_user_config {
+    allow_admin_create_user_only = false
+  }
+  tags = local.common_tags
 }
 
 
@@ -102,6 +116,18 @@ resource "aws_cognito_user_pool" "main" {
 
 resource "aws_cognito_user_pool_client" "app" {
   # TODO
+  name                   = "${var.project}-client"
+  user_pool_id           = aws_cognito_user_pool.main.id
+  generate_secret        = false
+  explicit_auth_flows    = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  access_token_validity  = 60
+  id_token_validity      = 60
+  refresh_token_validity = 30
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
 }
 
 
@@ -119,9 +145,14 @@ resource "aws_cognito_user_pool_client" "app" {
 #   domain       = "${var.project}-${substr(data.aws_caller_identity.current.account_id, -8, -1)}"
 #   user_pool_id = aws_cognito_user_pool.main.id
 #
+# ⚠️ domain 不能包含 AWS 保留字（cognito、aws、amazon 等）！
+#    所以 var.project 不能設成 "cognito-lab"，建議用 "auth-lab"
+#
 # 本 lab 不實際使用 Hosted UI，但這是 Lab 40（API GW + Cognito Authorizer）的前置設定
 # substr(-8, -1) 取最後 8 個字元，確保唯一性
 
 resource "aws_cognito_user_pool_domain" "main" {
   # TODO
+  domain       = "${var.project}-${substr(data.aws_caller_identity.current.account_id, -8, -1)}"
+  user_pool_id = aws_cognito_user_pool.main.id
 }
