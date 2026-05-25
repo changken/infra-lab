@@ -110,7 +110,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | 29 ✅ | `29-route53-basic` | Route 53 Hosted Zone + A Record + Health Check | ~$0.50 | SAA |
 | 30 ✅ | `30-elasticache-redis` | ElastiCache Redis（Cluster mode off）+ Lambda 測試 | ~$0.50 | SAA |
 | 31 | `31-cognito-userpool` | Cognito User Pool + App Client + JWT 驗證 | $0 | DVA |
-| 32 | `32-xray-lambda` | X-Ray + Lambda + API Gateway 分散式追蹤 | $0 | DVA |
+| 32 🚧 | `32-xray-lambda` | X-Ray + Lambda + API Gateway 分散式追蹤 | $0 | DVA |
 
 ### 學習重點
 - CloudFront：OAC（Origin Access Control）取代舊版 OAI、Cache Behavior、TTL
