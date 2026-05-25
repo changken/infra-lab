@@ -1,0 +1,16 @@
+# Terraform
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+.terraform/
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# 敏感設定
+*.tfvars
+!terraform.tfvars.example
+
+# Lambda 打包
+src/*.zip

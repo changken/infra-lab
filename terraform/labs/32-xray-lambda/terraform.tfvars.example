@@ -1,0 +1,3 @@
+region      = "us-east-1"
+project     = "xray-lab"
+environment = "dev"
