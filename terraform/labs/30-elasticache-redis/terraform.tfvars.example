@@ -1,0 +1,6 @@
+region      = "us-east-1"
+project     = "redis-lab"
+environment = "dev"
+
+# cache.t3.micro = $0.017/hr，練完立刻 terraform destroy！
+redis_node_type = "cache.t3.micro"

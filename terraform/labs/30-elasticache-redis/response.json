@@ -1,0 +1,1 @@
+{"statusCode": 200, "body": "{\"status\": \"success\", \"redis_host\": \"redis-lab-redis.mzfyqu.0001.use1.cache.amazonaws.com\", \"redis_port\": 6379, \"response\": \"+PONG\"}"}
