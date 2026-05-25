@@ -1,0 +1,10 @@
+# Terraform state
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+!*.tfvars.example
+
+# Sensitive
+*.pem
+*.key
