@@ -81,8 +81,8 @@ echo "App Client ID: $CLIENT_ID"
 aws cognito-idp admin-create-user \
   --user-pool-id "$USER_POOL_ID" \
   --username "testuser@example.com" \
-  --temporary-password "Temp@1234!" \
-  --message-action SUPPRESS
+  --temporary-password "Temp@.1234" \
+  --message-action "SUPPRESS"
 ```
 
 `--message-action SUPPRESS` 避免 Cognito 嘗試寄驗證信（lab 環境不需要）。
@@ -95,7 +95,7 @@ aws cognito-idp admin-create-user \
 aws cognito-idp admin-set-user-password \
   --user-pool-id "$USER_POOL_ID" \
   --username "testuser@example.com" \
-  --password "Test@1234!" \
+  --password "Test@.1234" \
   --permanent
 ```
 
@@ -120,7 +120,7 @@ aws cognito-idp admin-get-user \
 TOKENS=$(aws cognito-idp initiate-auth \
   --auth-flow USER_PASSWORD_AUTH \
   --client-id "$CLIENT_ID" \
-  --auth-parameters USERNAME="testuser@example.com",PASSWORD="Test@1234!")
+  --auth-parameters USERNAME="testuser@example.com",PASSWORD="Test@.1234")
 
 echo "$TOKENS" | python3 -m json.tool
 ```
