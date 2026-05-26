@@ -124,13 +124,11 @@ echo "Trace ID: $TRACE_ID"
 aws xray batch-get-traces \
   --trace-ids "$TRACE_ID" \
   --query 'Traces[0].Segments[*].Document' \
-  --output text | python3 -c "
+  --output json | python3 -c "
 import json, sys
-for line in sys.stdin:
-    line = line.strip()
-    if not line:
-        continue
-    doc = json.loads(line)
+docs = json.load(sys.stdin)
+for doc_str in docs:
+    doc = json.loads(doc_str)
     duration = doc.get('end_time', 0) - doc.get('start_time', 0)
     print(f\"Segment: {doc.get('name'):<30} Duration: {duration:.3f}s\")
 "

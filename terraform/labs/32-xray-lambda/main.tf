@@ -64,14 +64,28 @@ data "archive_file" "lambda" {
 
 resource "aws_iam_role" "lambda" {
   # TODO
+  name = "${var.project}-lambda-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+  tags = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_basic" {
   # TODO
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_xray" {
   # TODO
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 
@@ -96,6 +110,16 @@ resource "aws_iam_role_policy_attachment" "lambda_xray" {
 
 resource "aws_lambda_function" "handler" {
   # TODO
+  function_name    = "${var.project}-handler"
+  runtime          = "python3.12"
+  handler          = "handler.handler"
+  role             = aws_iam_role.lambda.arn
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+  tracing_config {
+    mode = "Active"
+  }
+  tags = local.common_tags
 }
 
 
@@ -133,18 +157,34 @@ resource "aws_lambda_function" "handler" {
 
 resource "aws_api_gateway_rest_api" "main" {
   # TODO
+  name        = "${var.project}-api"
+  description = "X-Ray Lab API"
+  tags        = local.common_tags
 }
 
 resource "aws_api_gateway_resource" "hello" {
   # TODO
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_rest_api.main.root_resource_id
+  path_part   = "hello"
 }
 
 resource "aws_api_gateway_method" "post" {
   # TODO
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.hello.id
+  http_method   = "POST"
+  authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "lambda" {
   # TODO
+  rest_api_id             = aws_api_gateway_rest_api.main.id
+  resource_id             = aws_api_gateway_resource.hello.id
+  http_method             = aws_api_gateway_method.post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.handler.invoke_arn
 }
 
 
@@ -178,10 +218,26 @@ resource "aws_api_gateway_integration" "lambda" {
 
 resource "aws_api_gateway_deployment" "main" {
   # TODO
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.hello.id,
+      aws_api_gateway_method.post.id,
+      aws_api_gateway_integration.lambda.id,
+    ]))
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_api_gateway_stage" "dev" {
   # TODO
+  rest_api_id          = aws_api_gateway_rest_api.main.id
+  deployment_id        = aws_api_gateway_deployment.main.id
+  stage_name           = var.environment
+  xray_tracing_enabled = true
+  tags                 = local.common_tags
 }
 
 
@@ -201,4 +257,9 @@ resource "aws_api_gateway_stage" "dev" {
 
 resource "aws_lambda_permission" "apigw" {
   # TODO
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.handler.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
 }
