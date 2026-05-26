@@ -52,10 +52,16 @@ data "archive_file" "rotation" {
 
 resource "aws_kms_key" "main" {
   # TODO
+  description             = "KMS key for Secrets Manager lab"
+  enable_key_rotation     = true
+  deletion_window_in_days = 7
+  tags                    = local.common_tags
 }
 
 resource "aws_kms_alias" "main" {
   # TODO
+  name          = "alias/${var.project}-key"
+  target_key_id = aws_kms_key.main.key_id
 }
 
 
@@ -111,14 +117,47 @@ resource "aws_kms_alias" "main" {
 
 resource "aws_iam_role" "rotation" {
   # TODO
+  name = "${var.project}-rotation-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "rotation_basic" {
   # TODO
+  role       = aws_iam_role.rotation.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy" "rotation" {
   # TODO
+  name = "${var.project}-rotation-policy"
+  role = aws_iam_role.rotation.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:UpdateSecretVersionStage",
+        ]
+        Resource = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:${var.project}-db-credentials-*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
+        Resource = aws_kms_key.main.arn
+      },
+    ]
+  })
 }
 
 
@@ -144,6 +183,18 @@ resource "aws_iam_role_policy" "rotation" {
 
 resource "aws_lambda_function" "rotation" {
   # TODO
+  function_name    = "${var.project}-rotation"
+  runtime          = "python3.12"
+  handler          = "rotation_handler.handler"
+  role             = aws_iam_role.rotation.arn
+  filename         = data.archive_file.rotation.output_path
+  source_code_hash = data.archive_file.rotation.output_base64sha256
+  environment {
+    variables = {
+      SECRETS_MANAGER_ENDPOINT = "https://secretsmanager.${var.region}.amazonaws.com"
+    }
+  }
+  tags = local.common_tags
 }
 
 
@@ -163,6 +214,11 @@ resource "aws_lambda_function" "rotation" {
 
 resource "aws_lambda_permission" "secretsmanager" {
   # TODO
+  statement_id   = "AllowSecretsManagerInvoke"
+  action         = "lambda:InvokeFunction"
+  function_name  = aws_lambda_function.rotation.function_name
+  principal      = "secretsmanager.amazonaws.com"
+  source_account = data.aws_caller_identity.current.account_id
 }
 
 
@@ -194,10 +250,20 @@ resource "aws_lambda_permission" "secretsmanager" {
 
 resource "aws_secretsmanager_secret" "db" {
   # TODO
+  name                    = "${var.project}-db-credentials"
+  description             = "Database credentials for lab"
+  kms_key_id              = aws_kms_key.main.arn
+  recovery_window_in_days = 0
+  tags                    = local.common_tags
 }
 
 resource "aws_secretsmanager_secret_version" "initial" {
   # TODO
+  secret_id = aws_secretsmanager_secret.db.id
+  secret_string = jsonencode({
+    username = "admin"
+    password = "InitialPassword123!"
+  })
 }
 
 
@@ -225,4 +291,10 @@ resource "aws_secretsmanager_secret_version" "initial" {
 
 resource "aws_secretsmanager_secret_rotation" "db" {
   # TODO
+  secret_id           = aws_secretsmanager_secret.db.id
+  rotation_lambda_arn = aws_lambda_function.rotation.arn
+  rotation_rules {
+    automatically_after_days = 1
+  }
+  depends_on = [aws_lambda_permission.secretsmanager]
 }
