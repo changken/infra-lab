@@ -217,6 +217,11 @@ resource "aws_secretsmanager_secret_version" "initial" {
 # ⚠️ 注意：設定 rotation 後，AWS 預設會立刻觸發一次輪換（rotate_immediately = true）
 #          apply 後約 10-30 秒密碼即已更換，驗證時讀到的不是 InitialPassword123!
 #          若不想立即輪換，可加 rotate_immediately = false（但 lab 建議保留立即輪換以便驗證）
+#
+#   depends_on = [aws_lambda_permission.secretsmanager]
+#   # ← 必要！確保 Lambda permission 建立後才啟用輪換
+#   # ← 若缺少此設定，立即觸發的輪換會因 Lambda 尚無 invoke 權限而 AccessDenied
+#   # ← 參考 S3 notification 的相同模式（CLAUDE.md 卡關提示）
 
 resource "aws_secretsmanager_secret_rotation" "db" {
   # TODO
