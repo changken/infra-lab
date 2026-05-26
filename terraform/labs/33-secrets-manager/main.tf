@@ -62,7 +62,9 @@ resource "aws_kms_alias" "main" {
 #--------------------------------------------------------------
 # TODO 2: Lambda IAM Role（含 SecretsManager + KMS 權限）
 #--------------------------------------------------------------
-# 文件: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role
+# 文件 (role):             https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role
+# 文件 (policy_attachment): https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment
+# 文件 (inline_policy):     https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy
 #
 # [IAM Role]
 #   name = "${var.project}-rotation-role"
@@ -212,8 +214,9 @@ resource "aws_secretsmanager_secret_version" "initial" {
 #     # ← lab 設 1 天方便測試；生產環境建議 30-90 天
 #   }
 #
-# ⚠️ 注意：設定 rotation 後，AWS 會立刻觸發一次輪換（Immediate Rotation）
-#          apply 後約 10-30 秒可以看到密碼已經改變
+# ⚠️ 注意：設定 rotation 後，AWS 預設會立刻觸發一次輪換（rotate_immediately = true）
+#          apply 後約 10-30 秒密碼即已更換，驗證時讀到的不是 InitialPassword123!
+#          若不想立即輪換，可加 rotate_immediately = false（但 lab 建議保留立即輪換以便驗證）
 
 resource "aws_secretsmanager_secret_rotation" "db" {
   # TODO
