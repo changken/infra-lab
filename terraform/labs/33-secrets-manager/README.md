@@ -122,8 +122,8 @@ aws secretsmanager list-secret-version-ids \
 
 ```bash
 aws secretsmanager rotate-secret --secret-id "$SECRET_NAME"
-echo "等待輪換完成（約 15 秒）..."
-sleep 15
+echo "等待輪換完成（約 30 秒，Lambda cold start 可能需要更長）..."
+sleep 30
 ```
 
 ### 5. 驗證密碼已更換
@@ -145,7 +145,7 @@ LAMBDA_NAME=$(terraform output -raw rotation_lambda_name)
 # 取得最新 log group
 LOG_GROUP="/aws/lambda/$LAMBDA_NAME"
 
-# 列出最近的 log events
+# 列出最近的 log events（macOS / Linux / Git Bash）
 aws logs describe-log-streams \
   --log-group-name "$LOG_GROUP" \
   --order-by LastEventTime \
@@ -158,6 +158,10 @@ aws logs describe-log-streams \
     --log-stream-name {} \
     --query 'events[*].message' \
     --output text
+
+# Windows PowerShell 替代指令：
+# $stream = aws logs describe-log-streams --log-group-name $LOG_GROUP --order-by LastEventTime --descending --max-items 1 --query 'logStreams[0].logStreamName' --output text
+# aws logs get-log-events --log-group-name $LOG_GROUP --log-stream-name $stream --query 'events[*].message' --output text
 ```
 
 **期望輸出**：看到 4 次 Lambda 呼叫（createSecret、setSecret、testSecret、finishSecret）的日誌。
