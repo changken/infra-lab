@@ -110,7 +110,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | 29 ✅ | `29-route53-basic` | Route 53 Hosted Zone + A Record + Health Check | ~$0.50 | SAA |
 | 30 ✅ | `30-elasticache-redis` | ElastiCache Redis（Cluster mode off）+ Lambda 測試 | ~$0.50 | SAA |
 | 31 | `31-cognito-userpool` | Cognito User Pool + App Client + JWT 驗證 | $0 | DVA |
-| 32 🚧 | `32-xray-lambda` | X-Ray + Lambda + API Gateway 分散式追蹤 | $0 | DVA |
+| 32 ✅ | `32-xray-lambda` | X-Ray + Lambda + API Gateway 分散式追蹤 | $0 | DVA |
 
 ### 學習重點
 - CloudFront：OAC（Origin Access Control）取代舊版 OAI、Cache Behavior、TTL
@@ -136,7 +136,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 
 | 編號 | 目錄 | 說明 | 費用 | 認證對應 |
 |------|------|------|------|---------|
-| 33 🚧 | `33-secrets-manager` | Secrets Manager + Lambda 自動輪換 + KMS 加密 | < $0.10 | DVA, SOA |
+| 33 ✅ | `33-secrets-manager` | Secrets Manager + Lambda 自動輪換 + KMS 加密 | < $0.10 | DVA, SOA |
 | 34 | `34-ssm-session-manager` | Systems Manager Session Manager（零 SSH）+ Patch Manager | $0 | SOA |
 | 35 | `35-cloudtrail-config` | CloudTrail + Config Rules + SNS 合規告警 | < $0.50 | SOA, SAA |
 | 36 | `36-asg-alb` | Auto Scaling Group + ALB + Scaling Policy（EC2 彈性擴展）| ~$0.30 | SAA |
