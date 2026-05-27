@@ -169,7 +169,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 
 | 編號 | 場景 | 技術組合 | 費用 |
 |------|------|---------|------|
-| 37 | 電商訂單後端 | API GW → Lambda → SQS → Lambda → DynamoDB + SNS 通知 | < $0.50 |
+| 37 🚧 | 電商訂單後端 | API GW → Lambda → SQS → Lambda → DynamoDB + SNS 通知 | < $0.50 |
 | 38 | 自動化部署流水線 | GitHub Actions + OIDC → ECR → CodePipeline → ECS Blue/Green | ~$0.50 |
 | 39 | 圖片處理微服務 | S3 → EventBridge → Lambda → CloudFront 分發 | < $0.10 |
 | 40 | 多租戶 SaaS API | Cognito → API GW Authorizer → Lambda + 動態租戶隔離 | $0 |
