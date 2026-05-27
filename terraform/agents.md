@@ -56,7 +56,7 @@ terraform/
 │   ├── 32-xray-lambda/            ✅ 完成
 │   ├── 33-secrets-manager/        ✅ 完成
 │   ├── 34-ssm-session-manager/    ✅ 完成
-│   ├── 35-cloudtrail-config/      🚧 進行中
+│   ├── 35-cloudtrail-config/      ✅ 完成
 │   └── 36-asg-alb/                🚧 進行中
 └── modules/               # 可重用模組（參考用）
     ├── aws-k3s/           # 輕量 K8s（EKS 替代方案）
