@@ -52,7 +52,7 @@
 | 3 | `aws_cloudwatch_log_metric_filter` × 2 | JSON pattern 語法 `{ $.field = "value" }`，大小寫敏感 |
 | 4 | `aws_cloudwatch_metric_alarm` × 2 | metric_name 和 namespace 必須和 Filter 完全一致 |
 | 5 | `aws_sns_topic` + `aws_sns_topic_subscription` | apply 後立即確認訂閱信 |
-| 6 | `aws_iam_role` + `aws_iam_role_policy_attachment` + `aws_config_configuration_recorder` + `aws_config_delivery_channel` + `aws_config_configuration_recorder_status` + `aws_config_rule` × 2 | depends_on 順序：Recorder → Channel → Status → Rules |
+| 6 | `aws_iam_role` + `aws_iam_role_policy_attachment` + `aws_config_configuration_recorder` + `aws_config_delivery_channel` + `aws_config_configuration_recorder_status` + `aws_config_config_rule` × 2 | depends_on 順序：Recorder → Channel → Status → Rules |
 
 ---
 

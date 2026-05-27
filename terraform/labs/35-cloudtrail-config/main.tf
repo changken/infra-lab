@@ -63,14 +63,74 @@ data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "cloudtrail" {
   # TODO
+  bucket        = "${var.project}-logs-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
+  tags          = local.common_tags
 }
 
 resource "aws_s3_bucket_public_access_block" "cloudtrail" {
   # TODO
+  bucket                  = aws_s3_bucket.cloudtrail.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_policy" "cloudtrail" {
   # TODO
+  bucket = aws_s3_bucket.cloudtrail.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AWSCloudTrailAclCheck"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action   = "s3:GetBucketAcl"
+        Resource = aws_s3_bucket.cloudtrail.arn
+      },
+      {
+        Sid    = "AWSCloudTrailWrite"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      },
+      {
+        Sid    = "AWSConfigAclCheck"
+        Effect = "Allow"
+        Principal = {
+          Service = "config.amazonaws.com"
+        }
+        Action   = "s3:GetBucketAcl"
+        Resource = aws_s3_bucket.cloudtrail.arn
+      },
+      {
+        Sid    = "AWSConfigWrite"
+        Effect = "Allow"
+        Principal = {
+          Service = "config.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/Config/*"
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      }
+    ]
+  })
 }
 
 
@@ -114,21 +174,58 @@ resource "aws_s3_bucket_policy" "cloudtrail" {
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   # TODO
+  name              = "/aws/cloudtrail/${var.project}"
+  retention_in_days = 7
+  tags              = local.common_tags
 }
 
 resource "aws_iam_role" "cloudtrail" {
   # TODO
+  name = "${var.project}-cloudtrail-role"
+  tags = local.common_tags
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "cloudtrail.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
 }
 
 resource "aws_iam_role_policy" "cloudtrail_cloudwatch" {
   # TODO
+  name = "${var.project}-cloudtrail-policy"
+  role = aws_iam_role.cloudtrail.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Effect   = "Allow"
+        Resource = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+      }
+    ]
+  })
 }
 
 resource "aws_cloudtrail" "main" {
   # TODO
+  name                          = "${var.project}-trail"
+  s3_bucket_name                = aws_s3_bucket.cloudtrail.id
+  is_multi_region_trail         = true
+  enable_log_file_validation    = true
+  include_global_service_events = true
+  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+  cloud_watch_logs_role_arn     = aws_iam_role.cloudtrail.arn
+  tags                          = local.common_tags
 
   event_selector {
-    # TODO
+    read_write_type           = "All"
+    include_management_events = true
   }
 }
 
@@ -167,10 +264,30 @@ resource "aws_cloudtrail" "main" {
 
 resource "aws_cloudwatch_log_metric_filter" "root_login" {
   # TODO
+  name           = "${var.project}-root-login"
+  log_group_name = aws_cloudwatch_log_group.cloudtrail.name
+  pattern        = "{ $.userIdentity.type = \"Root\" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != \"AwsServiceEvent\" }"
+
+  metric_transformation {
+    name          = "RootLoginCount"
+    namespace     = "${var.project}/SecurityMetrics"
+    value         = "1"
+    default_value = "0"
+  }
 }
 
 resource "aws_cloudwatch_log_metric_filter" "sg_change" {
   # TODO
+  name           = "${var.project}-sg-change"
+  log_group_name = aws_cloudwatch_log_group.cloudtrail.name
+  pattern        = "{ $.eventName = \"AuthorizeSecurityGroupIngress\" || $.eventName = \"AuthorizeSecurityGroupEgress\" || $.eventName = \"RevokeSecurityGroupIngress\" || $.eventName = \"CreateSecurityGroup\" || $.eventName = \"DeleteSecurityGroup\" }"
+
+  metric_transformation {
+    name          = "SecurityGroupChangeCount"
+    namespace     = "${var.project}/SecurityMetrics"
+    value         = "1"
+    default_value = "0"
+  }
 }
 
 
@@ -202,10 +319,32 @@ resource "aws_cloudwatch_log_metric_filter" "sg_change" {
 
 resource "aws_cloudwatch_metric_alarm" "root_login" {
   # TODO
+  alarm_name          = "${var.project}-root-login-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "RootLoginCount"
+  namespace           = "${var.project}/SecurityMetrics"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  treat_missing_data  = "notBreaching"
+  tags                = local.common_tags
 }
 
 resource "aws_cloudwatch_metric_alarm" "sg_change" {
   # TODO
+  alarm_name          = "${var.project}-sg-change-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "SecurityGroupChangeCount"
+  namespace           = "${var.project}/SecurityMetrics"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  treat_missing_data  = "notBreaching"
+  tags                = local.common_tags
 }
 
 
@@ -230,10 +369,15 @@ resource "aws_cloudwatch_metric_alarm" "sg_change" {
 
 resource "aws_sns_topic" "alerts" {
   # TODO
+  name = "${var.project}-security-alerts"
+  tags = local.common_tags
 }
 
 resource "aws_sns_topic_subscription" "email" {
   # TODO
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
 }
 
 
@@ -284,40 +428,68 @@ resource "aws_sns_topic_subscription" "email" {
 
 resource "aws_iam_role" "config" {
   # TODO
+  name = "${var.project}-config-role"
+  tags = local.common_tags
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "config.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "config" {
   # TODO
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
+  role       = aws_iam_role.config.name
 }
 
 resource "aws_config_configuration_recorder" "main" {
   # TODO
+  name     = "${var.project}-recorder"
+  role_arn = aws_iam_role.config.arn
 
   recording_group {
     # TODO
+    all_supported                 = true
+    include_global_resource_types = true
   }
 }
 
 resource "aws_config_delivery_channel" "main" {
   # TODO
+  name           = "${var.project}-delivery-channel"
+  s3_bucket_name = aws_s3_bucket.cloudtrail.id
+  depends_on     = [aws_config_configuration_recorder.main]
 }
 
 resource "aws_config_configuration_recorder_status" "main" {
   # TODO
+  name       = aws_config_configuration_recorder.main.name
+  is_enabled = true
+  depends_on = [aws_config_delivery_channel.main]
 }
 
-resource "aws_config_rule" "s3_public_write" {
+resource "aws_config_config_rule" "s3_public_write" {
   # TODO
+  name = "s3-bucket-public-write-prohibited"
 
   source {
     # TODO
+    owner             = "AWS"
+    source_identifier = "S3_BUCKET_PUBLIC_WRITE_PROHIBITED"
   }
+  depends_on = [aws_config_configuration_recorder_status.main]
 }
 
-resource "aws_config_rule" "cloudtrail_enabled" {
+resource "aws_config_config_rule" "cloudtrail_enabled" {
   # TODO
-
+  name = "cloud-trail-enabled"
   source {
-    # TODO
+    owner             = "AWS"
+    source_identifier = "CLOUD_TRAIL_ENABLED"
   }
+  depends_on = [aws_config_configuration_recorder_status.main]
 }
