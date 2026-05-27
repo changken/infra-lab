@@ -73,22 +73,38 @@ data "aws_ami" "amazon_linux_2023" {
 
 resource "aws_vpc" "main" {
   # TODO
+  cidr_block = "10.0.0.0/16"
+  tags       = local.common_tags
 }
 
 resource "aws_subnet" "public" {
   # TODO
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true # ← EC2 自動取得 Public IP，才能出站連 SSM
+  tags                    = local.common_tags
 }
 
 resource "aws_internet_gateway" "main" {
   # TODO
+  vpc_id = aws_vpc.main.id
+  tags   = local.common_tags
 }
 
 resource "aws_route_table" "public" {
   # TODO
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+  tags = local.common_tags
 }
 
 resource "aws_route_table_association" "public" {
   # TODO
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
 }
 
 
@@ -116,6 +132,18 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_security_group" "ec2" {
   # TODO
+  name        = "${var.project}-ec2-sg"
+  description = "No inbound - SSM Session Manager only"
+  vpc_id      = aws_vpc.main.id
+  tags        = local.common_tags
+
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTPS to SSM endpoints"
+  }
 }
 
 
@@ -152,14 +180,29 @@ resource "aws_security_group" "ec2" {
 
 resource "aws_iam_role" "ec2_ssm" {
   # TODO
+  name = "${var.project}-ec2-role"
+  tags = local.common_tags
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "ssm_core" {
   # TODO
+  role       = aws_iam_role.ec2_ssm.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "ec2_ssm" {
   # TODO
+  name = "${var.project}-ec2-profile"
+  role = aws_iam_role.ec2_ssm.name
+  tags = local.common_tags
 }
 
 
@@ -183,6 +226,15 @@ resource "aws_iam_instance_profile" "ec2_ssm" {
 
 resource "aws_instance" "ssm_target" {
   # TODO
+  ami                    = data.aws_ami.amazon_linux_2023.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.ec2.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_ssm.name
+  tags = merge(local.common_tags, {
+    Name       = "${var.project}-ssm-target"
+    PatchGroup = var.project # ← Patch Manager Target 會用此 tag 篩選
+  })
 }
 
 
@@ -218,6 +270,30 @@ resource "aws_instance" "ssm_target" {
 
 resource "aws_ssm_patch_baseline" "amazon_linux_2023" {
   # TODO
+  name             = "${var.project}-baseline"
+  description      = "Patch baseline for Amazon Linux 2023"
+  operating_system = "AMAZON_LINUX_2023"
+  tags             = local.common_tags
+
+  approval_rule {
+    approve_after_days = 7 # ← 修補釋出 7 天後自動核准
+    compliance_level   = "HIGH"
+
+    patch_filter {
+      key    = "PRODUCT"
+      values = ["AmazonLinux2023"]
+    }
+
+    patch_filter {
+      key    = "CLASSIFICATION"
+      values = ["Security", "Bugfix"]
+    }
+
+    patch_filter {
+      key    = "SEVERITY"
+      values = ["Critical", "Important"]
+    }
+  }
 }
 
 
@@ -277,12 +353,49 @@ resource "aws_ssm_patch_baseline" "amazon_linux_2023" {
 
 resource "aws_ssm_maintenance_window" "weekly" {
   # TODO
+  name                       = "${var.project}-window"
+  schedule                   = "rate(7 days)" # ← lab 使用 rate 語法；生產環境常用 cron
+  duration                   = 2              # ← 維護視窗持續 2 小時
+  cutoff                     = 1              # ← 截止前 1 小時停止啟動新任務
+  allow_unassociated_targets = false
+  tags                       = local.common_tags
 }
 
 resource "aws_ssm_maintenance_window_target" "ec2" {
   # TODO
+  window_id     = aws_ssm_maintenance_window.weekly.id
+  name          = "${var.project}-target"
+  resource_type = "INSTANCE"
+
+  targets {
+    key    = "tag:PatchGroup" # ← 比對 EC2 tag PatchGroup
+    values = [var.project]    # ← 只有 PatchGroup = "ssm-lab" 的 EC2
+  }
 }
 
 resource "aws_ssm_maintenance_window_task" "patch_scan" {
   # TODO
+  window_id       = aws_ssm_maintenance_window.weekly.id
+  name            = "${var.project}-patch-scan"
+  task_arn        = "arn:aws:ssm:${var.region}::document/AWS-RunPatchBaseline" # ← 注意雙冒號
+  task_type       = "RUN_COMMAND"
+  priority        = 1
+  max_concurrency = "1"
+  max_errors      = "1"
+
+  targets {
+    key    = "WindowTargetIds"
+    values = [aws_ssm_maintenance_window_target.ec2.id]
+  }
+
+  task_invocation_parameters {
+    run_command_parameters {
+      document_version = "$DEFAULT"
+
+      parameter {
+        name   = "Operation"
+        values = ["Scan"] # ← Scan 只檢查不安裝；生產環境改 "Install"
+      }
+    }
+  }
 }
