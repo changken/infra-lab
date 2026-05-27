@@ -137,7 +137,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | 編號 | 目錄 | 說明 | 費用 | 認證對應 |
 |------|------|------|------|---------|
 | 33 ✅ | `33-secrets-manager` | Secrets Manager + Lambda 自動輪換 + KMS 加密 | < $0.10 | DVA, SOA |
-| 34 | `34-ssm-session-manager` | Systems Manager Session Manager（零 SSH）+ Patch Manager | $0 | SOA |
+| 34 🚧 | `34-ssm-session-manager` | Systems Manager Session Manager（零 SSH）+ Patch Manager | $0 | SOA |
 | 35 | `35-cloudtrail-config` | CloudTrail + Config Rules + SNS 合規告警 | < $0.50 | SOA, SAA |
 | 36 | `36-asg-alb` | Auto Scaling Group + ALB + Scaling Policy（EC2 彈性擴展）| ~$0.30 | SAA |
 
