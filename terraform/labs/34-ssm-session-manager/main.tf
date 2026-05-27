@@ -251,7 +251,7 @@ resource "aws_ssm_patch_baseline" "amazon_linux_2023" {
 #   name             = "${var.project}-patch-scan"
 #   task_arn         = "arn:aws:ssm:${var.region}::document/AWS-RunPatchBaseline"
 #   task_type        = "RUN_COMMAND"
-#   service_role_arn = aws_iam_role.ec2_ssm.arn
+#   # service_role_arn is optional for RUN_COMMAND tasks and can be omitted
 #   priority         = 1
 #   max_concurrency  = "1"
 #   max_errors       = "1"

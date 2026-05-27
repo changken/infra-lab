@@ -101,6 +101,8 @@ aws ec2 describe-security-groups \
 
 **期望輸出**：`[]`（空陣列，完全無 inbound 規則）。
 
+> **補充**：雖然 EC2 有 Public IP（`terraform output instance_public_ip`），但 Security Group 完全封鎖 inbound，所以無法 SSH 進去——這正是本 lab 的核心架構。
+
 ### 3. 啟動 Session Manager 互動式 Shell
 
 > **前提**：需安裝 [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)

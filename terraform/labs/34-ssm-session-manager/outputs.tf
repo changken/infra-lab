@@ -24,6 +24,6 @@ output "ssm_start_session_command" {
 }
 
 output "ssm_console_url" {
-  description = "SSM Session Manager Console 連結"
-  value       = "https://${var.region}.console.aws.amazon.com/systems-manager/session-manager/${aws_instance.ssm_target.id}"
+  description = "SSM Fleet Manager Console 連結（查看 EC2 SSM 狀態）"
+  value       = "https://${var.region}.console.aws.amazon.com/systems-manager/managed-instances/${aws_instance.ssm_target.id}/general"
 }
