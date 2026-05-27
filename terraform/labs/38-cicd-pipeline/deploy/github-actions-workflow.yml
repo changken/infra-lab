@@ -1,0 +1,67 @@
+# 複製此檔案到 .github/workflows/deploy.yml（相對於你的 GitHub repo 根目錄）
+#
+# 需要在 GitHub Secrets 設定（terraform output github_secrets_summary 會列出值）：
+#   AWS_ROLE_ARN     - GitHub Actions 使用的 IAM Role ARN
+#   ECR_REPOSITORY   - ECR Repository 名稱（不含 registry URL）
+#   ARTIFACT_BUCKET  - S3 Artifact Bucket 名稱
+#   AWS_REGION       - AWS 區域（例如 us-east-1）
+
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write   # OIDC token 必須
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./app
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Prepare deployment artifacts
+        env:
+          IMAGE_URI: ${{ steps.build-image.outputs.image_uri }}
+        run: |
+          # 替換 taskdef.json 中的 <IMAGE_NAME> 佔位符
+          sed "s|<IMAGE_NAME>|$IMAGE_URI|g" deploy/taskdef.json > taskdef.json
+
+          # 打包 CodeDeploy 所需的兩個檔案
+          zip deployment.zip taskdef.json deploy/appspec.yaml
+
+      - name: Upload deployment artifact to S3
+        run: |
+          aws s3 cp deployment.zip s3://${{ secrets.ARTIFACT_BUCKET }}/deployment.zip
+
+      - name: Summary
+        run: |
+          echo "### Deploy triggered :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: ${{ steps.build-image.outputs.image_uri }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifact: s3://${{ secrets.ARTIFACT_BUCKET }}/deployment.zip" >> $GITHUB_STEP_SUMMARY
+          echo "- Pipeline will start automatically via S3 polling" >> $GITHUB_STEP_SUMMARY

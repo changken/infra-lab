@@ -1,0 +1,4 @@
+region      = "us-east-1"
+project     = "cicd-lab"
+environment = "dev"
+github_repo = "your-org/your-repo"
