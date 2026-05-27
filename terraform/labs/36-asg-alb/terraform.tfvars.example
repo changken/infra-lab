@@ -1,0 +1,4 @@
+region        = "us-east-1"
+project       = "asg-lab"
+environment   = "dev"
+instance_type = "t3.micro"
