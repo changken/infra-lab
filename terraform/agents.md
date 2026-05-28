@@ -60,7 +60,8 @@ terraform/
 │   ├── 36-asg-alb/                🚧 進行中
 │   ├── 37-order-backend/          🚧 進行中
 │   ├── 38-cicd-pipeline/          🚧 進行中
-│   └── 39-image-processor/        🚧 進行中
+│   ├── 39-image-processor/        🚧 進行中
+│   └── 40-multitenant-api/        🚧 進行中
 └── modules/               # 可重用模組（參考用）
     ├── aws-k3s/           # 輕量 K8s（EKS 替代方案）
     ├── aws-windows-spot/
