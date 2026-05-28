@@ -1,0 +1,18 @@
+# Terraform state
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform variable files
+*.tfvars
+!*.tfvars.example
+
+# Terraform directories
+.terraform/
+
+# Lambda zip artifacts
+src/*.zip
+
+# OS
+.DS_Store
+Thumbs.db

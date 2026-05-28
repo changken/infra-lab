@@ -64,7 +64,8 @@ terraform/
 │   ├── 40-multitenant-api/        🚧 進行中
 │   ├── 41-observability-stack/    🚧 進行中
 │   ├── 42-security-compliance/    🚧 進行中
-│   └── 43-terraform-modules/     🚧 進行中
+│   ├── 43-terraform-modules/     🚧 進行中
+│   └── 44-step-functions/        🚧 進行中
 └── modules/               # 可重用模組（參考用）
     ├── aws-k3s/           # 輕量 K8s（EKS 替代方案）
     ├── aws-windows-spot/

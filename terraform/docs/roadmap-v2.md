@@ -158,7 +158,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 
 ---
 
-## Phase 2：場景整合專案（Labs 37-43）
+## Phase 2：場景整合專案（Labs 37-44）
 
 **難度：★★★★☆ ／ 預算：~$5 ／ 覆蓋：SAA + DVA + SOA 全覆蓋**
 
@@ -176,6 +176,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | 41 🚧 | 可觀測性全棧 | X-Ray + CloudWatch Logs Insights + Dashboard + Synthetic | < $1 |
 | 42 🚧 | 安全合規架構 | Config Rules + CloudTrail + GuardDuty + SNS 自動告警 | ~$1 |
 | 43 🚧 | Terraform 模組化重構 | 抽取可重用 modules + S3 remote state + DynamoDB lock | < $0.10 |
+| 44 🚧 | Step Functions 工作流程編排 | Lambda × 4 + Retry/Catch ASL + Standard Workflow | $0 |
 
 ### Lab 37：電商訂單後端
 
