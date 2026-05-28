@@ -80,34 +80,57 @@ data "aws_availability_zones" "available" {
 
 resource "aws_vpc" "main" {
   # TODO
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  tags                 = local.common_tags
 }
 
 resource "aws_subnet" "public_a" {
   # TODO
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
+  tags                    = merge(local.common_tags, { Name = "${var.project}-public-a" })
 }
 
 resource "aws_subnet" "public_b" {
   # TODO
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch = true
+  tags                    = merge(local.common_tags, { Name = "${var.project}-public-b" })
 }
 
 resource "aws_internet_gateway" "main" {
   # TODO
+  vpc_id = aws_vpc.main.id
+  tags   = local.common_tags
 }
 
 resource "aws_route_table" "public" {
   # TODO
+  vpc_id = aws_vpc.main.id
+  tags   = local.common_tags
 
   route {
     # TODO
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
   }
 }
 
 resource "aws_route_table_association" "public_a" {
   # TODO
+  subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "public_b" {
   # TODO
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.public.id
 }
 
 
@@ -152,25 +175,51 @@ resource "aws_route_table_association" "public_b" {
 
 resource "aws_security_group" "alb" {
   # TODO
+  name        = "${var.project}-alb-sg"
+  description = "Allow HTTP from internet"
+  vpc_id      = aws_vpc.main.id
+  tags        = local.common_tags
 
   ingress {
     # TODO
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTP from internet"
   }
 
   egress {
     # TODO
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 resource "aws_security_group" "ec2" {
   # TODO
+  name        = "${var.project}-ec2-sg"
+  description = "Allow HTTP from ALB only"
+  vpc_id      = aws_vpc.main.id
+  tags        = local.common_tags
 
   ingress {
     # TODO
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+    description     = "HTTP from ALB only"
   }
 
   egress {
     # TODO
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -207,9 +256,28 @@ resource "aws_security_group" "ec2" {
 
 resource "aws_launch_template" "web" {
   # TODO
+  name_prefix            = "${var.project}-"
+  image_id               = data.aws_ami.amazon_linux_2023.id
+  instance_type          = var.instance_type
+  vpc_security_group_ids = [aws_security_group.ec2.id]
+  tags                   = local.common_tags
+
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y httpd
+    systemctl start httpd
+    systemctl enable httpd
+    EC2_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+    AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+    echo "<h1>Hello from $EC2_ID ($AZ)</h1>" > /var/www/html/index.html
+  EOF
+  )
 
   tag_specifications {
     # TODO
+    resource_type = "instance"
+    tags          = merge(local.common_tags, { Name = "${var.project}-web" })
   }
 }
 
@@ -261,21 +329,46 @@ resource "aws_launch_template" "web" {
 
 resource "aws_lb_target_group" "web" {
   # TODO
+  name        = "${var.project}-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "instance"
+  tags        = local.common_tags
 
   health_check {
     # TODO
+    enabled             = true
+    path                = "/"
+    protocol            = "HTTP"
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    interval            = 30
+    timeout             = 5
+    matcher             = "200"
   }
 }
 
 resource "aws_lb" "main" {
   # TODO
+  name               = "${var.project}-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+  tags               = local.common_tags
 }
 
 resource "aws_lb_listener" "http" {
   # TODO
+  load_balancer_arn = aws_lb.main.arn
+  port              = "80"
+  protocol          = "HTTP"
 
   default_action {
     # TODO
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.web.arn
   }
 }
 
@@ -311,13 +404,26 @@ resource "aws_lb_listener" "http" {
 
 resource "aws_autoscaling_group" "web" {
   # TODO
+  name                      = "${var.project}-asg"
+  min_size                  = 1
+  max_size                  = 3
+  desired_capacity          = 2
+  vpc_zone_identifier       = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+  target_group_arns         = [aws_lb_target_group.web.arn]
+  health_check_type         = "ELB"
+  health_check_grace_period = 300
 
   launch_template {
     # TODO
+    id      = aws_launch_template.web.id
+    version = "$Latest"
   }
 
   tag {
     # TODO
+    key                 = "Name"
+    value               = "${var.project}-web"
+    propagate_at_launch = true
   }
 }
 
@@ -350,11 +456,16 @@ resource "aws_autoscaling_group" "web" {
 
 resource "aws_autoscaling_policy" "cpu_tracking" {
   # TODO
+  name                   = "${var.project}-cpu-tracking"
+  autoscaling_group_name = aws_autoscaling_group.web.name
+  policy_type            = "TargetTrackingScaling"
 
   target_tracking_configuration {
     predefined_metric_specification {
       # TODO
+      predefined_metric_type = "ASGAverageCPUUtilization"
     }
     # TODO
+    target_value = 50.0
   }
 }
