@@ -52,7 +52,7 @@ terraform/
 │   ├── 28-cloudfront-s3/          ✅ 完成
 │   ├── 29-route53-basic/          ✅ 完成
 │   ├── 30-elasticache-redis/      ✅ 完成
-│   ├── 31-cognito-userpool/       （待做）
+│   ├── 31-cognito-userpool/       ✅ 完成
 │   ├── 32-xray-lambda/            ✅ 完成
 │   ├── 33-secrets-manager/        ✅ 完成
 │   ├── 34-ssm-session-manager/    ✅ 完成

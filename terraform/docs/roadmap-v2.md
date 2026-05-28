@@ -30,7 +30,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | Phase 1-B | CI/CD 自動化 | 25-27 | ★★★☆☆ | < $1 | DVA, SOA |
 | Phase 1-C | 進階應用服務 | 28-32 | ★★☆☆☆ | ~$2 | SAA, DVA |
 | Phase 1-D | 安全與合規 | 33-36 | ★★★☆☆ | < $1 | SOA, SAA |
-| Phase 2 | 場景整合 | 37-43 | ★★★★☆ | ~$5 | 三張全覆蓋 |
+| Phase 2 | 場景整合 | 37-45 | ★★★★☆ | ~$5 | 三張全覆蓋 |
 | — | 緩衝（誤操作）| — | — | ~$5 | — |
 | **合計** | | **23 labs** | | **~$15** | |
 
@@ -158,7 +158,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 
 ---
 
-## Phase 2：場景整合專案（Labs 37-44）
+## Phase 2：場景整合專案（Labs 37-45）
 
 **難度：★★★★☆ ／ 預算：~$5 ／ 覆蓋：SAA + DVA + SOA 全覆蓋**
 
@@ -177,6 +177,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | 42 🚧 | 安全合規架構 | Config Rules + CloudTrail + GuardDuty + SNS 自動告警 | ~$1 |
 | 43 🚧 | Terraform 模組化重構 | 抽取可重用 modules + S3 remote state + DynamoDB lock | < $0.10 |
 | 44 🚧 | Step Functions 工作流程編排 | Lambda × 4 + Retry/Catch ASL + Standard Workflow | $0 |
+| 45 🚧 | Kinesis Data Streams 即時資料管道 | API GW → Lambda → Kinesis → Lambda → DynamoDB + CloudWatch Alarm | ~$0.03 |
 
 ### Lab 37：電商訂單後端
 
@@ -238,7 +239,7 @@ Week 3:   28 → 29 → 30         （網路層服務，注意 Route 53 / Elasti
 Week 4:   31 → 32 → 33 → 34   （安全應用，全部偏便宜）
 Week 5:   35 → 36               （合規稽核 + ASG）
 Week 6-8: 37 → 38 → 39         （場景整合 Round 1）
-Week 9-10: 40 → 41 → 42 → 43  （場景整合 Round 2，最終作品）
+Week 9-10: 40 → 41 → 42 → 43 → 44 → 45 （場景整合 Round 2，最終作品）
 ```
 
 **10 週、~$15 預估。**
