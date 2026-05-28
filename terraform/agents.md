@@ -57,9 +57,9 @@ terraform/
 │   ├── 33-secrets-manager/        ✅ 完成
 │   ├── 34-ssm-session-manager/    ✅ 完成
 │   ├── 35-cloudtrail-config/      ✅ 完成
-│   ├── 36-asg-alb/                🚧 進行中
-│   ├── 37-order-backend/          🚧 進行中
-│   ├── 38-cicd-pipeline/          🚧 進行中
+│   ├── 36-asg-alb/                ✅ 完成
+│   ├── 37-order-backend/          ✅ 完成
+│   ├── 38-cicd-pipeline/          （待做）
 │   ├── 39-image-processor/        🚧 進行中
 │   ├── 40-multitenant-api/        🚧 進行中
 │   ├── 41-observability-stack/    🚧 進行中

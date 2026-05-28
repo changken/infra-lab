@@ -139,7 +139,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | 33 ✅ | `33-secrets-manager` | Secrets Manager + Lambda 自動輪換 + KMS 加密 | < $0.10 | DVA, SOA |
 | 34 ✅ | `34-ssm-session-manager` | Systems Manager Session Manager（零 SSH）+ Patch Manager | $0 | SOA |
 | 35 ✅ | `35-cloudtrail-config` | CloudTrail + Config Rules + SNS 合規告警 | < $0.50 | SOA, SAA |
-| 36 🚧 | `36-asg-alb` | Auto Scaling Group + ALB + Scaling Policy（EC2 彈性擴展）| ~$0.30 | SAA |
+| 36 ✅ | `36-asg-alb` | Auto Scaling Group + ALB + Scaling Policy（EC2 彈性擴展）| ~$0.30 | SAA |
 
 ### 學習重點
 - Secrets Manager：Secret Rotation、KMS CMK、Lambda Rotation Function
@@ -169,7 +169,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 
 | 編號 | 場景 | 技術組合 | 費用 |
 |------|------|---------|------|
-| 37 🚧 | 電商訂單後端 | API GW → Lambda → SQS → Lambda → DynamoDB + SNS 通知 | < $0.50 |
+| 37 ✅ | 電商訂單後端 | API GW → Lambda → SQS → Lambda → DynamoDB + SNS 通知 | < $0.50 |
 | 38 🚧 | 自動化部署流水線 | GitHub Actions + OIDC → ECR → CodePipeline → ECS Blue/Green | ~$0.50 |
 | 39 🚧 | 圖片處理微服務 | S3 → EventBridge → Lambda → CloudFront 分發 | < $0.10 |
 | 40 🚧 | 多租戶 SaaS API | Cognito → API GW Authorizer → Lambda + 動態租戶隔離 | $0 |
