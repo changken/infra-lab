@@ -1,0 +1,6 @@
+region      = "us-east-1"
+project     = "obs-lab"
+environment = "dev"
+
+# 選填：填入 email 可在 Alarm 觸發時收到通知（需在 AWS SNS console 確認訂閱）
+# notification_email = "you@example.com"

@@ -173,7 +173,7 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | 38 🚧 | 自動化部署流水線 | GitHub Actions + OIDC → ECR → CodePipeline → ECS Blue/Green | ~$0.50 |
 | 39 🚧 | 圖片處理微服務 | S3 → EventBridge → Lambda → CloudFront 分發 | < $0.10 |
 | 40 🚧 | 多租戶 SaaS API | Cognito → API GW Authorizer → Lambda + 動態租戶隔離 | $0 |
-| 41 | 可觀測性全棧 | X-Ray + CloudWatch Logs Insights + Dashboard + Synthetic | < $1 |
+| 41 🚧 | 可觀測性全棧 | X-Ray + CloudWatch Logs Insights + Dashboard + Synthetic | < $1 |
 | 42 | 安全合規架構 | Config Rules + CloudTrail + GuardDuty + SNS 自動告警 | ~$1 |
 | 43 | Terraform 模組化重構 | 抽取可重用 modules + S3 remote state + DynamoDB lock | < $0.10 |
 
