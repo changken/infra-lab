@@ -67,9 +67,15 @@ data "archive_file" "processor" {
 
 resource "aws_dynamodb_table" "orders" {
   # TODO
+  name         = "${var.project}-orders"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "order_id"
+  tags         = local.common_tags
 
   attribute {
     # TODO
+    name = "order_id"
+    type = "S"
   }
 }
 
@@ -98,10 +104,19 @@ resource "aws_dynamodb_table" "orders" {
 
 resource "aws_sqs_queue" "orders_dlq" {
   # TODO
+  name = "${var.project}-orders-dlq"
+  tags = local.common_tags
 }
 
 resource "aws_sqs_queue" "orders" {
   # TODO
+  name                       = "${var.project}-orders"
+  visibility_timeout_seconds = 180
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.orders_dlq.arn
+    maxReceiveCount     = 3
+  })
+  tags = local.common_tags
 }
 
 
@@ -124,10 +139,15 @@ resource "aws_sqs_queue" "orders" {
 
 resource "aws_sns_topic" "orders" {
   # TODO
+  name = "${var.project}-orders-topic"
+  tags = local.common_tags
 }
 
 resource "aws_sns_topic_subscription" "email" {
   # TODO
+  topic_arn = aws_sns_topic.orders.arn
+  protocol  = "email"
+  endpoint  = var.notification_email
 }
 
 
@@ -184,26 +204,91 @@ resource "aws_sns_topic_subscription" "email" {
 
 resource "aws_iam_role" "validator" {
   # TODO
+  name = "${var.project}-validator-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+  tags = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "validator_basic" {
   # TODO
+  role       = aws_iam_role.validator.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy" "validator_sqs" {
   # TODO
+  name = "${var.project}-validator-sqs"
+  role = aws_iam_role.validator.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sqs:SendMessage"
+        Resource = aws_sqs_queue.orders.arn
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role" "processor" {
   # TODO
+  name = "${var.project}-processor-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "processor_basic" {
   # TODO
+  role       = aws_iam_role.processor.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy" "processor_permissions" {
   # TODO
+  name = "${var.project}-processor-permissions"
+  role = aws_iam_role.processor.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
+        Resource = aws_dynamodb_table.orders.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = "sns:Publish"
+        Resource = aws_sns_topic.orders.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
+        Resource = aws_sqs_queue.orders.arn
+      }
+    ]
+  })
 }
 
 
@@ -249,20 +334,39 @@ resource "aws_iam_role_policy" "processor_permissions" {
 
 resource "aws_lambda_function" "validator" {
   # TODO
+  function_name    = "${var.project}-validator"
+  role             = aws_iam_role.validator.arn
+  handler          = "validator.lambda_handler"
+  runtime          = "python3.13"
+  filename         = data.archive_file.validator.output_path
+  source_code_hash = data.archive_file.validator.output_base64sha256
+  timeout          = 30
+  tags             = local.common_tags
 
   environment {
     variables = {
       # TODO
+      ORDER_QUEUE_URL = aws_sqs_queue.orders.url
     }
   }
 }
 
 resource "aws_lambda_function" "processor" {
   # TODO
+  function_name    = "${var.project}-processor"
+  role             = aws_iam_role.processor.arn
+  handler          = "processor.lambda_handler"
+  runtime          = "python3.13"
+  filename         = data.archive_file.processor.output_path
+  source_code_hash = data.archive_file.processor.output_base64sha256
+  timeout          = 30
+  tags             = local.common_tags
 
   environment {
     variables = {
       # TODO
+      ORDERS_TABLE  = aws_dynamodb_table.orders.name
+      SNS_TOPIC_ARN = aws_sns_topic.orders.arn
     }
   }
 }
@@ -310,22 +414,40 @@ resource "aws_lambda_function" "processor" {
 
 resource "aws_apigatewayv2_api" "main" {
   # TODO
+  name          = "${var.project}-api"
+  protocol_type = "HTTP"
+  tags          = local.common_tags
 }
 
 resource "aws_apigatewayv2_integration" "validator" {
   # TODO
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.validator.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "post_orders" {
   # TODO
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /orders"
+  target    = "integrations/${aws_apigatewayv2_integration.validator.id}"
 }
 
 resource "aws_apigatewayv2_stage" "default" {
   # TODO
+  api_id      = aws_apigatewayv2_api.main.id
+  name        = "$default"
+  auto_deploy = true
+  tags        = local.common_tags
 }
 
 resource "aws_lambda_permission" "apigw_validator" {
   # TODO
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.validator.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
 
 
@@ -345,4 +467,8 @@ resource "aws_lambda_permission" "apigw_validator" {
 
 resource "aws_lambda_event_source_mapping" "sqs_to_processor" {
   # TODO
+  event_source_arn = aws_sqs_queue.orders.arn
+  function_name    = aws_lambda_function.processor.arn
+  batch_size       = 10
+  enabled          = true
 }

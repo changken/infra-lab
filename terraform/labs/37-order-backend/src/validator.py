@@ -3,6 +3,7 @@ import boto3
 import os
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
 sqs = boto3.client("sqs")
 QUEUE_URL = os.environ["ORDER_QUEUE_URL"]
@@ -30,7 +31,7 @@ def lambda_handler(event, context):
         "order_id": str(uuid.uuid4()),
         "customer_id": str(body["customer_id"]),
         "items": body["items"],
-        "total_amount": float(body["total_amount"]),
+        "total_amount": Decimal(str(body["total_amount"])),
         "status": "PENDING",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }

@@ -1,6 +1,7 @@
 import json
 import boto3
 import os
+from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 sns = boto3.client("sns")
@@ -14,7 +15,7 @@ def lambda_handler(event, context):
     processed = 0
 
     for record in event["Records"]:
-        order = json.loads(record["body"])
+        order = json.loads(record["body"], parse_float=Decimal)
         order_id = order["order_id"]
 
         # Update status and write to DynamoDB
