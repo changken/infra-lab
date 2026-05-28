@@ -1,0 +1,6 @@
+region      = "us-east-1"
+project     = "tf-lab"
+environment = "dev"
+
+# 選填：填入 email 可在 Lambda Errors 告警時收到通知
+# notification_email = "you@example.com"

@@ -1,0 +1,19 @@
+# Terraform state（root + bootstrap 都不 commit）
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform variable files
+*.tfvars
+!*.tfvars.example
+
+# Terraform directories
+.terraform/
+bootstrap/.terraform/
+
+# Lambda zip artifacts
+src/*.zip
+
+# OS
+.DS_Store
+Thumbs.db
