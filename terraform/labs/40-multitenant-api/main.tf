@@ -87,10 +87,41 @@ data "archive_file" "api" {
 
 resource "aws_cognito_user_pool" "main" {
   # TODO
+  name = "${var.project}-users"
+
+  password_policy {
+    minimum_length                   = 8
+    require_uppercase                = true
+    require_lowercase                = true
+    require_numbers                  = true
+    require_symbols                  = false
+    temporary_password_validity_days = 7
+  }
+
+  schema {
+    name                     = "tenant_id"
+    attribute_data_type      = "String"
+    mutable                  = true
+    required                 = false
+    developer_only_attribute = false
+  }
+
+  tags = local.common_tags
 }
 
 resource "aws_cognito_user_pool_client" "main" {
   # TODO
+  name            = "${var.project}-client"
+  user_pool_id    = aws_cognito_user_pool.main.id
+  generate_secret = false
+
+  explicit_auth_flows = [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+  ]
+
+  read_attributes  = ["email", "custom:tenant_id"]
+  write_attributes = ["email", "custom:tenant_id"]
 }
 
 
@@ -117,6 +148,22 @@ resource "aws_cognito_user_pool_client" "main" {
 
 resource "aws_dynamodb_table" "items" {
   # TODO
+  name         = "${var.project}-items"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "pk"
+  range_key    = "sk"
+
+  attribute {
+    name = "pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "S"
+  }
+
+  tags = local.common_tags
 }
 
 
@@ -153,14 +200,45 @@ resource "aws_dynamodb_table" "items" {
 
 resource "aws_iam_role" "api" {
   # TODO
+  name = "${var.project}-api-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "api_basic" {
   # TODO
+  role       = aws_iam_role.api.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy" "api_dynamodb" {
   # TODO
+  name = "${var.project}-api-dynamodb-policy"
+  role = aws_iam_role.api.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:Query", "dynamodb:PutItem"]
+        Resource = aws_dynamodb_table.items.arn
+      }
+    ]
+  })
 }
 
 
@@ -187,10 +265,17 @@ resource "aws_iam_role_policy" "api_dynamodb" {
 
 resource "aws_lambda_function" "api" {
   # TODO
+  function_name    = "${var.project}-api"
+  role             = aws_iam_role.api.arn
+  handler          = "api.lambda_handler"
+  runtime          = "python3.13"
+  filename         = data.archive_file.api.output_path
+  source_code_hash = data.archive_file.api.output_base64sha256
+  timeout          = 10
 
   environment {
     variables = {
-      # TODO
+      TABLE_NAME = aws_dynamodb_table.items.id
     }
   }
 }
@@ -227,13 +312,21 @@ resource "aws_lambda_function" "api" {
 
 resource "aws_apigatewayv2_api" "main" {
   # TODO
+  name          = "${var.project}-api"
+  protocol_type = "HTTP"
+  tags          = local.common_tags
 }
 
 resource "aws_apigatewayv2_authorizer" "cognito" {
   # TODO
+  api_id           = aws_apigatewayv2_api.main.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "CognitoJWT"
 
   jwt_configuration {
-    # TODO
+    audience = [aws_cognito_user_pool_client.main.id]
+    issuer   = "https://cognito-idp.${var.region}.amazonaws.com/${aws_cognito_user_pool.main.id}"
   }
 }
 
@@ -279,20 +372,43 @@ resource "aws_apigatewayv2_authorizer" "cognito" {
 
 resource "aws_apigatewayv2_integration" "lambda" {
   # TODO
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.api.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "get_items" {
   # TODO
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "GET /items"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "post_items" {
   # TODO
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "POST /items"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
 resource "aws_apigatewayv2_stage" "default" {
   # TODO
+  api_id      = aws_apigatewayv2_api.main.id
+  name        = "$default"
+  auto_deploy = true
+  tags        = local.common_tags
 }
 
 resource "aws_lambda_permission" "apigw" {
   # TODO
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
