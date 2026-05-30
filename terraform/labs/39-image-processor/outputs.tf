@@ -15,7 +15,7 @@ output "cloudfront_domain_name" {
 
 output "eventbridge_rule_name" {
   description = "EventBridge Rule 名稱"
-  value       = aws_cloudwatch_events_rule.s3_upload.name
+  value       = aws_cloudwatch_event_rule.s3_upload.name
 }
 
 output "upload_command" {
@@ -35,5 +35,5 @@ output "cloudfront_image_url_example" {
 
 output "eventbridge_events_command" {
   description = "查詢 EventBridge Rule 過去觸發次數的 CLI 指令"
-  value       = "aws cloudwatch get-metric-statistics --namespace AWS/Events --metric-name TriggeredRules --dimensions Name=RuleName,Value=${aws_cloudwatch_events_rule.s3_upload.name} --start-time $(date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ') --end-time $(date -u '+%Y-%m-%dT%H:%M:%SZ') --period 3600 --statistics Sum"
+  value       = "aws cloudwatch get-metric-statistics --namespace AWS/Events --metric-name TriggeredRules --dimensions Name=RuleName,Value=${aws_cloudwatch_event_rule.s3_upload.name} --start-time $(date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ') --end-time $(date -u '+%Y-%m-%dT%H:%M:%SZ') --period 3600 --statistics Sum"
 }

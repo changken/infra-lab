@@ -80,14 +80,25 @@ data "archive_file" "processor" {
 
 resource "aws_s3_bucket" "input" {
   # TODO
+  bucket        = "${var.project}-input-${random_id.suffix.hex}"
+  force_destroy = true
+  tags          = local.common_tags
 }
 
 resource "aws_s3_bucket_public_access_block" "input" {
   # TODO
+  bucket = aws_s3_bucket.input.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_notification" "input" {
   # TODO
+  bucket      = aws_s3_bucket.input.id
+  eventbridge = true
 }
 
 
@@ -112,10 +123,19 @@ resource "aws_s3_bucket_notification" "input" {
 
 resource "aws_s3_bucket" "output" {
   # TODO
+  bucket        = "${var.project}-output-${random_id.suffix.hex}"
+  force_destroy = true
+  tags          = local.common_tags
 }
 
 resource "aws_s3_bucket_public_access_block" "output" {
   # TODO
+  bucket = aws_s3_bucket.output.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 
@@ -154,14 +174,46 @@ resource "aws_s3_bucket_public_access_block" "output" {
 
 resource "aws_iam_role" "processor" {
   # TODO
+  name = "${var.project}-processor-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "processor_basic" {
   # TODO
+  role       = aws_iam_role.processor.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy" "processor_s3" {
   # TODO
+  name = "${var.project}-processor-s3-policy"
+  role = aws_iam_role.processor.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = "${aws_s3_bucket.input.arn}/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "${aws_s3_bucket.output.arn}/*"
+      }
+    ]
+  })
 }
 
 
@@ -199,16 +251,29 @@ resource "aws_iam_role_policy" "processor_s3" {
 
 resource "aws_lambda_function" "processor" {
   # TODO
+  function_name    = "${var.project}-processor"
+  role             = aws_iam_role.processor.arn
+  handler          = "processor.lambda_handler"
+  runtime          = "python3.13"
+  filename         = data.archive_file.processor.output_path
+  source_code_hash = data.archive_file.processor.output_base64sha256
+  timeout          = 30
+  tags             = local.common_tags
 
   environment {
     variables = {
-      # TODO
+      OUTPUT_BUCKET = aws_s3_bucket.output.id
     }
   }
 }
 
 resource "aws_lambda_permission" "eventbridge" {
   # TODO
+  statement_id  = "AllowEventBridgeInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.processor.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.s3_upload.arn
 }
 
 
@@ -241,12 +306,27 @@ resource "aws_lambda_permission" "eventbridge" {
 # ⚠️ 注意：event_pattern 的 detail.bucket.name 必須是 Array（即使只有一個值）
 #          若不過濾 bucket name，所有 S3 bucket 的事件都會觸發此 Rule！
 
-resource "aws_cloudwatch_events_rule" "s3_upload" {
+resource "aws_cloudwatch_event_rule" "s3_upload" {
   # TODO
+  name        = "${var.project}-s3-upload"
+  description = "Trigger processor Lambda when file is uploaded to input bucket"
+  event_pattern = jsonencode({
+    source      = ["aws.s3"]
+    detail-type = ["Object Created"]
+    detail = {
+      bucket = {
+        name = [aws_s3_bucket.input.id]
+      }
+    }
+  })
+  tags = local.common_tags
 }
 
-resource "aws_cloudwatch_events_target" "processor_lambda" {
+resource "aws_cloudwatch_event_target" "processor_lambda" {
   # TODO
+  rule      = aws_cloudwatch_event_rule.s3_upload.name
+  target_id = "ProcessorLambda"
+  arn       = aws_lambda_function.processor.arn
 }
 
 
@@ -325,37 +405,81 @@ resource "aws_cloudwatch_events_target" "processor_lambda" {
 
 resource "aws_cloudfront_origin_access_control" "main" {
   # TODO
+  name                              = "${var.project}-cf-oac"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
 }
 
 resource "aws_cloudfront_distribution" "main" {
   # TODO
+  enabled             = true
+  default_root_object = ""
+  price_class         = "PriceClass_100"
+  tags                = local.common_tags
 
   origin {
     # TODO
+    domain_name              = aws_s3_bucket.output.bucket_regional_domain_name
+    origin_id                = "S3OutputBucket"
+    origin_access_control_id = aws_cloudfront_origin_access_control.main.id
   }
 
   default_cache_behavior {
     # TODO
+    target_origin_id       = "S3OutputBucket"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
 
     forwarded_values {
       # TODO
+      query_string = false
       cookies {
         # TODO
+        forward = "none"
       }
     }
+
+    min_ttl     = 0
+    default_ttl = 3600
+    max_ttl     = 86400
   }
 
   restrictions {
     geo_restriction {
       # TODO
+      restriction_type = "none"
     }
   }
 
   viewer_certificate {
     # TODO
+    cloudfront_default_certificate = true
   }
 }
 
 resource "aws_s3_bucket_policy" "output_cloudfront" {
   # TODO
+  bucket = aws_s3_bucket.output.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontOAC"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.output.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.main.arn
+          }
+        }
+      }
+    ]
+  })
 }
