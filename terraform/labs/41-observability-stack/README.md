@@ -115,17 +115,18 @@ echo "API: $API"
 ### 步驟 2：產生各種流量類型
 
 ```bash
-# 正常流量（20 次，給 Dashboard 有資料顯示）
-for i in $(seq 1 20); do curl -s $API/ > /dev/null; echo -n "."; done; echo
+# 正常流量（20 次）
+for i in $(seq 1 20); do curl -s $API/ > /dev/null; echo -n '.'; done; echo
 
-# 慢速流量（5 次，讓 Duration P99 上升到 ~2 秒）
+# 慢速流量（5 次）
 for i in $(seq 1 5); do curl -s $API/slow > /dev/null; echo "slow $i done"; done
 
 # 錯誤流量（10 次，觸發 Lambda Errors Alarm）
-for i in $(seq 1 10); do curl -s $API/error > /dev/null; echo -n "!"; done; echo
+for i in $(seq 1 10); do curl -s $API/error > /dev/null; echo -n '!'; done; echo
 
 # 隨機錯誤流量（30 次，觀察 30% Error Rate）
-for i in $(seq 1 30); do curl -s $API/random > /dev/null; echo -n "?"; done; echo
+for i in $(seq 1 30); do curl -s $API/random > /dev/null; echo -n '?'; done; echo
+
 ```
 
 ### 步驟 3：觀察 X-Ray Traces

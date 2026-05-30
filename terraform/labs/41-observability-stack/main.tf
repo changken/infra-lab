@@ -93,26 +93,57 @@ data "archive_file" "canary" {
 
 resource "aws_cloudwatch_log_group" "lambda" {
   # TODO
+  name              = "/aws/lambda/${var.project}-app"
+  retention_in_days = 7
+  tags              = local.common_tags
 }
 
 resource "aws_iam_role" "app" {
   # TODO
+  name = "${var.project}-app-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "app_basic" {
   # TODO
+  role       = aws_iam_role.app.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy_attachment" "app_xray" {
   # TODO
+  role       = aws_iam_role.app.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 resource "aws_lambda_function" "app" {
   # TODO
+  function_name    = "${var.project}-app"
+  role             = aws_iam_role.app.arn
+  handler          = "app.lambda_handler"
+  runtime          = "python3.13"
+  filename         = data.archive_file.app.output_path
+  source_code_hash = data.archive_file.app.output_base64sha256
+  timeout          = 10
+  tags             = local.common_tags
 
   tracing_config {
     # TODO
+    mode = "Active"
   }
+
+  depends_on = [aws_cloudwatch_log_group.lambda]
 }
 
 
@@ -175,30 +206,62 @@ resource "aws_lambda_function" "app" {
 
 resource "aws_cloudwatch_log_group" "apigw" {
   # TODO
+  name              = "/aws/apigateway/${var.project}"
+  retention_in_days = 7
+  tags              = local.common_tags
 }
 
 resource "aws_apigatewayv2_api" "main" {
   # TODO
+  name          = "${var.project}-api"
+  protocol_type = "HTTP"
+  tags          = local.common_tags
 }
 
 resource "aws_apigatewayv2_integration" "lambda" {
   # TODO
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.app.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "default" {
   # TODO
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
 resource "aws_apigatewayv2_stage" "default" {
   # TODO
+  name        = "$default"
+  api_id      = aws_apigatewayv2_api.main.id
+  auto_deploy = true
+  tags        = local.common_tags
 
   access_log_settings {
     # TODO
+    destination_arn = aws_cloudwatch_log_group.apigw.arn
+    format = jsonencode({
+      requestId        = "$context.requestId"
+      requestTime      = "$context.requestTime"
+      httpMethod       = "$context.httpMethod"
+      routeKey         = "$context.routeKey"
+      status           = "$context.status"
+      responseLength   = "$context.responseLength"
+      integrationError = "$context.integrationErrorMessage"
+    })
   }
 }
 
 resource "aws_lambda_permission" "apigw" {
   # TODO
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.app.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
 
 
@@ -250,18 +313,52 @@ resource "aws_lambda_permission" "apigw" {
 
 resource "aws_sns_topic" "alarms" {
   # TODO
+  name = "${var.project}-alarms"
+  tags = local.common_tags
 }
 
 resource "aws_sns_topic_subscription" "email" {
   # TODO（記得加 count）
+  count     = var.notification_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.alarms.arn
+  protocol  = "email"
+  endpoint  = var.notification_email
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   # TODO
+  alarm_name  = "${var.project}-lambda-errors"
+  namespace   = "AWS/Lambda"
+  metric_name = "Errors"
+  dimensions = {
+    FunctionName = aws_lambda_function.app.function_name
+  }
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 3
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  statistic           = "Sum"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  ok_actions          = [aws_sns_topic.alarms.arn]
+  tags                = local.common_tags
 }
 
 resource "aws_cloudwatch_metric_alarm" "apigw_5xx" {
   # TODO
+  alarm_name          = "${var.project}-apigw-5xx"
+  namespace           = "AWS/ApiGateway"
+  metric_name         = "5XXError"
+  dimensions          = { ApiId = aws_apigatewayv2_api.main.id }
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  statistic           = "Sum"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  ok_actions          = [aws_sns_topic.alarms.arn]
+  tags                = local.common_tags
 }
 
 
@@ -305,10 +402,32 @@ resource "aws_cloudwatch_metric_alarm" "apigw_5xx" {
 
 resource "aws_cloudwatch_log_metric_filter" "app_errors" {
   # TODO
+  name           = "${var.project}-error-count"
+  log_group_name = aws_cloudwatch_log_group.lambda.name
+  pattern        = "ERROR"
+
+  metric_transformation {
+    name          = "AppErrorCount"
+    namespace     = "ObservabilityLab"
+    value         = "1"
+    default_value = "0"
+    unit          = "Count"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "custom_errors" {
   # TODO
+  alarm_name          = "${var.project}-custom-errors"
+  namespace           = "ObservabilityLab"
+  metric_name         = "AppErrorCount"
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  statistic           = "Sum"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  tags                = local.common_tags
 }
 
 
@@ -391,6 +510,83 @@ resource "aws_cloudwatch_metric_alarm" "custom_errors" {
 
 resource "aws_cloudwatch_dashboard" "main" {
   # TODO
+  dashboard_name = "${var.project}-dashboard"
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Lambda Invocations & Errors"
+          region = var.region
+          metrics = [
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.app.function_name],
+            ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.app.function_name,
+            { "color" = "#d62728", "yAxis" = "right" }]
+          ]
+          period = 60
+          stat   = "Sum"
+          view   = "timeSeries"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Lambda Duration P99"
+          region = var.region
+          metrics = [
+            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.app.function_name,
+            { "stat" = "p99" }]
+          ]
+          period = 60
+          view   = "timeSeries"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          title  = "API Gateway Requests & 5XX"
+          region = var.region
+          metrics = [
+            ["AWS/ApiGateway", "Count", "ApiId", aws_apigatewayv2_api.main.id],
+            ["AWS/ApiGateway", "5XXError", "ApiId", aws_apigatewayv2_api.main.id,
+            { "color" = "#d62728" }]
+          ]
+          period = 60
+          stat   = "Sum"
+          view   = "timeSeries"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Custom Log Error Count"
+          region = var.region
+          metrics = [
+            ["ObservabilityLab", "AppErrorCount"]
+          ]
+          period = 60
+          stat   = "Sum"
+          view   = "timeSeries"
+        }
+      }
+    ]
+  })
 }
 
 
@@ -456,28 +652,80 @@ resource "aws_cloudwatch_dashboard" "main" {
 
 resource "aws_s3_bucket" "canary" {
   # TODO
+  bucket        = "${var.project}-canary-${random_id.suffix.hex}"
+  force_destroy = true
+  tags          = local.common_tags
 }
 
 resource "aws_s3_bucket_public_access_block" "canary" {
   # TODO
+  bucket = aws_s3_bucket.canary.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 resource "aws_iam_role" "canary" {
   # TODO
+  name = "${var.project}-canary-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy" "canary" {
   # TODO
+  name = "${var.project}-canary-policy"
+  role = aws_iam_role.canary.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      { Effect = "Allow"
+        Action = ["s3:PutObject", "s3:GetBucketLocation"]
+      Resource = [aws_s3_bucket.canary.arn, "${aws_s3_bucket.canary.arn}/*"] },
+      { Effect = "Allow"
+        Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+      Resource = "arn:aws:logs:*:*:*" },
+      { Effect = "Allow"
+        Action = ["cloudwatch:PutMetricData"]
+      Resource = "*" }
+    ]
+  })
 }
 
 resource "aws_synthetics_canary" "api_heartbeat" {
   # TODO
+  name                 = "${var.project}-api-heartbeat"
+  artifact_s3_location = "s3://${aws_s3_bucket.canary.id}/artifacts/"
+  execution_role_arn   = aws_iam_role.canary.arn
+  handler              = "apiCanary.handler"
+  zip_file             = data.archive_file.canary.output_path
+  runtime_version      = "syn-nodejs-puppeteer-9.1"
+  start_canary         = true
+  tags                 = local.common_tags
 
   schedule {
     # TODO
+    expression = "rate(5 minutes)"
   }
 
   run_config {
     # TODO
+    timeout_in_seconds = 60
+    environment_variables = {
+      API_URL = aws_apigatewayv2_stage.default.invoke_url
+    }
   }
 }
