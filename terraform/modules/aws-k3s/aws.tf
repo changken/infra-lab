@@ -128,6 +128,56 @@ resource "aws_security_group" "k3s" {
   }
 }
 
+# ============================================================================
+# IAM Role for K3s nodes (SSM Parameter Store access)
+# ============================================================================
+
+resource "aws_iam_role" "k3s_node" {
+  name = "my-k3s-lab-node-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+
+  tags = {
+    Name    = "my-k3s-lab-node-role"
+    Project = "k3s-lab"
+  }
+}
+
+resource "aws_iam_role_policy" "k3s_ssm" {
+  name = "my-k3s-lab-ssm-policy"
+  role = aws_iam_role.k3s_node.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "ssm:PutParameter",
+        "ssm:GetParameter",
+        "ssm:DeleteParameter"
+      ]
+      Resource = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/k3s-lab/node-token"
+    }]
+  })
+}
+
+resource "aws_iam_instance_profile" "k3s_node" {
+  name = "my-k3s-lab-node-profile"
+  role = aws_iam_role.k3s_node.name
+
+  tags = {
+    Name    = "my-k3s-lab-node-profile"
+    Project = "k3s-lab"
+  }
+}
+
 # 7. SSH Key Pair
 resource "aws_key_pair" "emergency" {
   key_name   = "my-k3s-lab-emergency-key"
