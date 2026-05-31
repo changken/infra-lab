@@ -12,20 +12,10 @@ hostnamectl set-hostname "${hostname}"
 # Update system
 echo "[1/4] Updating system packages..."
 apt-get update
-apt-get upgrade -y
-
-# Install Tailscale
-echo "[2/4] Installing Tailscale..."
-curl -fsSL https://tailscale.com/install.sh | sh
-systemctl enable --now tailscaled
-tailscale up \
-  --authkey="${tailscale_auth_key}" \
-  --ssh \
-  --hostname="${hostname}" \
-  --accept-routes
+DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 
 # Install K3s server (use EIP for TLS SAN)
-echo "[3/4] Installing K3s server..."
+echo "[2/4] Installing K3s server..."
 PUBLIC_IP="${public_ip}"
 curl -sfL https://get.k3s.io | sh -s - server \
   --tls-san "$PUBLIC_IP" \
@@ -33,7 +23,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --node-name "${hostname}"
 
 # Wait for K3s to generate node token, then write to SSM
-echo "[4/4] Writing node token to SSM..."
+echo "[3/4] Writing node token to SSM..."
 until [ -f /var/lib/rancher/k3s/server/node-token ]; do
   echo "Waiting for K3s token file..."
   sleep 2
@@ -45,6 +35,18 @@ aws ssm put-parameter \
   --type SecureString \
   --region "${aws_region}" \
   --overwrite
+
+# Install Tailscale (best-effort — cluster works without it, used for management only)
+echo "[4/4] Installing Tailscale..."
+curl -fsSL https://tailscale.com/install.sh | sh
+systemctl enable --now tailscaled
+tailscale up \
+  --authkey="${tailscale_auth_key}" \
+  --ssh \
+  --hostname="${hostname}" \
+  --accept-routes \
+  --timeout 2m \
+  || echo "[WARN] Tailscale setup failed — K3s is running, connect via EC2 console if needed"
 
 echo "========================================="
 echo "Setup complete at $(date)"
