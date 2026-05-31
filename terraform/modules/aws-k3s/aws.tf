@@ -163,7 +163,7 @@ resource "aws_iam_role_policy" "k3s_ssm" {
         "ssm:GetParameter",
         "ssm:DeleteParameter"
       ]
-      Resource = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/k3s-lab/node-token"
+      Resource = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/k3s-lab/*"
     }]
   })
 }
@@ -226,10 +226,9 @@ resource "aws_instance" "k3s_cp" {
   }
 
   user_data = templatefile("${path.module}/user-data-cp.sh", {
-    tailscale_auth_key = var.tailscale_auth_key
-    hostname           = "k3s-cp"
-    aws_region         = var.aws_region
-    public_ip          = aws_eip.k3s_cp.public_ip
+    hostname  = "k3s-cp"
+    aws_region = var.aws_region
+    public_ip  = aws_eip.k3s_cp.public_ip
   })
 
   metadata_options {
@@ -277,10 +276,9 @@ resource "aws_instance" "k3s_worker" {
   }
 
   user_data = templatefile("${path.module}/user-data-worker.sh", {
-    tailscale_auth_key = var.tailscale_auth_key
-    hostname           = "k3s-worker-${count.index}"
-    aws_region         = var.aws_region
-    cp_private_ip      = aws_instance.k3s_cp.private_ip
+    hostname      = "k3s-worker-${count.index}"
+    aws_region    = var.aws_region
+    cp_private_ip = aws_instance.k3s_cp.private_ip
   })
 
   metadata_options {

@@ -49,8 +49,14 @@ curl -sfL https://get.k3s.io | \
 echo "[4/4] Installing Tailscale..."
 curl -fsSL https://tailscale.com/install.sh | sh
 systemctl enable --now tailscaled
+TAILSCALE_KEY=$(aws ssm get-parameter \
+  --name "/k3s-lab/tailscale-auth-key" \
+  --with-decryption \
+  --query "Parameter.Value" \
+  --output text \
+  --region "${aws_region}")
 tailscale up \
-  --authkey="${tailscale_auth_key}" \
+  --authkey="$TAILSCALE_KEY" \
   --ssh \
   --hostname="${hostname}" \
   --accept-routes \
