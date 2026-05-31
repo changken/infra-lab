@@ -115,30 +115,102 @@ resource "random_id" "suffix" {
 
 resource "aws_s3_bucket" "cloudtrail" {
   # TODO
+  bucket        = "${var.project}-cloudtrail-${random_id.suffix.hex}"
+  force_destroy = true
+  tags          = local.common_tags
 }
 
 resource "aws_s3_bucket_public_access_block" "cloudtrail" {
   # TODO
+  bucket                  = aws_s3_bucket.cloudtrail.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_policy" "cloudtrail" {
   # TODO
+  bucket = aws_s3_bucket.cloudtrail.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AWSCloudTrailAclCheck"
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "s3:GetBucketAcl"
+        Resource  = aws_s3_bucket.cloudtrail.arn
+        Condition = { StringEquals = {
+          "AWS:SourceArn" = "arn:aws:cloudtrail:${var.region}:${data.aws_caller_identity.current.account_id}:trail/${var.project}-trail"
+        } }
+      },
+      {
+        Sid       = "AWSCloudTrailWrite"
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+        Condition = { StringEquals = {
+          "s3:x-amz-acl"  = "bucket-owner-full-control"
+          "AWS:SourceArn" = "arn:aws:cloudtrail:${var.region}:${data.aws_caller_identity.current.account_id}:trail/${var.project}-trail"
+        } }
+      }
+    ]
+  })
 }
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   # TODO
+  name              = "/aws/cloudtrail/${var.project}"
+  retention_in_days = 90
+  tags              = local.common_tags
 }
 
 resource "aws_iam_role" "cloudtrail" {
   # TODO
+  name = "${var.project}-cloudtrail-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = ""
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy" "cloudtrail_logs" {
   # TODO
+  name = "${var.project}-cloudtrail-logs"
+  role = aws_iam_role.cloudtrail.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+        Effect   = "Allow"
+      }
+    ]
+  })
 }
 
 resource "aws_cloudtrail" "main" {
   # TODO
+  name                          = "${var.project}-trail"
+  s3_bucket_name                = aws_s3_bucket.cloudtrail.id
+  include_global_service_events = true
+  is_multi_region_trail         = true
+  enable_log_file_validation    = true
+  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+  cloud_watch_logs_role_arn     = aws_iam_role.cloudtrail.arn
+  tags                          = local.common_tags
 }
 
 
@@ -203,46 +275,118 @@ resource "aws_cloudtrail" "main" {
 
 resource "aws_s3_bucket" "config" {
   # TODO
+  bucket        = "${var.project}-config-${random_id.suffix.hex}"
+  force_destroy = true
+  tags          = local.common_tags
 }
 
 resource "aws_s3_bucket_public_access_block" "config" {
   # TODO
+  bucket                  = aws_s3_bucket.config.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_policy" "config" {
   # TODO
+  bucket = aws_s3_bucket.config.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "s3:GetBucketAcl"
+        Resource = aws_s3_bucket.config.arn
+        Effect   = "Allow"
+        Principal = {
+          Service = "config.amazonaws.com"
+        }
+      },
+      {
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.config.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/Config/*"
+        Effect   = "Allow"
+        Principal = {
+          Service = "config.amazonaws.com"
+        }
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role" "config" {
   # TODO
+  name = "${var.project}-config-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "config.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "config_role" {
   # TODO
+  role       = aws_iam_role.config.name
+  # ⚠️ AWSConfigRole 已廢棄，正確名稱為 AWS_ConfigRole
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
 }
 
 resource "aws_iam_role_policy" "config_s3" {
   # TODO
+  name = "${var.project}-config-s3"
+  role = aws_iam_role.config.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.config.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/Config/*"
+        Effect   = "Allow"
+      }
+    ]
+  })
 }
 
 resource "aws_config_configuration_recorder" "main" {
   # TODO
-
+  name     = "default"
+  role_arn = aws_iam_role.config.arn
   recording_group {
     # TODO
+    all_supported                 = true
+    include_global_resource_types = true
   }
 }
 
 resource "aws_config_delivery_channel" "main" {
   # TODO
+  name           = "default"
+  s3_bucket_name = aws_s3_bucket.config.id
 
   snapshot_delivery_properties {
     # TODO
+    delivery_frequency = "TwentyFour_Hours"
   }
 }
 
 resource "aws_config_configuration_recorder_status" "main" {
   # TODO
+  name       = aws_config_configuration_recorder.main.name
+  is_enabled = true
+  depends_on = [aws_config_delivery_channel.main]
 }
 
 
@@ -293,14 +437,41 @@ resource "aws_config_configuration_recorder_status" "main" {
 
 resource "aws_config_config_rule" "s3_public_read" {
   # TODO
+  name = "s3-bucket-public-read-prohibited"
+  source {
+    owner             = "AWS"
+    source_identifier = "S3_BUCKET_PUBLIC_READ_PROHIBITED"
+  }
+  depends_on = [aws_config_configuration_recorder_status.main]
 }
 
 resource "aws_config_config_rule" "root_mfa" {
   # TODO
+  name = "root-account-mfa-enabled"
+  source {
+    owner             = "AWS"
+    source_identifier = "ROOT_ACCOUNT_MFA_ENABLED"
+  }
+  depends_on = [aws_config_configuration_recorder_status.main]
 }
 
 resource "aws_config_config_rule" "iam_password_policy" {
   # TODO
+  name = "iam-password-policy"
+  source {
+    owner             = "AWS"
+    source_identifier = "IAM_PASSWORD_POLICY"
+  }
+  input_parameters = jsonencode({
+    RequireUppercaseCharacters = "true"
+    RequireLowercaseCharacters = "true"
+    RequireSymbols             = "true"
+    RequireNumbers             = "true"
+    MinimumPasswordLength      = "14"
+    PasswordReusePrevention    = "24"
+    MaxPasswordAge             = "90"
+  })
+  depends_on = [aws_config_configuration_recorder_status.main]
 }
 
 
@@ -360,18 +531,60 @@ resource "aws_config_config_rule" "iam_password_policy" {
 
 resource "aws_guardduty_detector" "main" {
   # TODO
+  enable = true
+  tags   = local.common_tags
 }
 
 resource "aws_sns_topic" "security" {
   # TODO
+  name = "${var.project}-security-alerts"
+  tags = local.common_tags
 }
 
 resource "aws_sns_topic_subscription" "email" {
   # TODO（記得加 count）
+  count     = var.notification_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.security.arn
+  protocol  = "email"
+  endpoint  = var.notification_email
 }
 
 resource "aws_sns_topic_policy" "security" {
   # TODO
+  arn = aws_sns_topic.security.arn
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowAccountOwner"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        # ⚠️ sns:* 在 Topic Policy 中無效（CreateTopic 等帳號層級操作不能套用在 topic resource）
+        # ⚠️ sns:Unsubscribe 是 subscription 層級 action（ARN 格式為 topic:subscription），
+        #   不能用於 topic ARN，否則觸發 "out of service scope" 錯誤
+        Action = [
+          "sns:Publish",
+          "sns:Subscribe",
+          "sns:GetTopicAttributes",
+          "sns:SetTopicAttributes",
+          "sns:AddPermission",
+          "sns:RemovePermission",
+          "sns:DeleteTopic",
+          "sns:ListSubscriptionsByTopic",
+        ]
+        Resource  = aws_sns_topic.security.arn
+      },
+      {
+        Sid       = "AllowEventBridgePublish"
+        Effect    = "Allow"
+        Principal = { Service = "events.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.security.arn
+      }
+      # ⚠️ 注意：cloudwatch.amazonaws.com 不支援 SNS Topic Policy 直接授權。
+      #   CloudWatch Alarm → SNS 使用帳號層級的 IAM 權限，無需在 Topic Policy 中明確允許。
+    ]
+  })
 }
 
 
@@ -424,18 +637,46 @@ resource "aws_sns_topic_policy" "security" {
 
 resource "aws_cloudwatch_event_rule" "config_noncompliant" {
   # TODO
+  name        = "${var.project}-config-noncompliant"
+  description = "Route Config compliance violations to SNS"
+  event_pattern = jsonencode({
+    source      = ["aws.config"]
+    detail-type = ["Config Rules Compliance Change"]
+    detail = {
+      newEvaluationResult = {
+        complianceType = ["NON_COMPLIANT"]
+      }
+    }
+  })
+  tags = local.common_tags
 }
 
 resource "aws_cloudwatch_event_target" "config_sns" {
   # TODO
+  rule      = aws_cloudwatch_event_rule.config_noncompliant.name
+  target_id = "ConfigNonCompliantSNS"
+  arn       = aws_sns_topic.security.arn
 }
 
 resource "aws_cloudwatch_event_rule" "guardduty_finding" {
   # TODO
+  name        = "${var.project}-guardduty-finding"
+  description = "Route GuardDuty high/medium findings to SNS"
+  event_pattern = jsonencode({
+    source      = ["aws.guardduty"]
+    detail-type = ["GuardDuty Finding"]
+    detail = {
+      severity = [{ numeric = [">=", 4] }] # Medium(4), High(7), Critical(9)
+    }
+  })
+  tags = local.common_tags
 }
 
 resource "aws_cloudwatch_event_target" "guardduty_sns" {
   # TODO
+  rule      = aws_cloudwatch_event_rule.guardduty_finding.name
+  target_id = "GuardDutyFindingSNS"
+  arn       = aws_sns_topic.security.arn
 }
 
 
@@ -495,24 +736,81 @@ resource "aws_cloudwatch_event_target" "guardduty_sns" {
 
 resource "aws_cloudwatch_log_metric_filter" "root_usage" {
   # TODO
+  name           = "${var.project}-root-usage"
+  log_group_name = aws_cloudwatch_log_group.cloudtrail.name
+  pattern        = "{ $.userIdentity.type = \"Root\" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != \"AwsServiceEvent\" }"
+  metric_transformation {
+    name          = "RootUsageCount"
+    namespace     = "SecurityMetrics/${var.project}"
+    value         = "1"
+    default_value = "0"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "root_usage" {
   # TODO
+  alarm_name          = "${var.project}-root-usage"
+  namespace           = "SecurityMetrics/${var.project}"
+  metric_name         = "RootUsageCount"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  statistic           = "Sum"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security.arn]
 }
 
 resource "aws_cloudwatch_log_metric_filter" "unauthorized_api" {
   # TODO
+  name           = "${var.project}-unauthorized-api"
+  log_group_name = aws_cloudwatch_log_group.cloudtrail.name
+  pattern        = "{ ($.errorCode = \"AccessDenied\" ) || ($.errorCode = \"UnauthorizedOperation\" ) }"
+  metric_transformation {
+    name          = "UnauthorizedApiCallCount"
+    namespace     = "SecurityMetrics/${var.project}"
+    value         = "1"
+    default_value = "0"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "unauthorized_api" {
   # TODO
+  alarm_name          = "${var.project}-unauthorized-api"
+  namespace           = "SecurityMetrics/${var.project}"
+  metric_name         = "UnauthorizedApiCallCount"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  statistic           = "Sum"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security.arn]
 }
 
 resource "aws_cloudwatch_log_metric_filter" "iam_changes" {
   # TODO
+  name           = "${var.project}-iam-changes"
+  log_group_name = aws_cloudwatch_log_group.cloudtrail.name
+  pattern        = "{ ($.eventName = PutUserPolicy ) || ($.eventName = PutRolePolicy ) || ($.eventName = AttachRolePolicy ) || ($.eventName = DetachRolePolicy ) || ($.eventName = AttachUserPolicy ) || ($.eventName = DetachUserPolicy ) }"
+  metric_transformation {
+    name          = "IamPolicyChangeCount"
+    namespace     = "SecurityMetrics/${var.project}"
+    value         = "1"
+    default_value = "0"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "iam_changes" {
   # TODO
+  alarm_name          = "${var.project}-iam-changes"
+  namespace           = "SecurityMetrics/${var.project}"
+  metric_name         = "IamPolicyChangeCount"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  statistic           = "Sum"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.security.arn]
 }
