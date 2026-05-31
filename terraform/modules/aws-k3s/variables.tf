@@ -1,28 +1,9 @@
 # ============================================================================
-# Common Variables
-# ============================================================================
-
-variable "tailscale_auth_key" {
-  description = "Tailscale authentication key for automatic VPN enrollment"
-  type        = string
-  sensitive   = true
-}
-
-# ============================================================================
-# Azure Variables
-# ============================================================================
-
-variable "emergency_ssh_public_key_path" {
-  description = "Path to emergency SSH public key for Azure VM access"
-  type        = string
-}
-
-# ============================================================================
 # AWS Variables
 # ============================================================================
 
 variable "aws_region" {
-  description = "AWS region for EC2 instance"
+  description = "AWS region for EC2 instances"
   type        = string
   default     = "us-east-1"
 }
@@ -52,7 +33,7 @@ variable "aws_ssh_public_key_path" {
 }
 
 variable "aws_availability_zone" {
-  description = "AWS availability zone for EC2 instance"
+  description = "AWS availability zone (empty = auto-select)"
   type        = string
-  default     = "" # Empty means AWS will auto-select
+  default     = ""
 }

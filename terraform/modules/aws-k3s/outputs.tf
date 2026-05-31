@@ -2,18 +2,6 @@
 # Outputs
 # ============================================================================
 
-# Azure Outputs
-output "azure_vm_name" {
-  description = "Azure VM name"
-  value       = azurerm_linux_virtual_machine.vm.name
-}
-
-output "azure_vm_private_ip" {
-  description = "Azure VM private IP address"
-  value       = azurerm_network_interface.nic.private_ip_address
-}
-
-# AWS Outputs
 output "aws_instance_id" {
   description = "AWS EC2 control plane instance ID"
   value       = aws_instance.k3s_cp.id
@@ -49,40 +37,32 @@ output "worker_public_ips" {
   value       = aws_instance.k3s_worker[*].public_ip
 }
 
-# Instructions
 output "next_steps" {
   description = "Next steps after deployment"
   value       = <<-EOT
     ========================================
-    Multi-Cloud K3s Lab Deployed!
+    AWS K3s Cluster Deployed!
     ========================================
 
-    Azure VM:       ${azurerm_linux_virtual_machine.vm.name}
-    AWS CP:         ${aws_instance.k3s_cp.id}
-    AWS Workers:    ${join(", ", aws_instance.k3s_worker[*].id)}
-    AWS EIP:        ${aws_eip.k3s_cp.public_ip}
+    CP:      ${aws_instance.k3s_cp.id}
+    Workers: ${join(", ", aws_instance.k3s_worker[*].id)}
+    EIP:     ${aws_eip.k3s_cp.public_ip}
 
-    Next Steps:
+    1. Wait for cloud-init (~3-5 minutes):
 
-    1. Wait for cloud-init to complete (~3-5 minutes):
-
-       # Check CP (Azure Run Command not needed for AWS — use console output)
        aws ec2 get-console-output \
          --instance-id ${aws_instance.k3s_cp.id} \
          --region ${var.aws_region} | grep "Setup complete"
 
-       # Check workers
        aws ec2 get-console-output \
          --instance-id ${aws_instance.k3s_worker[0].id} \
          --region ${var.aws_region} | grep "Setup complete"
 
     2. Check Tailscale devices:
        https://login.tailscale.com/admin/machines
-
-       You should see:
-       - k3s-cp (AWS control plane) ✓
-       - k3s-worker-0 (AWS worker) ✓
-       - k3s-worker-1 (AWS worker) ✓
+       - k3s-cp ✓
+       - k3s-worker-0 ✓
+       - k3s-worker-1 ✓
 
     3. Get kubeconfig:
        EIP="${aws_eip.k3s_cp.public_ip}"
@@ -90,7 +70,7 @@ output "next_steps" {
          | sed "s|https://127.0.0.1:6443|https://$EIP:6443|g" \
          > kubeconfig/k3s-aws.yaml
 
-    4. Verify all nodes are Ready:
+    4. Verify nodes:
        KUBECONFIG=kubeconfig/k3s-aws.yaml kubectl get nodes
 
        Expected:
@@ -99,7 +79,7 @@ output "next_steps" {
        k3s-worker-0   Ready    <none>                 Xm
        k3s-worker-1   Ready    <none>                 Xm
 
-    5. Stop instances to save cost when not in use:
+    5. Stop to save cost:
        aws ec2 stop-instances \
          --instance-ids ${aws_instance.k3s_cp.id} ${join(" ", aws_instance.k3s_worker[*].id)} \
          --region ${var.aws_region}
@@ -107,17 +87,18 @@ output "next_steps" {
     ========================================
     Troubleshooting:
 
-    CP cloud-init log:
+    CP log:
       aws ec2 get-console-output --instance-id ${aws_instance.k3s_cp.id} --region ${var.aws_region}
 
-    Worker cloud-init log (Tailscale SSH):
+    Worker log (via Tailscale SSH):
       tailscale ssh ubuntu@k3s-worker-0 "tail -50 /var/log/user-data.log"
 
-    SSM token check:
+    SSM token:
       aws ssm get-parameter --name /k3s-lab/node-token --with-decryption --region ${var.aws_region}
 
     Clean up SSM after destroy:
       aws ssm delete-parameter --name /k3s-lab/node-token --region ${var.aws_region}
+      aws ssm delete-parameter --name /k3s-lab/tailscale-auth-key --region ${var.aws_region}
     ========================================
   EOT
 }

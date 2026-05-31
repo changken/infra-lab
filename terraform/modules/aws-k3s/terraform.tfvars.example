@@ -3,23 +3,6 @@
 # terraform.tfvars is ignored by git for security
 
 # ============================================================================
-# Common Variables
-# ============================================================================
-
-# Tailscale Auth Key (for automatic VPN enrollment)
-# Get from: https://login.tailscale.com/admin/settings/keys
-# Recommended: Create an ephemeral, reusable key with appropriate tags
-tailscale_auth_key = "tskey-auth-REPLACE_ME"
-
-# ============================================================================
-# Azure Variables
-# ============================================================================
-
-# Emergency SSH public key (repo-local; for backup access only)
-# Generate with: ssh-keygen -t ed25519 -f ./.ssh/azure_emergency_ed25519 -N ""
-emergency_ssh_public_key_path = "./.ssh/azure_emergency_ed25519.pub"
-
-# ============================================================================
 # AWS Variables
 # ============================================================================
 
@@ -35,10 +18,19 @@ worker_instance_type = "t3.small"
 # Number of worker nodes (default: 2)
 # worker_count = 2
 
-# AWS SSH public key (repo-local; for backup access only)
+# AWS SSH public key (repo-local; for emergency access only)
 # Generate with: ssh-keygen -t ed25519 -f ./.ssh/aws_emergency_ed25519 -N ""
-# Or reuse the same key as Azure
 aws_ssh_public_key_path = "./.ssh/aws_emergency_ed25519.pub"
 
 # AWS availability zone (optional, leave empty for auto-select)
 # aws_availability_zone = "us-east-1a"
+
+# ============================================================================
+# Pre-apply: create SSM parameters manually (not managed by Terraform)
+# ============================================================================
+#
+# aws ssm put-parameter \
+#   --name "/k3s-lab/tailscale-auth-key" \
+#   --value "tskey-auth-REPLACE_ME" \
+#   --type SecureString \
+#   --region us-east-1
