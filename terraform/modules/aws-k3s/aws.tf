@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 # ============================================================================
 # AWS EC2 + K3s Lab
 # ============================================================================
@@ -32,7 +34,7 @@ resource "aws_subnet" "main" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.1.1.0/24"
   availability_zone       = var.aws_availability_zone != "" ? var.aws_availability_zone : null
-  map_public_ip_on_launch = false  # No public IP, Tailscale only
+  map_public_ip_on_launch = false # No public IP, Tailscale only
 
   tags = {
     Name    = "my-k3s-lab-subnet"
@@ -76,6 +78,41 @@ resource "aws_security_group" "k3s" {
     description = "Allow all outbound traffic"
   }
 
+  # K3s API server — inter-node (self) and kubectl from outside
+  ingress {
+    from_port   = 6443
+    to_port     = 6443
+    protocol    = "tcp"
+    self        = true
+    description = "K3s API server (inter-node)"
+  }
+
+  ingress {
+    from_port   = 6443
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "K3s API server (kubectl access)"
+  }
+
+  # Flannel VXLAN — pod network overlay
+  ingress {
+    from_port   = 8472
+    to_port     = 8472
+    protocol    = "udp"
+    self        = true
+    description = "Flannel VXLAN (pod network)"
+  }
+
+  # Kubelet — health checks between nodes
+  ingress {
+    from_port   = 10250
+    to_port     = 10250
+    protocol    = "tcp"
+    self        = true
+    description = "Kubelet metrics"
+  }
+
   # Optional: Emergency SSH (uncomment if needed)
   # ingress {
   #   from_port   = 22
@@ -110,7 +147,7 @@ resource "aws_instance" "k3s" {
 
   subnet_id                   = aws_subnet.main.id
   vpc_security_group_ids      = [aws_security_group.k3s.id]
-  associate_public_ip_address = true  # Needed for initial Tailscale setup
+  associate_public_ip_address = true # Needed for initial Tailscale setup
 
   root_block_device {
     volume_type           = "gp3"
@@ -130,7 +167,7 @@ resource "aws_instance" "k3s" {
   })
 
   metadata_options {
-    http_tokens   = "required"  # Enforce IMDSv2
+    http_tokens   = "required" # Enforce IMDSv2
     http_endpoint = "enabled"
   }
 
@@ -143,7 +180,7 @@ resource "aws_instance" "k3s" {
 # 9. Data Source: Latest Ubuntu 24.04 LTS AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["099720109477"]  # Canonical
+  owners      = ["099720109477"] # Canonical
 
   filter {
     name   = "name"
