@@ -178,6 +178,19 @@ resource "aws_iam_instance_profile" "k3s_node" {
   }
 }
 
+# ============================================================================
+# Elastic IP for K3s control plane (stable public IP for kubeconfig)
+# ============================================================================
+
+resource "aws_eip" "k3s_cp" {
+  domain = "vpc"
+
+  tags = {
+    Name    = "my-k3s-lab-cp-eip"
+    Project = "k3s-lab"
+  }
+}
+
 # 7. SSH Key Pair
 resource "aws_key_pair" "emergency" {
   key_name   = "my-k3s-lab-emergency-key"
