@@ -202,15 +202,16 @@ resource "aws_key_pair" "emergency" {
   }
 }
 
-# 8. EC2 Instance
-resource "aws_instance" "k3s" {
+# 8. K3s Control Plane EC2 Instance
+resource "aws_instance" "k3s_cp" {
   ami           = data.aws_ami.ubuntu.id
-  instance_type = var.aws_instance_type
+  instance_type = var.cp_instance_type
   key_name      = aws_key_pair.emergency.key_name
 
   subnet_id                   = aws_subnet.main.id
   vpc_security_group_ids      = [aws_security_group.k3s.id]
-  associate_public_ip_address = true # Needed for initial Tailscale setup
+  associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.k3s_node.name
 
   root_block_device {
     volume_type           = "gp3"
@@ -219,25 +220,32 @@ resource "aws_instance" "k3s" {
     encrypted             = true
 
     tags = {
-      Name    = "my-k3s-vm-aws-root"
+      Name    = "my-k3s-cp-root"
       Project = "k3s-lab"
     }
   }
 
-  user_data = templatefile("${path.module}/user-data-aws.sh", {
+  user_data = templatefile("${path.module}/user-data-cp.sh", {
     tailscale_auth_key = var.tailscale_auth_key
-    hostname           = "my-k3s-vm-aws"
+    hostname           = "k3s-cp"
+    aws_region         = var.aws_region
+    public_ip          = aws_eip.k3s_cp.public_ip
   })
 
   metadata_options {
-    http_tokens   = "required" # Enforce IMDSv2
+    http_tokens   = "required"
     http_endpoint = "enabled"
   }
 
   tags = {
-    Name    = "my-k3s-vm-aws"
+    Name    = "my-k3s-cp"
     Project = "k3s-lab"
   }
+}
+
+resource "aws_eip_association" "k3s_cp" {
+  instance_id   = aws_instance.k3s_cp.id
+  allocation_id = aws_eip.k3s_cp.id
 }
 
 # 9. Data Source: Latest Ubuntu 24.04 LTS AMI
