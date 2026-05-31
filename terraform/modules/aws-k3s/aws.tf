@@ -248,6 +248,54 @@ resource "aws_eip_association" "k3s_cp" {
   allocation_id = aws_eip.k3s_cp.id
 }
 
+# ============================================================================
+# K3s Worker Nodes
+# ============================================================================
+
+resource "aws_instance" "k3s_worker" {
+  count = var.worker_count
+
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.worker_instance_type
+  key_name      = aws_key_pair.emergency.key_name
+
+  subnet_id                   = aws_subnet.main.id
+  vpc_security_group_ids      = [aws_security_group.k3s.id]
+  associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.k3s_node.name
+
+  root_block_device {
+    volume_type           = "gp3"
+    volume_size           = 32
+    delete_on_termination = true
+    encrypted             = true
+
+    tags = {
+      Name    = "my-k3s-worker-${count.index}-root"
+      Project = "k3s-lab"
+    }
+  }
+
+  user_data = templatefile("${path.module}/user-data-worker.sh", {
+    tailscale_auth_key = var.tailscale_auth_key
+    hostname           = "k3s-worker-${count.index}"
+    aws_region         = var.aws_region
+    cp_private_ip      = aws_instance.k3s_cp.private_ip
+  })
+
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
+
+  depends_on = [aws_instance.k3s_cp]
+
+  tags = {
+    Name    = "my-k3s-worker-${count.index}"
+    Project = "k3s-lab"
+  }
+}
+
 # 9. Data Source: Latest Ubuntu 24.04 LTS AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
