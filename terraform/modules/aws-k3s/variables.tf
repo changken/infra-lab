@@ -27,10 +27,22 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "aws_instance_type" {
-  description = "AWS EC2 instance type"
+variable "cp_instance_type" {
+  description = "K3s control plane EC2 instance type"
   type        = string
   default     = "t3.medium"
+}
+
+variable "worker_instance_type" {
+  description = "K3s worker node EC2 instance type"
+  type        = string
+  default     = "t3.small"
+}
+
+variable "worker_count" {
+  description = "Number of K3s worker nodes"
+  type        = number
+  default     = 2
 }
 
 variable "aws_ssh_public_key_path" {
@@ -42,5 +54,5 @@ variable "aws_ssh_public_key_path" {
 variable "aws_availability_zone" {
   description = "AWS availability zone for EC2 instance"
   type        = string
-  default     = ""  # Empty means AWS will auto-select
+  default     = "" # Empty means AWS will auto-select
 }
