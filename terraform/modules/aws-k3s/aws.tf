@@ -1,5 +1,14 @@
 data "aws_caller_identity" "current" {}
 
+locals {
+  project = "k3s-lab"
+
+  common_tags = {
+    Project   = local.project
+    ManagedBy = "terraform"
+  }
+}
+
 # ============================================================================
 # AWS EC2 + K3s Lab
 # ============================================================================
@@ -13,20 +22,18 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  tags = {
-    Name    = "my-k3s-lab-vpc"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-vpc"
+  })
 }
 
 # 2. Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name    = "my-k3s-lab-igw"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-igw"
+  })
 }
 
 # 3. Subnet
@@ -36,10 +43,9 @@ resource "aws_subnet" "main" {
   availability_zone       = var.aws_availability_zone != "" ? var.aws_availability_zone : null
   map_public_ip_on_launch = false # No public IP, Tailscale only
 
-  tags = {
-    Name    = "my-k3s-lab-subnet"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-subnet"
+  })
 }
 
 # 4. Route Table
@@ -51,10 +57,9 @@ resource "aws_route_table" "main" {
     gateway_id = aws_internet_gateway.main.id
   }
 
-  tags = {
-    Name    = "my-k3s-lab-rt"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-rt"
+  })
 }
 
 # 5. Route Table Association
@@ -113,19 +118,18 @@ resource "aws_security_group" "k3s" {
     description = "Kubelet metrics"
   }
 
-  # Optional: Emergency SSH (uncomment if needed)
-  # ingress {
-  #   from_port   = 22
-  #   to_port     = 22
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["YOUR_IP/32"]
-  #   description = "Emergency SSH access"
-  # }
-
-  tags = {
-    Name    = "my-k3s-lab-sg"
-    Project = "k3s-lab"
+  # Optional: Emergency SSH
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.ssh_allowed_cidr]
+    description = "Emergency SSH access"
   }
+
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-sg"
+  })
 }
 
 # ============================================================================
@@ -144,10 +148,9 @@ resource "aws_iam_role" "k3s_node" {
     }]
   })
 
-  tags = {
-    Name    = "my-k3s-lab-node-role"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-node-role"
+  })
 }
 
 resource "aws_iam_role_policy" "k3s_ssm" {
@@ -172,10 +175,9 @@ resource "aws_iam_instance_profile" "k3s_node" {
   name = "my-k3s-lab-node-profile"
   role = aws_iam_role.k3s_node.name
 
-  tags = {
-    Name    = "my-k3s-lab-node-profile"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-node-profile"
+  })
 }
 
 # ============================================================================
@@ -185,10 +187,9 @@ resource "aws_iam_instance_profile" "k3s_node" {
 resource "aws_eip" "k3s_cp" {
   domain = "vpc"
 
-  tags = {
-    Name    = "my-k3s-lab-cp-eip"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-cp-eip"
+  })
 }
 
 # 7. SSH Key Pair
@@ -196,10 +197,9 @@ resource "aws_key_pair" "emergency" {
   key_name   = "my-k3s-lab-emergency-key"
   public_key = file(pathexpand(var.aws_ssh_public_key_path))
 
-  tags = {
-    Name    = "my-k3s-lab-emergency-key"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-lab-emergency-key"
+  })
 }
 
 # 8. K3s Control Plane EC2 Instance
@@ -219,14 +219,13 @@ resource "aws_instance" "k3s_cp" {
     delete_on_termination = true
     encrypted             = true
 
-    tags = {
-      Name    = "my-k3s-cp-root"
-      Project = "k3s-lab"
-    }
+    tags = merge(local.common_tags, {
+      Name = "my-k3s-cp-root"
+    })
   }
 
   user_data = templatefile("${path.module}/user-data-cp.sh", {
-    hostname  = "k3s-cp"
+    hostname   = var.cp_hostname
     aws_region = var.aws_region
     public_ip  = aws_eip.k3s_cp.public_ip
   })
@@ -236,10 +235,9 @@ resource "aws_instance" "k3s_cp" {
     http_endpoint = "enabled"
   }
 
-  tags = {
-    Name    = "my-k3s-cp"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-cp"
+  })
 }
 
 resource "aws_eip_association" "k3s_cp" {
@@ -269,14 +267,13 @@ resource "aws_instance" "k3s_worker" {
     delete_on_termination = true
     encrypted             = true
 
-    tags = {
-      Name    = "my-k3s-worker-${count.index}-root"
-      Project = "k3s-lab"
-    }
+    tags = merge(local.common_tags, {
+      Name = "my-k3s-worker-${count.index + 1}-root"
+    })
   }
 
   user_data = templatefile("${path.module}/user-data-worker.sh", {
-    hostname      = "k3s-worker-${count.index}"
+    hostname      = "${var.worker_hostname_prefix}-${count.index + 1}"
     aws_region    = var.aws_region
     cp_private_ip = aws_instance.k3s_cp.private_ip
   })
@@ -288,10 +285,9 @@ resource "aws_instance" "k3s_worker" {
 
   depends_on = [aws_instance.k3s_cp]
 
-  tags = {
-    Name    = "my-k3s-worker-${count.index}"
-    Project = "k3s-lab"
-  }
+  tags = merge(local.common_tags, {
+    Name = "my-k3s-worker-${count.index + 1}"
+  })
 }
 
 # 9. Data Source: Latest Ubuntu 24.04 LTS AMI

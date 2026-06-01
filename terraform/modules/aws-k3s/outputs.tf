@@ -60,13 +60,14 @@ output "next_steps" {
 
     2. Check Tailscale devices:
        https://login.tailscale.com/admin/machines
-       - k3s-cp ✓
-       - k3s-worker-0 ✓
-       - k3s-worker-1 ✓
+       - ${var.cp_hostname} ✓
+%{for i in range(var.worker_count)~}
+       - ${var.worker_hostname_prefix}-${i + 1} ✓
+%{endfor~}
 
     3. Get kubeconfig:
        EIP="${aws_eip.k3s_cp.public_ip}"
-       tailscale ssh ubuntu@k3s-cp "sudo cat /etc/rancher/k3s/k3s.yaml" \
+       tailscale ssh ubuntu@${var.cp_hostname} "sudo cat /etc/rancher/k3s/k3s.yaml" \
          | sed "s|https://127.0.0.1:6443|https://$EIP:6443|g" \
          > kubeconfig/k3s-aws.yaml
 
@@ -74,10 +75,11 @@ output "next_steps" {
        KUBECONFIG=kubeconfig/k3s-aws.yaml kubectl get nodes
 
        Expected:
-       NAME           STATUS   ROLES                  AGE
-       k3s-cp         Ready    control-plane,master   Xm
-       k3s-worker-0   Ready    <none>                 Xm
-       k3s-worker-1   Ready    <none>                 Xm
+       NAME                    STATUS   ROLES                  AGE
+       ${var.cp_hostname}      Ready    control-plane,master   Xm
+%{for i in range(var.worker_count)~}
+       ${var.worker_hostname_prefix}-${i + 1}   Ready    <none>                 Xm
+%{endfor~}
 
     5. Stop to save cost:
        aws ec2 stop-instances \
@@ -91,7 +93,7 @@ output "next_steps" {
       aws ec2 get-console-output --instance-id ${aws_instance.k3s_cp.id} --region ${var.aws_region}
 
     Worker log (via Tailscale SSH):
-      tailscale ssh ubuntu@k3s-worker-0 "tail -50 /var/log/user-data.log"
+      tailscale ssh ubuntu@${var.worker_hostname_prefix}-1 "tail -50 /var/log/user-data.log"
 
     SSM token:
       aws ssm get-parameter --name /k3s-lab/node-token --with-decryption --region ${var.aws_region}

@@ -426,7 +426,139 @@ KUBECONFIG=kubeconfig/k3s-aws.yaml kubectl get nodes
 
 ---
 
-## 6. 參考資料
+## 6. GUI 管理工具
+
+K3s 叢集支援多種 GUI 管理方式，功能覆蓋率與資源消耗各有不同。
+
+| 工具 | 部署位置 | RAM 佔用 | 功能覆蓋率 | 推薦情境 |
+|------|---------|---------|-----------|---------|
+| **OpenLens** | 本機安裝 | 0（EC2） | ★★★★☆ | 個人日常管理 ✅ |
+| **Kubernetes Dashboard** | K3s 叢集內 | ~100 MB | ★★★☆☆ | 輕量網頁 UI |
+| **Rancher** | K3s 叢集內 | ~500 MB | ★★★★★ | 多叢集企業管理 |
+
+### 6.1 OpenLens（推薦）
+
+**優點**：零伺服器資源消耗、支援多個 context 切換、功能完整。
+
+**安裝**：至 [github.com/MuhammedKalkan/OpenLens/releases](https://github.com/MuhammedKalkan/OpenLens/releases) 下載對應平台版本。
+
+**取得並設定 kubeconfig：**
+
+```bash
+# 透過 Tailscale SSH 取得 kubeconfig（以 EIP 作為 API server 位址）
+EIP=$(terraform output -raw aws_eip_public_ip)
+
+tailscale ssh ubuntu@my-cp "sudo cat /etc/rancher/k3s/k3s.yaml" \
+  | sed "s|https://127.0.0.1:6443|https://$EIP:6443|g" \
+  > ~/.kube/k3s-aws.yaml
+
+# 驗證
+KUBECONFIG=~/.kube/k3s-aws.yaml kubectl get nodes
+```
+
+**在 OpenLens 載入：**
+
+1. 開啟 OpenLens → **File > Add Cluster**
+2. 選擇 `~/.kube/k3s-aws.yaml`
+3. 叢集出現後點擊連線，即可瀏覽所有資源
+
+**多 context 管理（同時管理 AWS K3s + 本機）：**
+
+```bash
+# 合併多個 kubeconfig
+export KUBECONFIG=~/.kube/config:~/.kube/k3s-aws.yaml
+
+# 列出所有 context
+kubectl config get-contexts
+
+# 切換 context
+kubectl config use-context default   # K3s 叢集（預設名稱）
+```
+
+**OpenLens 可管理的資源：**
+
+| 類別 | 支援項目 |
+|------|---------|
+| Workloads | Pod、Deployment、ReplicaSet、DaemonSet、StatefulSet、Job、CronJob |
+| Network | Service、Ingress、Endpoint |
+| Config | ConfigMap、Secret |
+| Storage | PVC、StorageClass |
+| RBAC | Role、ClusterRole、ServiceAccount |
+| 操作 | Pod exec、Log 串流、Port-forward、YAML 編輯 |
+
+---
+
+### 6.2 Kubernetes Dashboard（輕量網頁 UI）
+
+適合偏好瀏覽器操作，且不想在本機安裝額外軟體的情境。
+
+**安裝（在 CP 上執行）：**
+
+```bash
+# 透過 Tailscale SSH 登入 CP
+tailscale ssh ubuntu@my-cp
+
+# 部署 Kubernetes Dashboard
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+# 建立 admin ServiceAccount
+kubectl create serviceaccount admin-user -n kubernetes-dashboard
+kubectl create clusterrolebinding admin-user \
+  --clusterrole=cluster-admin \
+  --serviceaccount=kubernetes-dashboard:admin-user
+
+# 取得登入 Token
+kubectl -n kubernetes-dashboard create token admin-user
+```
+
+**本機存取（port-forward 透過 Tailscale）：**
+
+```bash
+# 在本機執行（需已設定 kubeconfig）
+KUBECONFIG=~/.kube/k3s-aws.yaml \
+  kubectl port-forward -n kubernetes-dashboard svc/kubernetes-dashboard 8443:443
+
+# 開啟瀏覽器
+# https://localhost:8443
+# 貼上上方取得的 Token 登入
+```
+
+> **注意**：每次 port-forward 結束後需重新執行；Token 預設有效期 1 小時。
+
+---
+
+### 6.3 Rancher（功能最完整，多叢集管理）
+
+適合需要完整 GitOps、App Catalog、細粒度 RBAC 的情境。
+
+> ⚠️ **資源需求**：Rancher + cert-manager 約消耗 500 MB RAM。  
+> t3.medium（4 GB）可運行，但 worker 負載會受影響，建議評估後再安裝。
+
+```bash
+# 安裝 cert-manager（Rancher 前置依賴）
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+kubectl -n cert-manager rollout status deploy/cert-manager --timeout=120s
+
+# 安裝 Rancher（以 Tailscale IP 作為 hostname）
+TS_IP=$(tailscale ip -4)   # 在 CP 上執行
+helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+helm repo update
+
+helm install rancher rancher-latest/rancher \
+  --namespace cattle-system --create-namespace \
+  --set hostname=rancher.${TS_IP}.nip.io \
+  --set bootstrapPassword=admin \
+  --set replicas=1
+
+# 等待就緒
+kubectl -n cattle-system rollout status deploy/rancher --timeout=300s
+```
+
+**存取**：瀏覽器開啟 `https://rancher.<Tailscale-IP>.nip.io`，首次登入使用 `admin` 作為密碼。
+
+---
+
+## 7. 參考資料
 
 - [K3s 官方文件](https://docs.k3s.io/)
 - [Tailscale 官方文件](https://tailscale.com/kb/)

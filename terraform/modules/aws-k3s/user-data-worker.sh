@@ -14,8 +14,16 @@ echo "[1/4] Updating system packages..."
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 
+# Install AWS CLI v2
+echo "[2/5] Installing AWS CLI v2..."
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+apt-get install -y unzip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+rm -rf /tmp/awscliv2.zip /tmp/aws
+
 # Poll SSM for K3s token (max 10 minutes: 60 retries x 10s)
-echo "[2/4] Waiting for K3s token from SSM..."
+echo "[3/5] Waiting for K3s token from SSM..."
 TOKEN=""
 for i in $(seq 1 60); do
   TOKEN=$(aws ssm get-parameter \
@@ -38,15 +46,15 @@ if [ -z "$TOKEN" ]; then
 fi
 
 # Join K3s cluster via CP private IP
-echo "[3/4] Joining K3s cluster..."
+echo "[4/5] Joining K3s cluster..."
 curl -sfL https://get.k3s.io | \
   K3S_URL="https://${cp_private_ip}:6443" \
   K3S_TOKEN="$TOKEN" \
   sh -s - agent \
   --node-name "${hostname}"
 
-# Install Tailscale (best-effort — cluster works without it, used for management only)
-echo "[4/4] Installing Tailscale..."
+# Install Tailscale
+echo "[5/5] Installing Tailscale..."
 curl -fsSL https://tailscale.com/install.sh | sh
 systemctl enable --now tailscaled
 TAILSCALE_KEY=$(aws ssm get-parameter \

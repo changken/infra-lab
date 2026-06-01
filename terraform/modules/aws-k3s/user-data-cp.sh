@@ -14,8 +14,16 @@ echo "[1/4] Updating system packages..."
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 
+# Install AWS CLI v2
+echo "[2/5] Installing AWS CLI v2..."
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+apt-get install -y unzip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+rm -rf /tmp/awscliv2.zip /tmp/aws
+
 # Install K3s server (use EIP for TLS SAN)
-echo "[2/4] Installing K3s server..."
+echo "[3/5] Installing K3s server..."
 PUBLIC_IP="${public_ip}"
 curl -sfL https://get.k3s.io | sh -s - server \
   --tls-san "$PUBLIC_IP" \
@@ -23,7 +31,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --node-name "${hostname}"
 
 # Wait for K3s to generate node token, then write to SSM
-echo "[3/4] Writing node token to SSM..."
+echo "[4/5] Writing node token to SSM..."
 until [ -f /var/lib/rancher/k3s/server/node-token ]; do
   echo "Waiting for K3s token file..."
   sleep 2
@@ -36,8 +44,8 @@ aws ssm put-parameter \
   --region "${aws_region}" \
   --overwrite
 
-# Install Tailscale (best-effort — cluster works without it, used for management only)
-echo "[4/4] Installing Tailscale..."
+# Install Tailscale
+echo "[5/5] Installing Tailscale..."
 curl -fsSL https://tailscale.com/install.sh | sh
 systemctl enable --now tailscaled
 TAILSCALE_KEY=$(aws ssm get-parameter \
