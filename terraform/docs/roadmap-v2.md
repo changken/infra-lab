@@ -175,9 +175,9 @@ Phase 1 不跳過，是 Phase 2 的基礎。
 | 40 🚧 | 多租戶 SaaS API | Cognito → API GW Authorizer → Lambda + 動態租戶隔離 | $0 |
 | 41 🚧 | 可觀測性全棧 | X-Ray + CloudWatch Logs Insights + Dashboard + Synthetic | < $1 |
 | 42 🚧 | 安全合規架構 | Config Rules + CloudTrail + GuardDuty + SNS 自動告警 | ~$1 |
-| 43 🚧 | Terraform 模組化重構 | 抽取可重用 modules + S3 remote state + DynamoDB lock | < $0.10 |
-| 44 🚧 | Step Functions 工作流程編排 | Lambda × 4 + Retry/Catch ASL + Standard Workflow | $0 |
-| 45 🚧 | Kinesis Data Streams 即時資料管道 | API GW → Lambda → Kinesis → Lambda → DynamoDB + CloudWatch Alarm | ~$0.03 |
+| 43 ✅ | Terraform 模組化重構 | 抽取可重用 modules + S3 remote state + DynamoDB lock | < $0.10 |
+| 44 ✅ | Step Functions 工作流程編排 | Lambda × 4 + Retry/Catch ASL + Standard Workflow | $0 |
+| 45 ✅ | Kinesis Data Streams 即時資料管道 | API GW → Lambda → Kinesis → Lambda → DynamoDB + CloudWatch Alarm | ~$0.03 |
 
 ### Lab 37：電商訂單後端
 
