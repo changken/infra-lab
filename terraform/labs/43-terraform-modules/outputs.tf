@@ -9,29 +9,35 @@
 output "api_endpoint" {
   description = "API Gateway 呼叫 URL（來自 module.api）"
   # TODO: value = module.api.???
+  value = module.api.api_endpoint
 }
 
 output "function_name" {
   description = "Lambda Function 名稱（來自 module.api）"
   # TODO
+  value = module.api.function_name
 }
 
 output "vpc_id" {
   description = "VPC ID（來自 module.network）"
   # TODO
+  value = module.network.vpc_id
 }
 
 output "public_subnet_ids" {
   description = "Public Subnet IDs（來自 module.network）"
   # TODO
+  value = module.network.public_subnet_ids
 }
 
 output "sns_topic_arn" {
   description = "Alarm SNS Topic ARN（來自 module.monitoring）"
   # TODO
+  value = module.monitoring.sns_topic_arn
 }
 
 output "curl_command" {
   description = "測試 API 的 curl 指令"
   # TODO: value = "curl -s ${module.api.api_endpoint}/"
+  value = "curl -s ${module.api.api_endpoint}/"
 }

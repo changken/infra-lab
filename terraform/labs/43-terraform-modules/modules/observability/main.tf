@@ -59,16 +59,47 @@
 
 resource "aws_sns_topic" "alarms" {
   # TODO
+  name = "${var.project}-${var.environment}-alarms"
+  tags = var.tags
 }
 
 resource "aws_sns_topic_subscription" "email" {
   # TODO（記得加 count）
+  count     = var.notification_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.alarms.arn
+  protocol  = "email"
+  endpoint  = var.notification_email
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   # TODO
+  alarm_name          = "${var.project}-${var.environment}-lambda-errors"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  dimensions          = { FunctionName = var.lambda_function_name }
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 3
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  statistic           = "Sum"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  ok_actions          = [aws_sns_topic.alarms.arn]
+  tags                = var.tags
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_duration" {
   # TODO
+  alarm_name          = "${var.project}-${var.environment}-lambda-duration"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Duration"
+  dimensions          = { FunctionName = var.lambda_function_name }
+  period              = 300
+  evaluation_periods  = 2
+  threshold           = 10000
+  extended_statistic  = "p99"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  tags                = var.tags
 }

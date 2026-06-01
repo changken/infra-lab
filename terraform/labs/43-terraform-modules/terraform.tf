@@ -33,6 +33,14 @@ terraform {
   #   dynamodb_table = "<paste from: cd bootstrap && terraform output -raw lock_table_name>"
   #   encrypt        = true
   # }
+
+  backend "s3" {
+    bucket         = "tf-lab-state-7b5f6fd8"
+    key            = "43-terraform-modules/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "tf-lab-state-lock"
+    encrypt        = true
+  }
 }
 
 provider "aws" {

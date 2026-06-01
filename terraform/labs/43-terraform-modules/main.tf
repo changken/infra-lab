@@ -72,12 +72,37 @@ data "archive_file" "hello" {
 
 module "network" {
   # TODO
+  source      = "./modules/networking"
+  project     = var.project
+  environment = var.environment
+  tags        = local.common_tags
 }
 
 module "api" {
   # TODO
+  source           = "./modules/serverless-api"
+  project          = var.project
+  environment      = var.environment
+  source_zip_path  = data.archive_file.hello.output_path
+  source_code_hash = data.archive_file.hello.output_base64sha256
+  tags             = local.common_tags
+  # 選填：handler, runtime, timeout, memory_size, environment_variables
+  handler     = "hello.lambda_handler"
+  runtime     = "python3.13"
+  timeout     = 10
+  memory_size = 128
+  environment_variables = {
+    ENVIRONMENT = var.environment
+    LOG_LEVEL   = "INFO"
+  }
 }
 
 module "monitoring" {
   # TODO
+  source               = "./modules/observability"
+  project              = var.project
+  environment          = var.environment
+  lambda_function_name = module.api.function_name
+  notification_email   = var.notification_email
+  tags                 = local.common_tags
 }
