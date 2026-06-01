@@ -35,6 +35,10 @@
 
 resource "aws_kinesis_stream" "events" {
   # TODO
+  name             = "${local.prefix}-events"
+  shard_count      = 1
+  retention_period = 24
+  tags             = local.common_tags
 }
 
 
@@ -61,6 +65,16 @@ resource "aws_kinesis_stream" "events" {
 
 resource "aws_dynamodb_table" "aggregation" {
   # TODO
+  name         = "${local.prefix}-event-counts"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "event_type"
+
+  attribute {
+    name = "event_type"
+    type = "S"
+  }
+
+  tags = local.common_tags
 }
 
 
@@ -119,42 +133,103 @@ resource "aws_dynamodb_table" "aggregation" {
 
 resource "aws_iam_role" "producer" {
   # TODO
+  name = "${local.prefix}-producer-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "producer_basic" {
   # TODO
+  role       = aws_iam_role.producer.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy" "producer_kinesis" {
   # TODO: kinesis:PutRecord + kinesis:PutRecords
+  name = "${local.prefix}-producer-kinesis-policy"
+  role = aws_iam_role.producer.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "kinesis:PutRecord",
+          "kinesis:PutRecords"
+        ]
+        Effect   = "Allow"
+        Resource = aws_kinesis_stream.events.arn
+      }
+    ]
+  })
 }
 
 data "archive_file" "producer" {
   # TODO
+  type        = "zip"
+  source_file = "${path.module}/src/producer.py"
+  output_path = "${path.module}/src/producer.zip"
 }
 
 resource "aws_lambda_function" "producer" {
   # TODO: 記得加 environment { variables = { STREAM_NAME = ... } }
+  function_name    = "${local.prefix}-producer"
+  handler          = "producer.handler"
+  runtime          = "python3.12"
+  role             = aws_iam_role.producer.arn
+  filename         = data.archive_file.producer.output_path
+  source_code_hash = data.archive_file.producer.output_base64sha256
+
+  environment {
+    variables = {
+      STREAM_NAME = aws_kinesis_stream.events.name
+    }
+  }
 }
 
 resource "aws_apigatewayv2_api" "producer" {
   # TODO
+  name          = "${local.prefix}-producer-api"
+  protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_integration" "producer" {
   # TODO
+  api_id           = aws_apigatewayv2_api.producer.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.producer.invoke_arn
 }
 
 resource "aws_apigatewayv2_route" "producer" {
   # TODO: route_key = "POST /events"
+  api_id    = aws_apigatewayv2_api.producer.id
+  route_key = "POST /events"
+  target    = "integrations/${aws_apigatewayv2_integration.producer.id}"
 }
 
 resource "aws_apigatewayv2_stage" "producer" {
   # TODO: name = "$default", auto_deploy = true
+  api_id      = aws_apigatewayv2_api.producer.id
+  name        = "$default"
+  auto_deploy = true
 }
 
 resource "aws_lambda_permission" "producer_apigw" {
   # TODO
+  statement_id  = "AllowAPIGWToLambda"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.producer.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.producer.execution_arn}/*/*"
 }
 
 
@@ -202,27 +277,74 @@ resource "aws_lambda_permission" "producer_apigw" {
 
 resource "aws_iam_role" "consumer" {
   # TODO
+  name = "${local.prefix}-consumer-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "consumer_kinesis" {
   # TODO: AWSLambdaKinesisExecutionRole
+  role       = aws_iam_role.consumer.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaKinesisExecutionRole"
 }
 
 resource "aws_iam_role_policy" "consumer_dynamodb" {
   # TODO: dynamodb:UpdateItem
+  name = "${local.prefix}-consumer-dynamodb-policy"
+  role = aws_iam_role.consumer.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = ["dynamodb:UpdateItem"]
+        Effect   = "Allow"
+        Resource = aws_dynamodb_table.aggregation.arn
+      }
+    ]
+  })
 }
 
 data "archive_file" "consumer" {
   # TODO
+  type        = "zip"
+  source_file = "${path.module}/src/consumer.py"
+  output_path = "${path.module}/src/consumer.zip"
 }
 
 resource "aws_lambda_function" "consumer" {
   # TODO: 記得加 environment { variables = { TABLE_NAME = ... } }
+  function_name    = "${local.prefix}-consumer"
+  handler          = "consumer.handler"
+  runtime          = "python3.12"
+  role             = aws_iam_role.consumer.arn
+  filename         = data.archive_file.consumer.output_path
+  source_code_hash = data.archive_file.consumer.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME = aws_dynamodb_table.aggregation.name
+    }
+  }
 }
 
 resource "aws_lambda_event_source_mapping" "kinesis" {
   # TODO: event_source_arn, function_name, starting_position, batch_size,
   #       bisect_batch_on_function_error
+  event_source_arn               = aws_kinesis_stream.events.arn
+  function_name                  = aws_lambda_function.consumer.function_name
+  starting_position              = "LATEST"
+  batch_size                     = 100
+  bisect_batch_on_function_error = true
 }
 
 
@@ -260,12 +382,26 @@ resource "aws_lambda_event_source_mapping" "kinesis" {
 
 resource "aws_sns_topic" "alarms" {
   # TODO
+  name = "${local.prefix}-alarms"
 }
 
 resource "aws_sns_topic_subscription" "email" {
   # TODO: conditional with count
+  topic_arn = aws_sns_topic.alarms.arn
+  protocol  = "email"
+  endpoint  = var.notification_email
 }
 
 resource "aws_cloudwatch_metric_alarm" "iterator_age" {
   # TODO
+  alarm_name          = "${local.prefix}-high-iterator-age"
+  namespace           = "AWS/Kinesis"
+  metric_name         = "GetRecords.IteratorAgeMilliseconds"
+  dimensions          = { StreamName = aws_kinesis_stream.events.name }
+  statistic           = "Maximum"
+  period              = 60
+  evaluation_periods  = 3
+  threshold           = 60000 # 60 秒
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
 }
