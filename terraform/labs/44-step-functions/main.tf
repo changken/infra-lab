@@ -46,14 +46,41 @@
 
 resource "aws_iam_role" "lambda" {
   # TODO
+  name = "${local.prefix}-lambda-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_basic" {
   # TODO
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy" "lambda_sns" {
   # TODO
+  name = "${local.prefix}-lambda-sns"
+  role = aws_iam_role.lambda.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "sns:Publish"
+        Effect   = "Allow"
+        Resource = aws_sns_topic.orders.arn
+      }
+    ]
+  })
 }
 
 
@@ -93,34 +120,76 @@ resource "aws_iam_role_policy" "lambda_sns" {
 
 data "archive_file" "validate_order" {
   # TODO
+  type        = "zip"
+  source_file = "${path.module}/src/validate_order.py"
+  output_path = "${path.module}/src/validate_order.zip"
 }
 
 data "archive_file" "reserve_inventory" {
   # TODO
+  type        = "zip"
+  source_file = "${path.module}/src/reserve_inventory.py"
+  output_path = "${path.module}/src/reserve_inventory.zip"
 }
 
 data "archive_file" "process_payment" {
   # TODO
+  type        = "zip"
+  source_file = "${path.module}/src/process_payment.py"
+  output_path = "${path.module}/src/process_payment.zip"
 }
 
 data "archive_file" "notify_customer" {
   # TODO
+  type        = "zip"
+  source_file = "${path.module}/src/notify_customer.py"
+  output_path = "${path.module}/src/notify_customer.zip"
 }
 
 resource "aws_lambda_function" "validate_order" {
   # TODO
+  function_name    = "${local.prefix}-validate-order"
+  filename         = data.archive_file.validate_order.output_path
+  source_code_hash = data.archive_file.validate_order.output_base64sha256
+  handler          = "validate_order.handler"
+  runtime          = "python3.12"
+  role             = aws_iam_role.lambda.arn
 }
 
 resource "aws_lambda_function" "reserve_inventory" {
   # TODO
+  function_name    = "${local.prefix}-reserve-inventory"
+  filename         = data.archive_file.reserve_inventory.output_path
+  source_code_hash = data.archive_file.reserve_inventory.output_base64sha256
+  handler          = "reserve_inventory.handler"
+  runtime          = "python3.12"
+  role             = aws_iam_role.lambda.arn
 }
 
 resource "aws_lambda_function" "process_payment" {
   # TODO
+  function_name    = "${local.prefix}-process-payment"
+  filename         = data.archive_file.process_payment.output_path
+  source_code_hash = data.archive_file.process_payment.output_base64sha256
+  handler          = "process_payment.handler"
+  runtime          = "python3.12"
+  role             = aws_iam_role.lambda.arn
 }
 
 resource "aws_lambda_function" "notify_customer" {
   # TODO: 記得加 environment { variables = { SNS_TOPIC_ARN = ... } }
+  function_name    = "${local.prefix}-notify-customer"
+  filename         = data.archive_file.notify_customer.output_path
+  source_code_hash = data.archive_file.notify_customer.output_base64sha256
+  handler          = "notify_customer.handler"
+  runtime          = "python3.12"
+  role             = aws_iam_role.lambda.arn
+
+  environment {
+    variables = {
+      SNS_TOPIC_ARN = aws_sns_topic.orders.arn
+    }
+  }
 }
 
 
@@ -143,10 +212,16 @@ resource "aws_lambda_function" "notify_customer" {
 
 resource "aws_sns_topic" "orders" {
   # TODO
+  name = "${local.prefix}-orders"
+  tags = local.common_tags
 }
 
 resource "aws_sns_topic_subscription" "email" {
   # TODO: conditional with count
+  count     = var.notification_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.orders.arn
+  protocol  = "email"
+  endpoint  = var.notification_email
 }
 
 
@@ -184,10 +259,51 @@ resource "aws_sns_topic_subscription" "email" {
 
 resource "aws_iam_role" "sfn" {
   # TODO
+  name = "${local.prefix}-sfn-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "states.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy" "sfn" {
   # TODO
+  name = "${local.prefix}-sfn-policy"
+  role = aws_iam_role.sfn.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "lambda:InvokeFunction"
+        Effect = "Allow"
+        Resource = [
+          aws_lambda_function.validate_order.arn,
+          aws_lambda_function.reserve_inventory.arn,
+          aws_lambda_function.process_payment.arn,
+          aws_lambda_function.notify_customer.arn,
+        ]
+      },
+      {
+        Action = [
+          "logs:CreateLogDelivery", "logs:GetLogDelivery",
+          "logs:UpdateLogDelivery", "logs:DeleteLogDelivery",
+          "logs:ListLogDeliveries", "logs:PutLogEvents",
+          "logs:PutResourcePolicy", "logs:DescribeLogGroups",
+          "logs:DescribeResourcePolicies"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 
@@ -285,8 +401,91 @@ resource "aws_iam_role_policy" "sfn" {
 
 resource "aws_cloudwatch_log_group" "sfn" {
   # TODO
+  name              = "/aws/states/${local.prefix}-order-workflow"
+  retention_in_days = 7
 }
 
 resource "aws_sfn_state_machine" "order_workflow" {
   # TODO
+  name     = "${local.prefix}-order-workflow"
+  role_arn = aws_iam_role.sfn.arn
+  definition = jsonencode({
+    Comment = "Order processing workflow"
+    StartAt = "ValidateOrder"
+    States = {
+      ValidateOrder = {
+        Type     = "Task"
+        Resource = aws_lambda_function.validate_order.arn
+        Retry = [
+          {
+            ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException"]
+            IntervalSeconds = 2
+            MaxAttempts     = 2
+            BackoffRate     = 1.5
+          }
+        ]
+        Catch = [
+          {
+            ErrorEquals = ["InvalidOrderError"]
+            Next        = "OrderFailed"
+            ResultPath  = "$.error"
+          }
+        ]
+        Next = "ReserveInventory"
+      }
+      ReserveInventory = {
+        Type     = "Task"
+        Resource = aws_lambda_function.reserve_inventory.arn
+        Catch = [
+          {
+            ErrorEquals = ["InsufficientInventoryError"]
+            Next        = "OrderFailed"
+            ResultPath  = "$.error"
+          }
+        ]
+        Next = "ProcessPayment"
+      }
+      ProcessPayment = {
+        Type     = "Task"
+        Resource = aws_lambda_function.process_payment.arn
+        Retry = [
+          {
+            ErrorEquals     = ["PaymentRetryableError"]
+            IntervalSeconds = 5
+            MaxAttempts     = 3
+            BackoffRate     = 2.0
+          }
+        ]
+        Catch = [
+          {
+            ErrorEquals = ["PaymentFailedError"]
+            Next        = "OrderFailed"
+            ResultPath  = "$.error"
+          }
+        ]
+        Next = "NotifyCustomer"
+      }
+      NotifyCustomer = {
+        Type     = "Task"
+        Resource = aws_lambda_function.notify_customer.arn
+        Next     = "OrderComplete"
+      }
+      OrderComplete = {
+        Type = "Succeed"
+      }
+      OrderFailed = {
+        Type  = "Fail"
+        Error = "OrderProcessingFailed"
+      }
+    }
+  })
+  type = "STANDARD"
+
+  logging_configuration {
+    level                  = "ERROR"
+    include_execution_data = false
+    log_destination        = "${aws_cloudwatch_log_group.sfn.arn}:*"
+  }
+
+  tags = local.common_tags
 }
