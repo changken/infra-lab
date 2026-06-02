@@ -1,0 +1,21 @@
+# VPC Configuration
+vpc_cidr = "192.168.0.0/16"
+
+# Public Subnets
+public_subnet_a_cidr = "192.168.1.0/24"
+public_subnet_b_cidr = "192.168.3.0/24"
+
+# Private Subnets
+private_subnet_a_cidr = "192.168.2.0/24"
+private_subnet_b_cidr = "192.168.4.0/24"
+
+# Availability Zones
+availability_zone_a = "ap-northeast-1a"
+availability_zone_b = "ap-northeast-1c"
+
+# VPC Options
+enable_dns_hostnames = true
+enable_dns_support   = true
+
+# Security / Access Control
+personal_pc_cidr = "100.0.0.1/32"
