@@ -11,13 +11,15 @@ flowchart TB
     user[使用者 / Terraform Root Module] --> eks_module[terraform/modules/aws-eks]
 
     eks_module --> cluster_role[EKS Cluster IAM Role]
-    eks_module --> cluster_sg[EKS Cluster Additional Security Group]
+    eks_module --> cluster_sg[EKS Primary Cluster Security Group<br/>由 EKS 自動建立與管理]
+    eks_module --> legacy_sg[Legacy Additional Security Group<br/>僅保留作遷移，不再綁定]
     eks_module --> eks_cluster[EKS Cluster / Control Plane]
 
     vpc[既有 VPC] --> eks_cluster
     subnets[既有 Subnets / 至少兩個 AZ] --> eks_cluster
     cluster_role --> eks_cluster
-    cluster_sg --> eks_cluster
+    eks_cluster --> cluster_sg
+    legacy_sg -.-> migration_note[避免舊 SG 尚有 ENI 依賴時被直接刪除]
 
     eks_cluster --> mode{compute_mode}
     mode -->|ec2| node_group[EKS Managed Node Group]
@@ -55,6 +57,7 @@ flowchart LR
 ### EC2 模式重點
 
 - 會建立 `aws_eks_node_group.main`。
+- EC2 nodes 預設使用 `subnet_ids`；若設定 `node_subnet_ids`，則改用 `node_subnet_ids`，方便把 cluster subnets 與 node subnets 分開。
 - 會建立 `aws_iam_role.node`，trust principal 是 `ec2.amazonaws.com`。
 - 會綁定 `AmazonEKSWorkerNodePolicy`、`AmazonEKS_CNI_Policy`、`AmazonEC2ContainerRegistryReadOnly`。
 - 適合學習 Worker Node、Node Group scaling、DaemonSet 與節點層級觀察。
@@ -146,4 +149,4 @@ flowchart TD
 1. 先閱讀 [`README.md`](../README.md) 了解輸入變數與基本使用方式。
 2. 再閱讀本文件的「模組整體架構」。
 3. 依你要練習的模式閱讀「EC2 Managed Node Group 模式」或「EKS Fargate Profile 模式」。
-4. 執行 `terraform plan` 前，確認 `public_access_cidrs` 已限制為自己的固定 IP。
+4. 執行 `terraform plan` 前，確認 endpoint access 設定符合你的網路環境；若關閉 private endpoint，請確保 worker nodes 也在 `public_access_cidrs` 允許範圍內。
