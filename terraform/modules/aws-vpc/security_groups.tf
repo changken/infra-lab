@@ -42,6 +42,15 @@ resource "aws_security_group" "k3s_nodes" {
     cidr_blocks = [var.vpc_cidr, var.personal_pc_cidr]
   }
 
+  # myvue3app
+  ingress {
+    description = "myvue3app"
+    from_port   = 30080
+    to_port     = 30080
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr, var.personal_pc_cidr]
+  }
+
   # Allow all outbound traffic
   egress {
     from_port   = 0
