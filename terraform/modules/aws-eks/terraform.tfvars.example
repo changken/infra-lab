@@ -1,0 +1,47 @@
+region      = "us-east-1"
+project     = "eks-template"
+environment = "dev"
+
+kubernetes_version = "1.31"
+
+# 請替換成你自己的 VPC ID 與至少兩個不同 AZ 的 subnet IDs。
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
+subnet_ids = [
+  "subnet-xxxxxxxxxxxxxxxxx",
+  "subnet-yyyyyyyyyyyyyyyyy",
+]
+
+# 建議練習時先限制成自己的固定 IP，例如 ["203.0.113.10/32"]。
+public_access_cidrs = ["0.0.0.0/0"]
+
+# 可選："ec2" 建立 Managed Node Group；"fargate" 建立 EKS Fargate Profile。
+compute_mode = "ec2"
+
+# EC2 Managed Node Group 設定（compute_mode = "ec2" 時使用）
+node_instance_types = ["t3.medium"]
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 3
+node_disk_size      = 20
+node_capacity_type  = "ON_DEMAND"
+
+# EKS Fargate Profile 設定（compute_mode = "fargate" 時使用）
+# 建議使用 private subnets；若留空會使用 subnet_ids。
+fargate_subnet_ids    = []
+fargate_profile_name  = "default"
+fargate_selectors = [
+  {
+    namespace = "default"
+    labels    = {}
+  },
+  {
+    namespace = "kube-system"
+    labels = {
+      k8s-app = "kube-dns"
+    }
+  }
+]
+
+tags = {
+  Purpose = "eks-learning"
+}
