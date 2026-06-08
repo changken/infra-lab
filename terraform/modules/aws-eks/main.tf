@@ -93,7 +93,7 @@ resource "aws_iam_role_policy_attachment" "fargate_pod_execution" {
 
 resource "aws_security_group" "cluster" {
   name        = "${local.name_prefix}-eks-cluster-sg"
-  description = "Additional security group for EKS cluster"
+  description = "Legacy additional security group for EKS cluster migration"
   vpc_id      = data.aws_vpc.selected.id
 
   egress {
@@ -104,8 +104,13 @@ resource "aws_security_group" "cluster" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-eks-cluster-sg"
+    Name    = "${local.name_prefix}-eks-cluster-sg"
+    Purpose = "legacy-eks-cluster-sg-migration"
   })
 }
 
@@ -116,7 +121,6 @@ resource "aws_eks_cluster" "main" {
 
   vpc_config {
     subnet_ids              = var.subnet_ids
-    security_group_ids      = [aws_security_group.cluster.id]
     endpoint_public_access  = var.endpoint_public_access
     endpoint_private_access = var.endpoint_private_access
     public_access_cidrs     = var.public_access_cidrs
@@ -133,7 +137,7 @@ resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${local.name_prefix}-nodes"
   node_role_arn   = aws_iam_role.node[0].arn
-  subnet_ids      = var.subnet_ids
+  subnet_ids      = local.node_subnet_ids
   instance_types  = var.node_instance_types
   capacity_type   = var.node_capacity_type
   disk_size       = var.node_disk_size

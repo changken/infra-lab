@@ -46,7 +46,7 @@ variable "endpoint_public_access" {
 variable "endpoint_private_access" {
   description = "Enable private access to the Kubernetes API server endpoint"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "public_access_cidrs" {
@@ -70,6 +70,17 @@ variable "node_instance_types" {
   description = "EC2 instance types for EKS managed node group"
   type        = list(string)
   default     = ["t3.medium"]
+}
+
+variable "node_subnet_ids" {
+  description = "Subnet IDs for the EC2 managed node group. If empty, subnet_ids will be used. For low-cost labs without NAT Gateway, use public subnets."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.node_subnet_ids) == 0 || length(var.node_subnet_ids) >= 2
+    error_message = "node_subnet_ids must be empty or contain at least two subnet IDs in different Availability Zones."
+  }
 }
 
 variable "node_desired_size" {

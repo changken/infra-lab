@@ -5,19 +5,25 @@ environment = "dev"
 kubernetes_version = "1.31"
 
 # 請替換成你自己的 VPC ID 與至少兩個不同 AZ 的 subnet IDs。
+# compute_mode = "ec2" 且 VPC 沒有 NAT Gateway 時，建議先使用 public subnets。
 vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
 subnet_ids = [
   "subnet-xxxxxxxxxxxxxxxxx",
   "subnet-yyyyyyyyyyyyyyyyy",
 ]
 
-# 建議練習時先限制成自己的固定 IP，例如 ["203.0.113.10/32"]。
+# 學習環境預設同時開啟 public/private endpoint，讓 EC2 worker nodes 較容易連到 EKS API。
+# 若 endpoint_private_access = false，public_access_cidrs 不要只放家用 IP，否則 worker node 可能無法 join cluster。
+endpoint_public_access  = true
+endpoint_private_access = true
 public_access_cidrs = ["0.0.0.0/0"]
 
 # 可選："ec2" 建立 Managed Node Group；"fargate" 建立 EKS Fargate Profile。
 compute_mode = "ec2"
 
 # EC2 Managed Node Group 設定（compute_mode = "ec2" 時使用）
+# 若留空會使用 subnet_ids；沒有 NAT Gateway 時，建議明確放 public subnet IDs。
+node_subnet_ids     = []
 node_instance_types = ["t3.medium"]
 node_desired_size   = 2
 node_min_size       = 1

@@ -19,8 +19,8 @@ output "cluster_version" {
 }
 
 output "cluster_security_group_id" {
-  description = "Additional security group ID attached to the EKS cluster"
-  value       = aws_security_group.cluster.id
+  description = "Primary security group ID created and managed by EKS for the cluster"
+  value       = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
 }
 
 output "cluster_role_arn" {
@@ -41,6 +41,11 @@ output "node_group_name" {
 output "node_role_arn" {
   description = "IAM role ARN used by EKS worker nodes"
   value       = local.is_ec2 ? aws_iam_role.node[0].arn : null
+}
+
+output "node_subnet_ids" {
+  description = "Subnet IDs used by the EKS managed node group"
+  value       = local.is_ec2 ? local.node_subnet_ids : null
 }
 
 output "fargate_profile_name" {
