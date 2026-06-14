@@ -33,6 +33,16 @@ output "compute_mode" {
   value       = var.compute_mode
 }
 
+output "authentication_mode" {
+  description = "EKS cluster authentication mode"
+  value       = aws_eks_cluster.main.access_config[0].authentication_mode
+}
+
+output "console_viewer_principal_arns" {
+  description = "IAM principal ARNs with EKS access entries for AWS Console Kubernetes resource visibility"
+  value       = sort(tolist(local.console_viewer_principal_arns))
+}
+
 output "node_group_name" {
   description = "EKS managed node group name"
   value       = local.is_ec2 ? aws_eks_node_group.main[0].node_group_name : null

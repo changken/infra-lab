@@ -9,6 +9,8 @@ data "aws_vpc" "selected" {
   id = var.vpc_id
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_role" "cluster" {
   name = "${local.name_prefix}-eks-cluster-role"
 
@@ -104,9 +106,9 @@ resource "aws_security_group" "cluster" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  lifecycle {
+  /*lifecycle {
     prevent_destroy = true
-  }
+  }*/
 
   tags = merge(local.common_tags, {
     Name    = "${local.name_prefix}-eks-cluster-sg"
@@ -119,6 +121,10 @@ resource "aws_eks_cluster" "main" {
   version  = var.kubernetes_version
   role_arn = aws_iam_role.cluster.arn
 
+  access_config {
+    authentication_mode = var.authentication_mode
+  }
+
   vpc_config {
     subnet_ids              = var.subnet_ids
     endpoint_public_access  = var.endpoint_public_access
@@ -129,6 +135,28 @@ resource "aws_eks_cluster" "main" {
   depends_on = [aws_iam_role_policy_attachment.cluster]
 
   tags = local.common_tags
+}
+
+resource "aws_eks_access_entry" "console_viewer" {
+  for_each = local.console_viewer_principal_arns
+
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = each.value
+  type          = "STANDARD"
+
+  tags = local.common_tags
+}
+
+resource "aws_eks_access_policy_association" "console_viewer" {
+  for_each = aws_eks_access_entry.console_viewer
+
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = each.value.principal_arn
+  policy_arn    = var.console_viewer_access_policy_arn
+
+  access_scope {
+    type = "cluster"
+  }
 }
 
 resource "aws_eks_node_group" "main" {

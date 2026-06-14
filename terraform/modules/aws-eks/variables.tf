@@ -55,6 +55,35 @@ variable "public_access_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "authentication_mode" {
+  description = "EKS cluster authentication mode. API_AND_CONFIG_MAP enables EKS access entries while keeping aws-auth compatibility."
+  type        = string
+  default     = "API_AND_CONFIG_MAP"
+
+  validation {
+    condition     = contains(["CONFIG_MAP", "API_AND_CONFIG_MAP", "API"], var.authentication_mode)
+    error_message = "authentication_mode must be CONFIG_MAP, API_AND_CONFIG_MAP, or API."
+  }
+}
+
+variable "enable_current_caller_console_access" {
+  description = "Create an EKS access entry for the IAM principal running Terraform so it can view Kubernetes resources in the AWS Console."
+  type        = bool
+  default     = false
+}
+
+variable "console_viewer_principal_arns" {
+  description = "Additional IAM user or role ARNs allowed to view Kubernetes resources such as pods, nodes, and services in the AWS Console."
+  type        = list(string)
+  default     = []
+}
+
+variable "console_viewer_access_policy_arn" {
+  description = "EKS access policy associated with console viewer access entries. AmazonEKSViewPolicy is read-only."
+  type        = string
+  default     = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+}
+
 variable "compute_mode" {
   description = "EKS compute mode: ec2 creates a managed node group, fargate creates an EKS Fargate profile"
   type        = string

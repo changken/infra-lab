@@ -54,9 +54,12 @@ resource "random_id" "suffix" {
 
 resource "aws_ecr_repository" "app" {
   # TODO
+  name                 = "${var.project}-app"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
-    # TODO
+    scan_on_push = true
   }
 }
 
@@ -86,33 +89,57 @@ resource "aws_ecr_repository" "app" {
 
 resource "aws_vpc" "main" {
   # TODO
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  tags                 = local.common_tags
 }
 
 resource "aws_subnet" "public_a" {
   # TODO
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  vpc_id                  = aws_vpc.main.id
+  tags                    = local.common_tags
 }
 
 resource "aws_subnet" "public_b" {
   # TODO
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  cidr_block              = "10.0.2.0/24"
+  map_public_ip_on_launch = true
+  vpc_id                  = aws_vpc.main.id
+  tags                    = local.common_tags
 }
 
 resource "aws_internet_gateway" "main" {
   # TODO
+  vpc_id = aws_vpc.main.id
+  tags   = local.common_tags
 }
 
 resource "aws_route_table" "public" {
   # TODO
+  vpc_id = aws_vpc.main.id
+
   route {
     # TODO
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
   }
+  tags = local.common_tags
 }
 
 resource "aws_route_table_association" "public_a" {
   # TODO
+  route_table_id = aws_route_table.public.id
+  subnet_id      = aws_subnet.public_a.id
 }
 
 resource "aws_route_table_association" "public_b" {
   # TODO
+  route_table_id = aws_route_table.public.id
+  subnet_id      = aws_subnet.public_b.id
 }
 
 
@@ -143,29 +170,53 @@ resource "aws_route_table_association" "public_b" {
 
 resource "aws_security_group" "alb" {
   # TODO
+  vpc_id = aws_vpc.main.id
+  name   = "${var.project}-alb-sg"
 
   ingress {
     # TODO port 80
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     # TODO port 8080
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
     # TODO
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 resource "aws_security_group" "ecs" {
   # TODO
+  vpc_id = aws_vpc.main.id
+  name   = "${var.project}-ecs-sg"
 
   ingress {
     # TODO
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   egress {
     # TODO
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -212,33 +263,69 @@ resource "aws_security_group" "ecs" {
 
 resource "aws_lb" "main" {
   # TODO
+  name               = "${var.project}-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+  tags               = local.common_tags
 }
 
 resource "aws_lb_target_group" "blue" {
   # TODO
+  name        = "${var.project}-blue-tg"
+  port        = 80
+  protocol    = "HTTP"
+  target_type = "ip"
+  vpc_id      = aws_vpc.main.id
+
   health_check {
     # TODO
+    path                = "/"
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    interval            = 30
   }
 }
 
 resource "aws_lb_target_group" "green" {
   # TODO
+  name        = "${var.project}-green-tg"
+  port        = 80
+  protocol    = "HTTP"
+  target_type = "ip"
+  vpc_id      = aws_vpc.main.id
   health_check {
     # TODO
+    path                = "/"
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    interval            = 30
   }
 }
 
 resource "aws_lb_listener" "prod" {
   # TODO production listener (port 80)
+  load_balancer_arn = aws_lb.main.arn
+  port              = "80"
+  protocol          = "HTTP"
+
   default_action {
     # TODO
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.blue.arn
   }
 }
 
 resource "aws_lb_listener" "test" {
   # TODO test listener (port 8080)
+  load_balancer_arn = aws_lb.main.arn
+  port              = "8080"
+  protocol          = "HTTP"
   default_action {
     # TODO
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.green.arn
   }
 }
 
@@ -324,22 +411,68 @@ resource "aws_lb_listener" "test" {
 
 resource "aws_ecs_cluster" "main" {
   # TODO
+  name = "${var.project}-cluster"
+  tags = local.common_tags
 }
 
 resource "aws_iam_role" "ecs_execution" {
   # TODO
+  name = "${var.project}-ecs-execution-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_execution" {
   # TODO
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  role       = aws_iam_role.ecs_execution.name
 }
 
 resource "aws_cloudwatch_log_group" "ecs" {
   # TODO
+  name              = "/ecs/${var.project}-web"
+  retention_in_days = 7
+  tags              = local.common_tags
 }
 
 resource "aws_ecs_task_definition" "web" {
   # TODO
+  family                   = "${var.project}-web"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
+  tags                     = local.common_tags
+  container_definitions = jsonencode([
+    {
+      name      = "web"
+      image     = "nginx:alpine"
+      essential = true
+      portMappings = [{
+        containerPort = 80
+        protocol      = "tcp"
+      }]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/${var.project}-web"
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
 
   lifecycle {
     ignore_changes = [container_definitions]
@@ -348,17 +481,29 @@ resource "aws_ecs_task_definition" "web" {
 
 resource "aws_ecs_service" "web" {
   # TODO
-
+  name            = "${var.project}-web"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.web.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+  tags            = local.common_tags
   deployment_controller {
     # TODO
+    type = "CODE_DEPLOY"
   }
 
   network_configuration {
     # TODO
+    security_groups  = [aws_security_group.ecs.id]
+    subnets          = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+    assign_public_ip = true
   }
 
   load_balancer {
     # TODO
+    target_group_arn = aws_lb_target_group.blue.arn
+    container_name   = "web"
+    container_port   = 80
   }
 
   lifecycle {
@@ -428,53 +573,87 @@ resource "aws_ecs_service" "web" {
 
 resource "aws_iam_role" "codedeploy" {
   # TODO
+  name = "${var.project}-codedeploy-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "codedeploy.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "codedeploy_ecs" {
   # TODO
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS"
+  role       = aws_iam_role.codedeploy.name
 }
 
 resource "aws_codedeploy_app" "main" {
   # TODO
+  name             = "${var.project}-app"
+  compute_platform = "ECS"
+  tags             = local.common_tags
 }
 
 resource "aws_codedeploy_deployment_group" "main" {
   # TODO
+  app_name               = aws_codedeploy_app.main.name
+  deployment_group_name  = "${var.project}-dg"
+  service_role_arn       = aws_iam_role.codedeploy.arn
+  deployment_config_name = "CodeDeployDefault.ECSAllAtOnce"
 
   auto_rollback_configuration {
     # TODO
+    enabled = true
+    events  = ["DEPLOYMENT_FAILURE"]
   }
 
   blue_green_deployment_config {
     deployment_ready_option {
       # TODO
+      action_on_timeout = "CONTINUE_DEPLOYMENT"
     }
     terminate_blue_instances_on_deployment_success {
       # TODO
+      action                           = "TERMINATE"
+      termination_wait_time_in_minutes = 5
     }
   }
 
   deployment_style {
     # TODO
+    deployment_type = "BLUE_GREEN"
   }
 
   ecs_service {
     # TODO
+    cluster_name = aws_ecs_cluster.main.name
+    service_name = aws_ecs_service.web.name
   }
 
   load_balancer_info {
     target_group_pair_info {
       prod_traffic_route {
         # TODO
+        listener_arns = [aws_lb_listener.prod.arn]
       }
       test_traffic_route {
         # TODO
+        listener_arns = [aws_lb_listener.test.arn]
       }
       target_group {
         # TODO blue
+        name = aws_lb_target_group.blue.name
       }
       target_group {
         # TODO green
+        name = aws_lb_target_group.green.name
       }
     }
   }
@@ -546,14 +725,65 @@ resource "aws_codedeploy_deployment_group" "main" {
 
 resource "aws_iam_openid_connect_provider" "github" {
   # TODO
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1c58a3a8518e8759bf075b76b750d4f2df264fcd"
+  ]
 }
 
 resource "aws_iam_role" "github_actions" {
   # TODO
+  name = "${var.project}-github-actions-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.github.arn
+        }
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          }
+          StringLike = {
+            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*"
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy" "github_actions" {
   # TODO
+  name = "${var.project}-github-actions-policy"
+  role = aws_iam_role.github_actions.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:PutImage",
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:GetBucketLocation"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 
@@ -649,34 +879,83 @@ resource "aws_iam_role_policy" "github_actions" {
 
 resource "aws_s3_bucket" "artifacts" {
   # TODO
+  bucket = "${var.project}-pipeline-artifacts-${random_id.suffix.hex}"
+  tags   = local.common_tags
 }
 
 resource "aws_s3_bucket_versioning" "artifacts" {
   # TODO
+  bucket = aws_s3_bucket.artifacts.id
   versioning_configuration {
     # TODO
+    status = "Enabled"
   }
 }
 
 resource "aws_iam_role" "codepipeline" {
   # TODO
+  name = "${var.project}-codepipeline-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "codepipeline.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy" "codepipeline" {
   # TODO
+  name = "${var.project}-codepipeline-policy"
+  role = aws_iam_role.codepipeline.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 resource "aws_codepipeline" "main" {
   # TODO
+  name     = "${var.project}-pipeline"
+  role_arn = aws_iam_role.codepipeline.arn
+  tags     = local.common_tags
 
   artifact_store {
     # TODO
+    location = aws_s3_bucket.artifacts.bucket
+    type     = "S3"
   }
 
   stage {
     name = "Source"
     action {
       # TODO
+      name             = "GitHubSource"
+      category         = "Source"
+      owner            = "AWS"
+      provider         = "S3"
+      version          = "1"
+      output_artifacts = ["source_output"]
+      configuration = {
+        S3Bucket             = aws_s3_bucket.artifacts.bucket
+        S3ObjectKey          = "deployment.zip"
+        PollForSourceChanges = "true"
+      }
     }
   }
 
@@ -684,6 +963,16 @@ resource "aws_codepipeline" "main" {
     name = "Deploy"
     action {
       # TODO
+      name            = "BlueGreenDeploy"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "CodeDeploy"
+      version         = "1"
+      input_artifacts = ["source_output"]
+      configuration = {
+        ApplicationName     = aws_codedeploy_app.main.name
+        DeploymentGroupName = aws_codedeploy_deployment_group.main.deployment_group_name
+      }
     }
   }
 }

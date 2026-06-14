@@ -13,6 +13,7 @@ flowchart TB
     eks_module --> cluster_role[EKS Cluster IAM Role]
     eks_module --> cluster_sg[EKS Primary Cluster Security Group<br/>由 EKS 自動建立與管理]
     eks_module --> legacy_sg[Legacy Additional Security Group<br/>僅保留作遷移，不再綁定]
+    eks_module --> access_entry[EKS Access Entries<br/>AWS Console 查看 Kubernetes Resources]
     eks_module --> eks_cluster[EKS Cluster / Control Plane]
 
     vpc[既有 VPC] --> eks_cluster
@@ -20,6 +21,8 @@ flowchart TB
     cluster_role --> eks_cluster
     eks_cluster --> cluster_sg
     legacy_sg -.-> migration_note[避免舊 SG 尚有 ENI 依賴時被直接刪除]
+    access_entry --> eks_cluster
+    console_user[AWS Console IAM User / Role] --> access_entry
 
     eks_cluster --> mode{compute_mode}
     mode -->|ec2| node_group[EKS Managed Node Group]

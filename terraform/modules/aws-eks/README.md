@@ -27,6 +27,7 @@
 - EKS Cluster IAM Role
 - EKS 自動建立與管理的 primary cluster Security Group
 - 舊版模組曾建立的額外 cluster Security Group（保留於 state 中作為遷移用，不再綁定到 EKS cluster）
+- EKS Access Entries / Access Policy Associations，讓指定 IAM principal 可在 AWS Console 查看 Kubernetes resources
 - `compute_mode = "ec2"` 時：EKS Managed Node Group、EKS Node IAM Role、必要 node policy attachments
 - `compute_mode = "fargate"` 時：EKS Fargate Profile、Fargate Pod Execution Role、必要 Fargate policy attachment
 
@@ -80,6 +81,12 @@ module "eks" {
   endpoint_private_access = true
   public_access_cidrs     = ["0.0.0.0/0"]
 
+  # AWS Console 要看到 Pods / Nodes / Services，登入 Console 的 IAM principal 需要 EKS Access Entry。
+  # 若 Terraform 是由 Terraform Cloud / CI role 執行，請把實際登入 AWS Console 的 IAM user 或 role ARN 放進此清單。
+  console_viewer_principal_arns = [
+    "arn:aws:iam::123456789012:user/your-console-user",
+  ]
+
   compute_mode = "ec2"
 
   # 若 cluster subnets 需要同時包含 private subnets，可用 node_subnet_ids 明確指定 EC2 nodes 使用 public subnets。
@@ -115,6 +122,10 @@ module "eks" {
   endpoint_private_access = true
   public_access_cidrs     = ["0.0.0.0/0"]
 
+  console_viewer_principal_arns = [
+    "arn:aws:iam::123456789012:user/your-console-user",
+  ]
+
   compute_mode = "fargate"
 
   fargate_selectors = [
@@ -145,6 +156,10 @@ module "eks" {
 | `endpoint_public_access` | `bool` | `true` | 是否開啟公開 Kubernetes API endpoint |
 | `endpoint_private_access` | `bool` | `true` | 是否開啟私有 Kubernetes API endpoint |
 | `public_access_cidrs` | `list(string)` | `["0.0.0.0/0"]` | 允許連線到公開 API endpoint 的 CIDR |
+| `authentication_mode` | `string` | `API_AND_CONFIG_MAP` | EKS authentication mode；需為 `API_AND_CONFIG_MAP` 或 `API` 才能使用 EKS Access Entries |
+| `enable_current_caller_console_access` | `bool` | `false` | 是否替執行 Terraform 的目前 IAM principal 建立 Console read-only access entry |
+| `console_viewer_principal_arns` | `list(string)` | `[]` | 額外允許在 AWS Console 查看 Kubernetes resources 的 IAM user / role ARNs |
+| `console_viewer_access_policy_arn` | `string` | `AmazonEKSViewPolicy` | 套用到 console viewer access entries 的 EKS access policy ARN |
 | `compute_mode` | `string` | `ec2` | `ec2` 或 `fargate` |
 | `node_subnet_ids` | `list(string)` | `[]` | EC2 Managed Node Group 使用的 subnet IDs；空值時沿用 `subnet_ids` |
 | `node_instance_types` | `list(string)` | `["t3.medium"]` | Worker node instance types |
@@ -169,6 +184,8 @@ module "eks" {
 | `cluster_security_group_id` | EKS 自動建立並管理的 primary cluster Security Group ID |
 | `cluster_role_arn` | EKS control plane IAM role ARN |
 | `compute_mode` | 啟用的 compute mode |
+| `authentication_mode` | EKS cluster authentication mode |
+| `console_viewer_principal_arns` | 已建立 EKS Access Entry、可在 AWS Console 查看 Kubernetes resources 的 IAM principal ARNs |
 | `node_group_name` | EKS Managed Node Group name；Fargate 模式為 `null` |
 | `node_role_arn` | Worker node IAM role ARN；Fargate 模式為 `null` |
 | `node_subnet_ids` | EKS Managed Node Group 實際使用的 subnet IDs；Fargate 模式為 `null` |
@@ -186,6 +203,40 @@ module "eks" {
 6. 若 `endpoint_private_access = false`，請不要只將 `public_access_cidrs` 設為家用 IP，否則 EC2 worker nodes 可能無法連到 public EKS API endpoint 而加入失敗。
 7. 預設 `endpoint_public_access = true`、`endpoint_private_access = true`、`public_access_cidrs = ["0.0.0.0/0"]` 是為了降低學習環境踩雷機率；正式環境應改成 private endpoint、NAT/VPC Endpoints、logging、encryption、addons、IRSA 與更嚴格的 Security Group 設計。
 8. 若你曾套用舊版模組，state 內可能已有 `aws_security_group.cluster`。新版會先保留這個 SG 但不再綁定到 EKS cluster，避免 AWS 尚未釋放 ENI 依賴時出現 `DependencyViolation`。
+9. AWS Console 的 EKS 頁面要顯示 `Pods`、`Nodes`、`Services`，登入 Console 的 IAM principal 必須有 EKS Access Entry 與 Kubernetes read permission；本模組預設使用 read-only 的 `AmazonEKSViewPolicy`。
+
+## AWS Console 查看 Pods / Nodes / Services
+
+EKS cluster 建好後，如果 AWS Console 顯示：
+
+```text
+Your current user or role does not have access to Kubernetes objects on this EKS cluster
+```
+
+代表目前登入 AWS Console 的 IAM user / role 沒有 Kubernetes resources 的存取權。請在 root module 設定：
+
+```hcl
+module "eks" {
+  source = "../../modules/aws-eks"
+
+  # 其他設定略...
+
+  authentication_mode = "API_AND_CONFIG_MAP"
+
+  console_viewer_principal_arns = [
+    "arn:aws:iam::123456789012:user/your-console-user",
+    # 或 "arn:aws:iam::123456789012:role/your-console-role"
+  ]
+}
+```
+
+套用後到 AWS Console：`EKS` → 選擇 cluster → `Resources`，即可查看 `Pods`、`Nodes`、`Services` 等 Kubernetes resources。
+
+注意：
+
+1. `enable_current_caller_console_access = true` 只會授權「執行 Terraform 的 IAM principal」。如果你用 Terraform Cloud / CI 套用，這通常不是你登入 AWS Console 的 user / role；若該 principal 已經有 access entry，重複建立也可能導致 apply 失敗。
+2. 若要讓自己的 AWS Console 帳號看到 resources，請把該 IAM user / role ARN 加到 `console_viewer_principal_arns`。
+3. 預設 `console_viewer_access_policy_arn` 是 `AmazonEKSViewPolicy`，只提供查看權限；若要管理 Kubernetes resources，請另外評估 `AmazonEKSAdminPolicy` 或 `AmazonEKSClusterAdminPolicy` 的風險。
 
 ## Troubleshooting：NodeCreationFailure
 

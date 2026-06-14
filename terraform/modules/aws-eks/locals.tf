@@ -6,6 +6,11 @@ locals {
   node_subnet_ids    = length(var.node_subnet_ids) > 0 ? var.node_subnet_ids : var.subnet_ids
   fargate_subnet_ids = length(var.fargate_subnet_ids) > 0 ? var.fargate_subnet_ids : var.subnet_ids
 
+  console_viewer_principal_arns = toset(distinct(compact(concat(
+    var.enable_current_caller_console_access ? [data.aws_caller_identity.current.arn] : [],
+    var.console_viewer_principal_arns,
+  ))))
+
   common_tags = merge(
     {
       Project     = var.project
