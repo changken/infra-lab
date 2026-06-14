@@ -7,7 +7,8 @@
 #   - SQL 檔由 Host 端預下載並掛載至 /opt/oracle-sql/oe
 #   - Step 1: sysdba via local IPC 建立帳號（不走 TCP，不受 Listener 影響）
 #   - Step 2: 改以 oe 身份執行 DDL，資料表才會建在 oe Schema 下
-#   - OE 依賴 HR.countries，所以授予必要的 GRANT
+#   - 修正：使用新版 repo (oracle-samples) 的檔名
+#     oe_cre.sql, oe_p_cus.sql, oe_p_itm.sql, oe_p_inv.sql, oe_p_d.sql, oe_idx.sql
 
 SQL_DIR=/opt/oracle-sql/oe
 
@@ -22,7 +23,7 @@ END;
 CREATE USER oe IDENTIFIED BY "$ORACLE_PASSWORD" QUOTA UNLIMITED ON USERS;
 GRANT CONNECT, RESOURCE, CREATE VIEW, CREATE SEQUENCE, CREATE SYNONYM TO oe;
 ALTER USER oe DEFAULT TABLESPACE USERS;
--- OE schema 的 COUNTRIES 表資料來自 HR，需要讀取 HR.COUNTRIES
+-- OE schema 依賴 HR.COUNTRIES
 GRANT SELECT ON hr.countries TO oe;
 EXIT;
 SQL
@@ -30,10 +31,13 @@ SQL
 echo ">>> [OE] Step 2: Creating schema objects as oe user..."
 sqlplus -s oe/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<SQL
 WHENEVER SQLERROR CONTINUE
-@$SQL_DIR/oe_create.sql
-@$SQL_DIR/oe_popul.sql
-@$SQL_DIR/oe_cre_idx.sql
-@$SQL_DIR/oe_code.sql
+@$SQL_DIR/oe_cre.sql
+@$SQL_DIR/oe_p_cus.sql
+@$SQL_DIR/oe_p_itm.sql
+@$SQL_DIR/oe_p_inv.sql
+@$SQL_DIR/oe_p_d.sql
+@$SQL_DIR/oe_idx.sql
+@$SQL_DIR/oe_comnt.sql
 EXIT;
 SQL
 

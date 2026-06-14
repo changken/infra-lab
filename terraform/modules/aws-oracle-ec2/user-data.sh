@@ -8,6 +8,9 @@
 # 2. init 腳本不再有 set -e，改用明確錯誤處理
 # 3. 帳號建立後，改以 hr/oe 身份執行 DDL，確保資料表
 #    建在正確的 Schema 下（而非 SYS 底下）
+# 4. 修正 GitHub repo 路徑與檔名（oracle -> oracle-samples）：
+#    HR: hr_popul.sql -> hr_populate.sql
+#    OE: 使用新版 oe_cre.sql / oe_idx.sql 等
 # =============================================================
 set -euxo pipefail
 
@@ -17,18 +20,19 @@ systemctl enable --now docker
 sleep 5
 
 # ── 在 Host 端預先下載 Oracle sample schema SQL 檔 ───────────
-# 這樣 Container 的 init script 就不需要對外 curl
+# repo 已從 oracle/db-sample-schemas 改為 oracle-samples/db-sample-schemas
+# 且 hr_popul.sql 已改名為 hr_populate.sql
 HR_DIR=/opt/oracle-sql/hr
 OE_DIR=/opt/oracle-sql/oe
 mkdir -p "$HR_DIR" "$OE_DIR"
 
-HR_BASE="https://raw.githubusercontent.com/oracle/db-sample-schemas/main/human_resources"
-for f in hr_create.sql hr_popul.sql hr_cre_idx.sql hr_code.sql hr_comnt.sql; do
+HR_BASE="https://raw.githubusercontent.com/oracle-samples/db-sample-schemas/main/human_resources"
+for f in hr_create.sql hr_populate.sql hr_cre_idx.sql hr_code.sql hr_comnt.sql; do
   curl -fsSL "$HR_BASE/$f" -o "$HR_DIR/$f"
 done
 
-OE_BASE="https://raw.githubusercontent.com/oracle/db-sample-schemas/main/order_entry"
-for f in oe_create.sql oe_popul.sql oe_cre_idx.sql oe_code.sql oe_comnt.sql; do
+OE_BASE="https://raw.githubusercontent.com/oracle-samples/db-sample-schemas/main/order_entry"
+for f in oe_cre.sql oe_p_cus.sql oe_p_itm.sql oe_p_inv.sql oe_p_d.sql oe_idx.sql oe_comnt.sql; do
   curl -fsSL "$OE_BASE/$f" -o "$OE_DIR/$f" || echo "Warning: $f not found, skipping"
 done
 
@@ -36,24 +40,24 @@ done
 mkdir -p /opt/oracle-init
 
 # ── 01_hr_schema.sh ──────────────────────────────────────────
-# SQL 檔已掛載於 /opt/oracle-sql/hr（Host 端預先下載）
 cat > /opt/oracle-init/01_hr_schema.sh << 'INITSCRIPT'
 #!/bin/bash
-# 注意：不使用 set -e，避免任一步驟失敗時中斷後續所有步驟
 SQL_DIR=/opt/oracle-sql/hr
 
 echo ">>> [HR] Waiting for XEPDB1 to be ready..."
 for i in $(seq 1 20); do
-  sqlplus -s / as sysdba <<'CHECK' 2>/dev/null | grep -q "OPEN" && break
-  SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-  SELECT open_mode FROM v\$pdbs WHERE name='XEPDB1';
-  EXIT;
+  result=$(sqlplus -s / as sysdba <<'CHECK' 2>/dev/null
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+SELECT open_mode FROM v$pdbs WHERE name='XEPDB1';
+EXIT;
 CHECK
+)
+  echo "$result" | grep -q "READ WRITE" && break
   echo "    attempt $i: XEPDB1 not ready yet, waiting 15s..."
   sleep 15
 done
 
-echo ">>> [HR] Step 1: Creating hr user (as sysdba via local IPC)..."
+echo ">>> [HR] Step 1: Creating hr user (sysdba / local IPC)..."
 sqlplus -s / as sysdba <<SQL
 ALTER SESSION SET CONTAINER = XEPDB1;
 BEGIN
@@ -71,7 +75,7 @@ echo ">>> [HR] Step 2: Creating schema objects as hr user..."
 sqlplus -s hr/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<SQL
 WHENEVER SQLERROR CONTINUE
 @$SQL_DIR/hr_create.sql
-@$SQL_DIR/hr_popul.sql
+@$SQL_DIR/hr_populate.sql
 @$SQL_DIR/hr_cre_idx.sql
 @$SQL_DIR/hr_code.sql
 @$SQL_DIR/hr_comnt.sql
@@ -91,7 +95,7 @@ cat > /opt/oracle-init/02_oe_schema.sh << 'INITSCRIPT'
 #!/bin/bash
 SQL_DIR=/opt/oracle-sql/oe
 
-echo ">>> [OE] Step 1: Creating oe user (as sysdba via local IPC)..."
+echo ">>> [OE] Step 1: Creating oe user (sysdba / local IPC)..."
 sqlplus -s / as sysdba <<SQL
 ALTER SESSION SET CONTAINER = XEPDB1;
 BEGIN
@@ -103,17 +107,19 @@ CREATE USER oe IDENTIFIED BY "$ORACLE_PASSWORD" QUOTA UNLIMITED ON USERS;
 GRANT CONNECT, RESOURCE, CREATE VIEW, CREATE SEQUENCE, CREATE SYNONYM TO oe;
 ALTER USER oe DEFAULT TABLESPACE USERS;
 GRANT SELECT ON hr.countries TO oe;
-GRANT SELECT ON hr.customers TO oe WITH GRANT OPTION;
 EXIT;
 SQL
 
 echo ">>> [OE] Step 2: Creating schema objects as oe user..."
 sqlplus -s oe/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<SQL
 WHENEVER SQLERROR CONTINUE
-@$SQL_DIR/oe_create.sql
-@$SQL_DIR/oe_popul.sql
-@$SQL_DIR/oe_cre_idx.sql
-@$SQL_DIR/oe_code.sql
+@$SQL_DIR/oe_cre.sql
+@$SQL_DIR/oe_p_cus.sql
+@$SQL_DIR/oe_p_itm.sql
+@$SQL_DIR/oe_p_inv.sql
+@$SQL_DIR/oe_p_d.sql
+@$SQL_DIR/oe_idx.sql
+@$SQL_DIR/oe_comnt.sql
 EXIT;
 SQL
 
@@ -128,7 +134,6 @@ INITSCRIPT
 chmod +x /opt/oracle-init/01_hr_schema.sh /opt/oracle-init/02_oe_schema.sh
 
 # ── 啟動 Oracle XE Container ─────────────────────────────────
-# 將 SQL 檔目錄一同 mount 進 container，供 init 腳本使用
 docker run -d \
   --name oracle-xe \
   --restart unless-stopped \

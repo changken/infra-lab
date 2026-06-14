@@ -7,16 +7,19 @@
 #   - SQL 檔由 Host 端預下載並掛載至 /opt/oracle-sql/hr
 #   - Step 1: sysdba via local IPC 建立帳號（不走 TCP，不受 Listener 影響）
 #   - Step 2: 改以 hr 身份執行 DDL，資料表才會建在 hr Schema 下
+#   - 修正：hr_popul.sql -> hr_populate.sql（新版 repo 檔名）
 
 SQL_DIR=/opt/oracle-sql/hr
 
 echo ">>> [HR] Waiting for XEPDB1 to be ready..."
 for i in $(seq 1 20); do
-  sqlplus -s / as sysdba <<'CHECK' 2>/dev/null | grep -q "OPEN" && break
-  SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-  SELECT open_mode FROM v\$pdbs WHERE name='XEPDB1';
-  EXIT;
+  result=$(sqlplus -s / as sysdba <<'CHECK' 2>/dev/null
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+SELECT open_mode FROM v$pdbs WHERE name='XEPDB1';
+EXIT;
 CHECK
+)
+  echo "$result" | grep -q "READ WRITE" && break
   echo "    attempt $i: XEPDB1 not ready yet, waiting 15s..."
   sleep 15
 done
@@ -39,7 +42,7 @@ echo ">>> [HR] Step 2: Creating schema objects as hr user..."
 sqlplus -s hr/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<SQL
 WHENEVER SQLERROR CONTINUE
 @$SQL_DIR/hr_create.sql
-@$SQL_DIR/hr_popul.sql
+@$SQL_DIR/hr_populate.sql
 @$SQL_DIR/hr_cre_idx.sql
 @$SQL_DIR/hr_code.sql
 @$SQL_DIR/hr_comnt.sql
