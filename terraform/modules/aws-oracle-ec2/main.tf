@@ -119,6 +119,8 @@ resource "aws_instance" "oracle" {
   user_data = templatefile("${path.module}/user-data.sh", {
     oracle_password = var.oracle_password
   })
+  # user-data 有變更時自動重建 EC2（確保 init scripts 重新執行）
+  user_data_replace_on_change = true
 
   tags = merge(local.common_tags, { Name = "${var.project}" })
 }
