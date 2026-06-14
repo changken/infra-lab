@@ -1,0 +1,23 @@
+region      = "us-east-1"
+project     = "oracle-rds-lab"
+environment = "dev"
+
+# RDS Instance
+instance_class    = "db.t3.medium"   # 最省；換 db.m5.large 給更大負載
+allocated_storage = 20
+engine_version    = "19"
+license_model     = "license-included"
+
+# 資料庫 — Oracle SID 大寫，長度 ≤ 8
+db_name     = "ORCL"
+db_username = "admin"
+db_password = "YourStrongP@ssword1"   # 至少 8 字元，含大小寫+數字+特殊符號
+
+# 網路 — 限制來源 IP
+allowed_cidr        = "118.150.143.171/32"
+publicly_accessible = true
+
+# Lab 保護
+skip_final_snapshot = true
+deletion_protection = false
+multi_az            = false

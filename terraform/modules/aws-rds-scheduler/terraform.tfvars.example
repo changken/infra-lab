@@ -1,0 +1,9 @@
+region      = "us-east-1"
+project     = "rds-scheduler"
+environment = "dev"
+
+alert_email = "your@email.com"
+
+# 台灣時間 UTC+8（預設值，通常不需要改）
+# stop_cron  = "cron(0 16 * * ? *)"   # 00:00 CST
+# start_cron = "cron(0 0 * * ? *)"    # 08:00 CST

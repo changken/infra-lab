@@ -1,0 +1,8 @@
+region      = "us-east-1"
+project     = "billing-guard"
+environment = "dev"
+
+budget_limit_amount = 38          # 月消費超過 $38 USD 觸發告警 + 清理 RDS
+alert_email         = "your@email.com"
+
+dry_run = false   # 改 true 可測試流程（只 log，不真的刪除）
