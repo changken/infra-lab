@@ -1,0 +1,7 @@
+region        = "us-east-1"
+project       = "oracle-ec2-lab"
+environment   = "dev"
+
+instance_type   = "t3.medium"       # 4GB RAM，Oracle XE 最低建議
+oracle_password = "LabPass1234#"    # SYS/SYSTEM/PDBADMIN 共用密碼
+allowed_cidr    = "118.150.143.171/32"
