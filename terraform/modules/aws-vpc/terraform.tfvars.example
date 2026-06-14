@@ -1,17 +1,14 @@
 # VPC Configuration
 vpc_cidr = "192.168.0.0/16"
 
-# Public Subnets
-public_subnet_a_cidr = "192.168.1.0/24"
-public_subnet_b_cidr = "192.168.3.0/24"
-
-# Private Subnets
-private_subnet_a_cidr = "192.168.2.0/24"
-private_subnet_b_cidr = "192.168.4.0/24"
-
 # Availability Zones
-availability_zone_a = "ap-northeast-1a"
-availability_zone_b = "ap-northeast-1c"
+availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d"]
+
+# Public Subnets (one CIDR per AZ, same order as availability_zones)
+public_subnet_cidrs = ["192.168.1.0/24", "192.168.3.0/24", "192.168.5.0/24", "192.168.7.0/24"]
+
+# Private Subnets (one CIDR per AZ, same order as availability_zones)
+private_subnet_cidrs = ["192.168.2.0/24", "192.168.4.0/24", "192.168.6.0/24", "192.168.8.0/24"]
 
 # VPC Options
 enable_dns_hostnames = true

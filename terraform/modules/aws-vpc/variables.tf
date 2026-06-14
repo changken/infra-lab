@@ -4,40 +4,22 @@ variable "vpc_cidr" {
   default     = "192.168.0.0/16"
 }
 
-variable "public_subnet_a_cidr" {
-  description = "Public subnet A CIDR"
-  type        = string
-  default     = "192.168.1.0/24"
+variable "public_subnet_cidrs" {
+  description = "List of CIDR blocks for public subnets (one per AZ)"
+  type        = list(string)
+  default     = ["192.168.1.0/24", "192.168.3.0/24"]
 }
 
-variable "public_subnet_b_cidr" {
-  description = "Public subnet B CIDR"
-  type        = string
-  default     = "192.168.3.0/24"
+variable "private_subnet_cidrs" {
+  description = "List of CIDR blocks for private subnets (one per AZ)"
+  type        = list(string)
+  default     = ["192.168.2.0/24", "192.168.4.0/24"]
 }
 
-variable "private_subnet_a_cidr" {
-  description = "Private subnet A CIDR"
-  type        = string
-  default     = "192.168.2.0/24"
-}
-
-variable "private_subnet_b_cidr" {
-  description = "Private subnet B CIDR"
-  type        = string
-  default     = "192.168.4.0/24"
-}
-
-variable "availability_zone_a" {
-  description = "Availability zone A"
-  type        = string
-  default     = "ap-northeast-1a"
-}
-
-variable "availability_zone_b" {
-  description = "Availability zone B"
-  type        = string
-  default     = "ap-northeast-1c"
+variable "availability_zones" {
+  description = "List of AZs to deploy subnets into (must match length of public/private subnet CIDRs)"
+  type        = list(string)
+  default     = ["ap-northeast-1a", "ap-northeast-1c"]
 }
 
 variable "enable_dns_hostnames" {

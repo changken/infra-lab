@@ -25,48 +25,37 @@ resource "aws_internet_gateway" "main" {
 #--------------------------------------------------------------
 # Public Subnets
 #--------------------------------------------------------------
-resource "aws_subnet" "public_a" {
+resource "aws_subnet" "public" {
+  for_each = {
+    for idx, cidr in var.public_subnet_cidrs :
+    var.availability_zones[idx] => cidr
+  }
+
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_a_cidr
-  availability_zone       = var.availability_zone_a
+  cidr_block              = each.value
+  availability_zone       = each.key
   map_public_ip_on_launch = true
 
   tags = merge(local.common_tags, {
-    Name = "public-subnet-a"
-  })
-}
-
-resource "aws_subnet" "public_b" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_b_cidr
-  availability_zone       = var.availability_zone_b
-  map_public_ip_on_launch = true
-
-  tags = merge(local.common_tags, {
-    Name = "public-subnet-b"
+    Name = "public-subnet-${each.key}"
   })
 }
 
 #--------------------------------------------------------------
 # Private Subnets
 #--------------------------------------------------------------
-resource "aws_subnet" "private_a" {
+resource "aws_subnet" "private" {
+  for_each = {
+    for idx, cidr in var.private_subnet_cidrs :
+    var.availability_zones[idx] => cidr
+  }
+
   vpc_id            = aws_vpc.main.id
-  cidr_block        = var.private_subnet_a_cidr
-  availability_zone = var.availability_zone_a
+  cidr_block        = each.value
+  availability_zone = each.key
 
   tags = merge(local.common_tags, {
-    Name = "private-subnet-a"
-  })
-}
-
-resource "aws_subnet" "private_b" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.private_subnet_b_cidr
-  availability_zone = var.availability_zone_b
-
-  tags = merge(local.common_tags, {
-    Name = "private-subnet-b"
+    Name = "private-subnet-${each.key}"
   })
 }
 
@@ -89,13 +78,10 @@ resource "aws_route_table" "public" {
 #--------------------------------------------------------------
 # Public Route Table Associations
 #--------------------------------------------------------------
-resource "aws_route_table_association" "public_a" {
-  subnet_id      = aws_subnet.public_a.id
-  route_table_id = aws_route_table.public.id
-}
+resource "aws_route_table_association" "public" {
+  for_each = aws_subnet.public
 
-resource "aws_route_table_association" "public_b" {
-  subnet_id      = aws_subnet.public_b.id
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -113,12 +99,9 @@ resource "aws_route_table" "private" {
 #--------------------------------------------------------------
 # Private Route Table Associations
 #--------------------------------------------------------------
-resource "aws_route_table_association" "private_a" {
-  subnet_id      = aws_subnet.private_a.id
-  route_table_id = aws_route_table.private.id
-}
+resource "aws_route_table_association" "private" {
+  for_each = aws_subnet.private
 
-resource "aws_route_table_association" "private_b" {
-  subnet_id      = aws_subnet.private_b.id
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.private.id
 }

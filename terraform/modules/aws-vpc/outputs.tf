@@ -13,24 +13,14 @@ output "internet_gateway_id" {
   value       = aws_internet_gateway.main.id
 }
 
-output "public_subnet_a_id" {
-  description = "The ID of public subnet A"
-  value       = aws_subnet.public_a.id
+output "public_subnet_ids" {
+  description = "Map of AZ => public subnet ID"
+  value       = { for az, subnet in aws_subnet.public : az => subnet.id }
 }
 
-output "public_subnet_b_id" {
-  description = "The ID of public subnet B"
-  value       = aws_subnet.public_b.id
-}
-
-output "private_subnet_a_id" {
-  description = "The ID of private subnet A"
-  value       = aws_subnet.private_a.id
-}
-
-output "private_subnet_b_id" {
-  description = "The ID of private subnet B"
-  value       = aws_subnet.private_b.id
+output "private_subnet_ids" {
+  description = "Map of AZ => private subnet ID"
+  value       = { for az, subnet in aws_subnet.private : az => subnet.id }
 }
 
 output "public_route_table_id" {
