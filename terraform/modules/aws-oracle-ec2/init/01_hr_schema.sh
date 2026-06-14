@@ -2,12 +2,10 @@
 # 安裝 Oracle HR (Human Resources) sample schema
 # 執行身份：container 內，Oracle 初始化完成後自動執行
 #
-# 修復：
-#   - 移除 set -e，避免任一步驟失敗中斷所有後續動作
-#   - SQL 檔由 Host 端預下載並掛載至 /opt/oracle-sql/hr
-#   - Step 1: sysdba via local IPC 建立帳號（不走 TCP，不受 Listener 影響）
-#   - Step 2: 改以 hr 身份執行 DDL，資料表才會建在 hr Schema 下
-#   - 修正：hr_popul.sql -> hr_populate.sql（新版 repo 檔名）
+# oracle-samples/db-sample-schemas 新版只有 3 個核心 SQL：
+#   hr_create.sql   — 建表 + index（已合併）
+#   hr_populate.sql — 資料填入（舊名 hr_popul.sql）
+#   hr_code.sql     — PL/SQL procedures
 
 SQL_DIR=/opt/oracle-sql/hr
 
@@ -43,9 +41,7 @@ sqlplus -s hr/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<SQL
 WHENEVER SQLERROR CONTINUE
 @$SQL_DIR/hr_create.sql
 @$SQL_DIR/hr_populate.sql
-@$SQL_DIR/hr_cre_idx.sql
 @$SQL_DIR/hr_code.sql
-@$SQL_DIR/hr_comnt.sql
 EXIT;
 SQL
 

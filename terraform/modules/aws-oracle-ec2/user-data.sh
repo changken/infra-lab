@@ -8,9 +8,12 @@
 # 2. init 腳本不再有 set -e，改用明確錯誤處理
 # 3. 帳號建立後，改以 hr/oe 身份執行 DDL，確保資料表
 #    建在正確的 Schema 下（而非 SYS 底下）
-# 4. 修正 GitHub repo 路徑與檔名（oracle -> oracle-samples）：
-#    HR: hr_popul.sql -> hr_populate.sql
-#    OE: 使用新版 oe_cre.sql / oe_idx.sql 等
+# 4. 修正 GitHub repo 路徑與檔名（oracle-samples 新版）：
+#    HR: hr_create.sql, hr_populate.sql, hr_code.sql（共3個）
+#        ※ hr_cre_idx.sql / hr_comnt.sql 已合併進 hr_create.sql
+#    OE: oe_cre.sql, oe_p_cus.sql, oe_p_itm.sql,
+#        oe_p_inv.sql, oe_p_d.sql, oe_idx.sql, oe_comnt.sql
+# 5. curl 加 || true，單一檔案 404 不再中止整個腳本
 # =============================================================
 set -euxo pipefail
 
@@ -20,20 +23,21 @@ systemctl enable --now docker
 sleep 5
 
 # ── 在 Host 端預先下載 Oracle sample schema SQL 檔 ───────────
-# repo 已從 oracle/db-sample-schemas 改為 oracle-samples/db-sample-schemas
-# 且 hr_popul.sql 已改名為 hr_populate.sql
 HR_DIR=/opt/oracle-sql/hr
 OE_DIR=/opt/oracle-sql/oe
 mkdir -p "$HR_DIR" "$OE_DIR"
 
+# oracle-samples/db-sample-schemas 新版 HR 只有 3 個核心 SQL
+# （hr_cre_idx.sql / hr_comnt.sql 已整合進 hr_create.sql）
 HR_BASE="https://raw.githubusercontent.com/oracle-samples/db-sample-schemas/main/human_resources"
-for f in hr_create.sql hr_populate.sql hr_cre_idx.sql hr_code.sql hr_comnt.sql; do
-  curl -fsSL "$HR_BASE/$f" -o "$HR_DIR/$f"
+for f in hr_create.sql hr_populate.sql hr_code.sql; do
+  curl -fsSL "$HR_BASE/$f" -o "$HR_DIR/$f" || echo "Warning: HR $f not found, skipping"
 done
 
+# OE 使用新版檔名
 OE_BASE="https://raw.githubusercontent.com/oracle-samples/db-sample-schemas/main/order_entry"
 for f in oe_cre.sql oe_p_cus.sql oe_p_itm.sql oe_p_inv.sql oe_p_d.sql oe_idx.sql oe_comnt.sql; do
-  curl -fsSL "$OE_BASE/$f" -o "$OE_DIR/$f" || echo "Warning: $f not found, skipping"
+  curl -fsSL "$OE_BASE/$f" -o "$OE_DIR/$f" || echo "Warning: OE $f not found, skipping"
 done
 
 # ── 建立 init 腳本目錄 ───────────────────────────────────────
@@ -76,9 +80,7 @@ sqlplus -s hr/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<SQL
 WHENEVER SQLERROR CONTINUE
 @$SQL_DIR/hr_create.sql
 @$SQL_DIR/hr_populate.sql
-@$SQL_DIR/hr_cre_idx.sql
 @$SQL_DIR/hr_code.sql
-@$SQL_DIR/hr_comnt.sql
 EXIT;
 SQL
 
