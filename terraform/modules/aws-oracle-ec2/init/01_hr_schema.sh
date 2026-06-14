@@ -1,38 +1,54 @@
 #!/bin/bash
-# 從 oracle/db-sample-schemas GitHub 下載並安裝 HR schema
+# 安裝 Oracle HR (Human Resources) sample schema
 # 執行身份：container 內，Oracle 初始化完成後自動執行
+#
+# 修復：
+#   - 移除 set -e，避免任一步驟失敗中斷所有後續動作
+#   - SQL 檔由 Host 端預下載並掛載至 /opt/oracle-sql/hr
+#   - Step 1: sysdba via local IPC 建立帳號（不走 TCP，不受 Listener 影響）
+#   - Step 2: 改以 hr 身份執行 DDL，資料表才會建在 hr Schema 下
 
-set -e
+SQL_DIR=/opt/oracle-sql/hr
 
-TMPDIR=/tmp/sample-schemas
-mkdir -p "$TMPDIR"
-cd "$TMPDIR"
+echo ">>> [HR] Waiting for XEPDB1 to be ready..."
+for i in $(seq 1 20); do
+  sqlplus -s / as sysdba <<'CHECK' 2>/dev/null | grep -q "OPEN" && break
+  SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+  SELECT open_mode FROM v\$pdbs WHERE name='XEPDB1';
+  EXIT;
+CHECK
+  echo "    attempt $i: XEPDB1 not ready yet, waiting 15s..."
+  sleep 15
+done
 
-echo ">>> Downloading Oracle HR sample schema..."
-curl -sL "https://raw.githubusercontent.com/oracle/db-sample-schemas/main/human_resources/hr_install.sql" -o hr_install.sql
-curl -sL "https://raw.githubusercontent.com/oracle/db-sample-schemas/main/human_resources/hr_create.sql" -o hr_create.sql
-curl -sL "https://raw.githubusercontent.com/oracle/db-sample-schemas/main/human_resources/hr_popul.sql"  -o hr_popul.sql
-curl -sL "https://raw.githubusercontent.com/oracle/db-sample-schemas/main/human_resources/hr_cre_idx.sql" -o hr_cre_idx.sql
-curl -sL "https://raw.githubusercontent.com/oracle/db-sample-schemas/main/human_resources/hr_code.sql"   -o hr_code.sql
-curl -sL "https://raw.githubusercontent.com/oracle/db-sample-schemas/main/human_resources/hr_comnt.sql"  -o hr_comnt.sql
-
-echo ">>> Installing HR schema into XEPDB1..."
-sqlplus -s sys/"$ORACLE_PASSWORD"@//localhost/XEPDB1 as sysdba <<EOF
--- 建立 HR user
+echo ">>> [HR] Step 1: Creating hr user (sysdba / local IPC)..."
+sqlplus -s / as sysdba <<SQL
+ALTER SESSION SET CONTAINER = XEPDB1;
+BEGIN
+  EXECUTE IMMEDIATE 'DROP USER hr CASCADE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
 CREATE USER hr IDENTIFIED BY "$ORACLE_PASSWORD" QUOTA UNLIMITED ON USERS;
-GRANT CONNECT, RESOURCE TO hr;
-GRANT CREATE VIEW TO hr;
-
--- 切換到 HR schema 執行建表/資料
-ALTER SESSION SET CURRENT_SCHEMA = hr;
-@$TMPDIR/hr_create.sql
-@$TMPDIR/hr_popul.sql
-@$TMPDIR/hr_cre_idx.sql
-@$TMPDIR/hr_code.sql
-@$TMPDIR/hr_comnt.sql
-
+GRANT CONNECT, RESOURCE, CREATE VIEW TO hr;
+ALTER USER hr DEFAULT TABLESPACE USERS;
 EXIT;
-EOF
+SQL
 
-echo ">>> HR schema installed. Tables: employees, departments, jobs, locations, countries, regions, job_history"
-rm -rf "$TMPDIR"
+echo ">>> [HR] Step 2: Creating schema objects as hr user..."
+sqlplus -s hr/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<SQL
+WHENEVER SQLERROR CONTINUE
+@$SQL_DIR/hr_create.sql
+@$SQL_DIR/hr_popul.sql
+@$SQL_DIR/hr_cre_idx.sql
+@$SQL_DIR/hr_code.sql
+@$SQL_DIR/hr_comnt.sql
+EXIT;
+SQL
+
+echo ">>> [HR] Done. Verifying tables..."
+sqlplus -s hr/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<'SQL'
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+SELECT table_name FROM user_tables ORDER BY table_name;
+EXIT;
+SQL
