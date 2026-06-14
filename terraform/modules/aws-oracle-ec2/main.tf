@@ -73,6 +73,33 @@ resource "aws_security_group" "oracle_ec2" {
   tags = merge(local.common_tags, { Name = "${var.project}-sg" })
 }
 
+# ── IAM Role for SSM ───────────────────────────────────────
+
+resource "aws_iam_role" "ssm" {
+  name = "${var.project}-ssm-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.ssm.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "ssm" {
+  name = "${var.project}-ssm-profile"
+  role = aws_iam_role.ssm.name
+}
+
 # ── EC2 Instance ───────────────────────────────────────────
 
 resource "aws_instance" "oracle" {
@@ -81,6 +108,7 @@ resource "aws_instance" "oracle" {
   subnet_id                   = data.aws_subnets.default.ids[0]
   vpc_security_group_ids      = [aws_security_group.oracle_ec2.id]
   associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.ssm.name
 
   # gp3 30GB：21-full image ~10GB + Oracle data + sample schemas
   root_block_device {
