@@ -40,6 +40,14 @@ for f in oe_cre.sql oe_p_cus.sql oe_p_itm.sql oe_p_inv.sql oe_p_d.sql oe_idx.sql
   curl -fsSL "$OE_BASE/$f" -o "$OE_DIR/$f" || echo "Warning: OE $f not found, skipping"
 done
 
+# SH (Sales History)
+SH_DIR=/opt/oracle-sql/sh
+mkdir -p "$SH_DIR"
+SH_BASE="https://raw.githubusercontent.com/oracle-samples/db-sample-schemas/main/sales_history"
+for f in sh_create.sql sh_populate.sql; do
+  curl -fsSL "$SH_BASE/$f" -o "$SH_DIR/$f" || echo "Warning: SH $f not found, skipping"
+done
+
 # ── 建立 init 腳本目錄 ───────────────────────────────────────
 mkdir -p /opt/oracle-init
 
@@ -133,7 +141,42 @@ EXIT;
 SQL
 INITSCRIPT
 
-chmod +x /opt/oracle-init/01_hr_schema.sh /opt/oracle-init/02_oe_schema.sh
+# ── 03_sh_schema.sh ──────────────────────────────────────────
+cat > /opt/oracle-init/03_sh_schema.sh << 'INITSCRIPT'
+#!/bin/bash
+SQL_DIR=/opt/oracle-sql/sh
+
+echo ">>> [SH] Step 1: Creating sh user (sysdba / local IPC)..."
+sqlplus -s / as sysdba <<SQL
+ALTER SESSION SET CONTAINER = XEPDB1;
+BEGIN
+  EXECUTE IMMEDIATE 'DROP USER sh CASCADE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+CREATE USER sh IDENTIFIED BY "$ORACLE_PASSWORD" QUOTA UNLIMITED ON USERS;
+GRANT CONNECT, RESOURCE, CREATE VIEW, CREATE SEQUENCE, CREATE SYNONYM TO sh;
+ALTER USER sh DEFAULT TABLESPACE USERS;
+EXIT;
+SQL
+
+echo ">>> [SH] Step 2: Creating schema objects as sh user..."
+sqlplus -s sh/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<SQL
+WHENEVER SQLERROR CONTINUE
+@$SQL_DIR/sh_create.sql
+@$SQL_DIR/sh_populate.sql
+EXIT;
+SQL
+
+echo ">>> [SH] Done. Verifying tables..."
+sqlplus -s sh/"$ORACLE_PASSWORD"@//localhost/XEPDB1 <<'SQL'
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+SELECT table_name FROM user_tables ORDER BY table_name;
+EXIT;
+SQL
+INITSCRIPT
+
+chmod +x /opt/oracle-init/01_hr_schema.sh /opt/oracle-init/02_oe_schema.sh /opt/oracle-init/03_sh_schema.sh
 
 # ── 啟動 Oracle XE Container ─────────────────────────────────
 docker run -d \
@@ -142,7 +185,6 @@ docker run -d \
   -p 1521:1521 \
   -p 5500:5500 \
   -e ORACLE_PASSWORD="${oracle_password}" \
-  -e ORACLE_DATABASE=XEPDB1 \
   -v oracle-data:/opt/oracle/oradata \
   -v /opt/oracle-init:/container-entrypoint-initdb.d \
   -v /opt/oracle-sql:/opt/oracle-sql:ro \
