@@ -54,6 +54,25 @@ resource "aws_iam_role_policy" "guard_rds" {
         Resource = "*"
       },
       {
+        Sid    = "EC2Stop"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:StopInstances",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ELBManage"
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:DescribeLoadBalancers",
+          "elasticloadbalancing:DescribeListeners",
+          "elasticloadbalancing:DeleteListener",
+        ]
+        Resource = "*"
+      },
+      {
         Sid    = "CloudWatchLogs"
         Effect = "Allow"
         Action = [
