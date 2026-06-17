@@ -11,11 +11,11 @@ data "aws_subnets" "default" {
 }
 
 resource "aws_security_group" "win2025" {
-  name_prefix = "win2025-"
+  name_prefix = "${var.name_prefix}-"
   vpc_id      = data.aws_vpc.default.id
 
-  # RDP - 建議鎖 IP，別開 0.0.0.0/0
   ingress {
+    description = "RDP from my IP only"
     from_port   = 3389
     to_port     = 3389
     protocol    = "tcp"
@@ -29,5 +29,9 @@ resource "aws_security_group" "win2025" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "win2025-sg" }
+  tags = merge(local.common_tags, { Name = "${var.name_prefix}-sg" })
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }

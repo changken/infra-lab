@@ -1,12 +1,13 @@
 # ---------- IAM ----------
 resource "aws_iam_instance_profile" "ssm" {
-  name = "ssm-cw-profile"
-  role = aws_iam_role.ssm.name
+  name_prefix = "${var.name_prefix}-ssm-"
+  role        = aws_iam_role.ssm.name
 }
 
 resource "aws_iam_role" "ssm" {
-  name               = "ssm-cw-role"
+  name_prefix        = "${var.name_prefix}-ssm-"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+  tags               = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "ssm" {

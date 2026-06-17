@@ -1,4 +1,13 @@
 # terraform.tfvars.example — 複製為 terraform.tfvars 後填入實際值
+
 region         = "us-east-1"
-my_ip          = "1.2.3.4/32"   # 改成你的公網 IP
-spot_max_price = null            # 可選，例如 "0.10"
+name_prefix    = "win2025"
+environment    = "dev"
+my_ip          = "1.2.3.4/32"    # 改成你的公網 IP
+instance_type  = "m5a.xlarge"
+market_type    = "spot"           # "spot" 或 "on-demand"
+spot_max_price = null             # 可選，例如 "0.10"（僅 market_type = "spot" 時有效）
+root_volume_size = 50
+
+# 可選：提供自己的 SSH public key 避免私鑰存入 tfstate
+# public_key_content = "ssh-rsa AAAA..."

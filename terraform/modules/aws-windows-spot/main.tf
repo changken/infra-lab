@@ -11,19 +11,35 @@ data "aws_ssm_parameter" "win2025_ami" {
 # ---------- Instance ----------
 resource "aws_instance" "win2025" {
   ami                         = data.aws_ssm_parameter.win2025_ami.value
-  instance_type               = "m5a.xlarge"
+  instance_type               = var.instance_type
   iam_instance_profile        = aws_iam_instance_profile.ssm.name
   subnet_id                   = data.aws_subnets.default.ids[0]
   vpc_security_group_ids      = [aws_security_group.win2025.id]
   key_name                    = aws_key_pair.win2025.key_name
   associate_public_ip_address = true
+  user_data_replace_on_change = true
 
-  instance_market_options {
-    market_type = "spot"
-    spot_options {
-      max_price                      = var.spot_max_price
-      spot_instance_type             = "one-time"
-      instance_interruption_behavior = "terminate"
+  root_block_device {
+    volume_type           = "gp3"
+    volume_size           = var.root_volume_size
+    delete_on_termination = true
+  }
+
+  # market_type = "spot"：使用 Spot 定價，成本較低
+  #   - persistent：價格回落後 AWS 自動重啟 instance
+  #   - stop：價格超過 max_price 時進入 stopped 狀態，EBS 資料保留
+  #   - max_price：null 表示接受 on-demand 價格上限
+  #   ⚠️ 手動 terminate 後需至 AWS Console 取消 Spot Request
+  # market_type = "on-demand"：固定價格，不會被中斷
+  dynamic "instance_market_options" {
+    for_each = var.market_type == "spot" ? [1] : []
+    content {
+      market_type = "spot"
+      spot_options {
+        max_price                      = var.spot_max_price
+        spot_instance_type             = "persistent"
+        instance_interruption_behavior = "stop"
+      }
     }
   }
 
@@ -40,5 +56,5 @@ resource "aws_instance" "win2025" {
     </powershell>
   EOF
 
-  tags = { Name = "WinServer2025-Spot-Test" }
+  tags = merge(local.common_tags, { Name = "${var.name_prefix}-spot" })
 }

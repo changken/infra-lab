@@ -1,16 +1,22 @@
 # ---------- Outputs ----------
 output "instance_id" {
-  value = aws_instance.win2025.id
+  description = "EC2 Spot instance ID"
+  value       = aws_instance.win2025.id
 }
 
 output "public_ip" {
-  value = aws_instance.win2025.public_ip
+  description = "Public IP address of the instance"
+  value       = aws_instance.win2025.public_ip
 }
 
 output "rdp_password_command" {
-  value = "aws ec2 get-password-data --instance-id ${aws_instance.win2025.id} --priv-launch-key ${local_file.private_key.filename}"
+  description = "AWS CLI command to retrieve the RDP password"
+  sensitive   = true
+  value       = var.public_key_content == null ? "aws ec2 get-password-data --instance-id ${aws_instance.win2025.id} --priv-launch-key ${path.module}/${var.name_prefix}-key.pem" : "Private key not managed by Terraform — provide it manually."
 }
 
 output "private_key_path" {
-  value = local_file.private_key.filename
+  description = "Path to the auto-generated private key file (only set when public_key_content is null)"
+  sensitive   = true
+  value       = var.public_key_content == null ? "${path.module}/${var.name_prefix}-key.pem" : null
 }
