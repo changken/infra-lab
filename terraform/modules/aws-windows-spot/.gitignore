@@ -14,6 +14,9 @@ override.tf.json
 *.pem
 *.tfvars
 !terraform.tfvars.example
+id_rsa
+id_rsa.pub
+*.pub
 
 # OS
 .DS_Store
