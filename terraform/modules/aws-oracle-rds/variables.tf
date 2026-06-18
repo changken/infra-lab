@@ -17,7 +17,7 @@ variable "environment" {
 variable "instance_class" {
   description = "RDS instance type. db.t3.medium 最省；db.m5.large 給較大工作負載"
   type        = string
-  default     = "db.t3.medium"
+  default     = "db.m5.large"
 }
 
 variable "allocated_storage" {

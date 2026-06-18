@@ -40,6 +40,14 @@ resource "aws_security_group" "oracle_rds" {
     cidr_blocks = [var.allowed_cidr]
   }
 
+  ingress {
+    description = "Oracle SQL*Net from VPC"
+    from_port   = 1521
+    to_port     = 1521
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_vpc.default.cidr_block]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

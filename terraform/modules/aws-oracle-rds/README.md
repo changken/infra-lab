@@ -60,7 +60,7 @@ jdbc:oracle:thin:@//your-rds-endpoint:1521/ORCL
 |---|---|---|
 | `region` | `us-east-1` | AWS Region |
 | `project` | `oracle-rds-lab` | 資源命名前綴 |
-| `instance_class` | `db.t3.medium` | RDS instance 類型 |
+| `instance_class` | `db.m5.large` | RDS instance 類型 |
 | `allocated_storage` | `20` | 儲存空間 (GB) |
 | `engine_version` | `19` | Oracle 19c |
 | `license_model` | `license-included` | SE2 LI，不需自帶授權 |
