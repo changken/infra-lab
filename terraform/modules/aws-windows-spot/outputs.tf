@@ -20,3 +20,8 @@ output "private_key_path" {
   sensitive   = true
   value       = var.public_key_content == null ? "${path.module}/${var.name_prefix}-key.pem" : null
 }
+
+output "security_group_id" {
+  description = "Windows Spot EC2 的 Security Group ID（供 Aurora allowed_security_groups 引用）"
+  value       = aws_security_group.win2025.id
+}

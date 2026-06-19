@@ -1,0 +1,15 @@
+# Terraform state
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform variable files（含密碼，禁止 commit）
+*.tfvars
+!*.tfvars.example
+
+# Terraform working directories
+.terraform/
+
+# OS
+.DS_Store
+Thumbs.db

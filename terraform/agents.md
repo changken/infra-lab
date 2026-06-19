@@ -67,10 +67,18 @@ terraform/
 │   ├── 43-terraform-modules/     ✅ 完成
 │   ├── 44-step-functions/         ✅ 完成
 │   └── 45-kinesis-data-streams/   ✅ 完成
-└── modules/               # 可重用模組（參考用）
-    ├── aws-k3s/           # 輕量 K8s（EKS 替代方案）
-    ├── aws-windows-spot/
-    └── azure-k3s/
+├── modules/               # 可重用模組（供多個 lab/env 共用呼叫）
+│   ├── aws-vpc/               # 通用 VPC + Subnet
+│   ├── aws-aurora-postgresql/ # Aurora Serverless v2 封裝
+│   ├── aws-windows-spot/      # Windows Bastion（Spot 定價）
+│   ├── aws-billing-guard/     # 帳單上限護欄
+│   ├── aws-rds-scheduler/     # RDS 排程開關（省錢）
+│   └── aws-eks/               # EKS Cluster 封裝
+└── envs/                  # 長駐獨立環境（有自己的 tfstate，非 lab 練習用）
+    ├── aws-oracle-ec2/        # Oracle XE on Docker（省費替代 RDS Oracle）
+    ├── aws-oracle-rds/        # Oracle on RDS（正式授權版）
+    ├── aws-k3s/               # K3s on AWS EC2（輕量 Kubernetes）
+    └── azure-k3s/             # K3s 跨雲實驗（AWS + Azure via Tailscale）
 ```
 
 ## 學習路線（共 15+ 週）

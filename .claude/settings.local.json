@@ -1,7 +1,31 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(Test-Path *)",
+      "WebFetch(domain:registry.terraform.io)",
+      "WebFetch(domain:github.com)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "PowerShell(New-Item *)",
+      "Bash(cd /d D:\\\\repo\\\\infra-lab)",
+      "Bash(terraform -chdir=terraform/labs/31-cognito-userpool fmt -check)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(grep *)",
+      "Bash(terraform *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(python3 -m py_compile terraform/labs/33-secrets-manager/src/rotation_handler.py)",
+      "PowerShell(head *)",
+      "mcp__plugin_terraform_terraform__search_providers",
+      "mcp__plugin_terraform_terraform__get_provider_details",
+      "Bash(python3 *)",
+      "Bash(node -e \"console.log\\('KMS 2hr:', \\(1/720*2\\).toFixed\\(4\\)\\); console.log\\('SM 2hr:', \\(0.40/720*2\\).toFixed\\(4\\)\\);\")",
+      "Bash(powershell -Command ' *)",
+      "Bash(awk *)",
+      "Bash(Select-String -Path \"terraform/labs/34-ssm-session-manager/README.md\" -Pattern \"^##\")",
+      "Bash(Select-Object LineNumber, Line)",
+      "Bash(echo \"EXIT:$?\")",
+      "PowerShell(terraform validate *)"
     ]
   }
 }

@@ -71,3 +71,19 @@ variable "public_key_content" {
   description = "SSH public key (OpenSSH format). If null, a key pair is auto-generated (private key stored in tfstate)."
   sensitive   = true
 }
+
+# ── 自訂 VPC 網路（可選）──────────────────────────────────
+# 若不填，模組自動使用 AWS Default VPC（原有行為）
+# 若填入，則使用指定的 VPC/Subnet（與 aws-vpc 模組搭配使用）
+
+variable "vpc_id" {
+  type        = string
+  default     = null
+  description = "自訂 VPC ID。若為 null 則使用 AWS Default VPC。與 aws-vpc 模組搭配時填入 module.vpc.vpc_id"
+}
+
+variable "subnet_id" {
+  type        = string
+  default     = null
+  description = "自訂 Public Subnet ID。若為 null 則從 Default VPC 自動選取。與 aws-vpc 模組搭配時填入 values(module.vpc.public_subnet_ids)[0]"
+}

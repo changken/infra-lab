@@ -13,7 +13,7 @@ resource "aws_instance" "win2025" {
   ami                         = data.aws_ssm_parameter.win2025_ami.value
   instance_type               = var.instance_type
   iam_instance_profile        = aws_iam_instance_profile.ssm.name
-  subnet_id                   = data.aws_subnets.default.ids[0]
+  subnet_id                   = local.resolved_subnet_id
   vpc_security_group_ids      = [aws_security_group.win2025.id]
   key_name                    = aws_key_pair.win2025.key_name
   associate_public_ip_address = true

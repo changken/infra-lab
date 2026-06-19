@@ -1,0 +1,35 @@
+#==============================================================
+# AWS Aurora PostgreSQL Module - terraform.tfvars.example
+#==============================================================
+
+# ── 專案環境 ──
+project     = "aurora-pgsql-lab"
+environment = "dev"
+region      = "us-east-1"
+
+# ── 網路配置 ──
+# 請填寫欲部署資料庫的 VPC ID 及 Subnets (最少需兩個不同可用區 AZ 才能建立 Aurora)
+vpc_id     = "vpc-xxxxxxxxxxxx"
+subnet_ids = ["subnet-xxxxxxxxxxxx", "subnet-yyyyyyyyyyyy"]
+
+# ── 實例規格 ──
+# 推薦使用 db.serverless (Serverless v2) 可自動隨流量伸縮，最低縮至 0.5 ACU 節省開發成本
+instance_class          = "db.serverless"
+serverless_min_capacity = 0.5
+serverless_max_capacity = 2.0
+cluster_size            = 1 # 開發環境使用單節點即可 (1 Writer, 0 Reader)
+
+# ── 資料庫認證 ──
+db_name     = "mydb"
+db_username = "postgres"
+# ⚠️ 密碼必填！請設定一個高強度的密碼。且禁止將本檔案(更名為 terraform.tfvars 後)上傳至 Git。
+db_password = "MyHighlySecurePassword123!"
+
+# ── 連線來源控制 ──
+# 填寫允許連入 PostgreSQL 5432 Port 的 CIDR 區段 (例如跳板機、Bastion、或你本地的 IP)
+allowed_cidr_blocks = ["10.0.0.0/16"]
+
+# ── 備份與刪除保護 ──
+skip_final_snapshot     = true # 刪除叢集時跳過 Final Snapshot (Lab 適用，省去儲存費用)
+deletion_protection     = false # 關閉刪除保護 (Lab 適用，避免 terraform destroy 失敗)
+backup_retention_period = 1 # 備份保留 1 天 (最少 1 天)

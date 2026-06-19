@@ -1,0 +1,31 @@
+#==============================================================
+# Lab 48 - terraform.tfvars.example
+# 複製為 terraform.tfvars 後填入實際值
+# ⚠️ terraform.tfvars 已加入 .gitignore，禁止 commit
+#==============================================================
+
+region      = "us-east-1"
+project     = "aurora-win-lab"
+environment = "dev"
+
+# 你的公網 IP（用於限制 RDP 連入），請執行：curl ifconfig.me
+my_ip = "1.2.3.4/32"
+
+# VPC 網段設定（Lab 預設即可，可不改）
+vpc_cidr             = "10.10.0.0/16"
+public_subnet_cidrs  = ["10.10.1.0/24", "10.10.3.0/24"]
+private_subnet_cidrs = ["10.10.2.0/24", "10.10.4.0/24"]
+availability_zones   = ["us-east-1a", "us-east-1b"]
+
+# Windows Spot 設定
+windows_instance_type = "m5a.xlarge"
+windows_market_type   = "spot"   # "spot" 或 "on-demand"
+
+# Aurora 設定
+aurora_engine_version = "15.4"
+aurora_min_acu        = 0.5
+aurora_max_acu        = 2.0
+
+db_name     = "mydb"
+db_username = "postgres"
+db_password = "YourStrongPassword123!"  # ← 請改成高強度密碼
