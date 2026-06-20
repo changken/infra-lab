@@ -1,0 +1,16 @@
+region      = "us-east-1"
+project     = "pgsql-rds"
+environment = "dev"
+
+# RDS
+instance_class    = "db.t3.micro"
+allocated_storage = 20
+engine_version    = "16"
+
+# 資料庫認證
+db_name     = "labdb"
+db_username = "pgadmin"
+db_password = "YourStrongPassword123!"  # 改成你自己的密碼
+
+# 網路（改成你的 IP）
+allowed_cidr = "0.0.0.0/0"  # ⚠️  改成你的 IP，例如 1.2.3.4/32
