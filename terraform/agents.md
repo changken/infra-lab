@@ -70,7 +70,7 @@ terraform/
 ├── modules/               # 可重用模組（供多個 lab/env 共用呼叫）
 │   ├── aws-vpc/               # 通用 VPC + Subnet
 │   ├── aws-aurora-postgresql/ # Aurora Serverless v2 封裝
-│   ├── aws-windows-spot/      # Windows Bastion（Spot 定價）
+│   ├── aws-windows/           # Windows Bastion（Spot / On-demand）
 │   ├── aws-billing-guard/     # 帳單上限護欄
 │   ├── aws-rds-scheduler/     # RDS 排程開關（省錢）
 │   └── aws-eks/               # EKS Cluster 封裝

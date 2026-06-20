@@ -43,7 +43,3 @@ output "internal_security_group_id" {
   value       = aws_security_group.internal.id
 }
 
-output "k3s_key_pair_name" {
-  description = "The name of the k3s key pair"
-  value       = aws_key_pair.k3s.key_name
-}

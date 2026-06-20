@@ -65,10 +65,16 @@ variable "root_volume_size" {
   }
 }
 
+variable "key_pair_name" {
+  type        = string
+  default     = null
+  description = "已存在的 AWS Key Pair 名稱（優先使用）。例如傳入 module.vpc.key_pair_name 即可複用 VPC 模組建立的金鑰。"
+}
+
 variable "public_key_content" {
   type        = string
   default     = null
-  description = "SSH public key (OpenSSH format). If null, a key pair is auto-generated (private key stored in tfstate)."
+  description = "SSH public key (OpenSSH format). key_pair_name 未填時生效；若同樣為 null 則自動生成（私鑰存入 tfstate，僅建議測試環境）。"
   sensitive   = true
 }
 

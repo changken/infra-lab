@@ -15,7 +15,7 @@ resource "aws_instance" "win2025" {
   iam_instance_profile        = aws_iam_instance_profile.ssm.name
   subnet_id                   = local.resolved_subnet_id
   vpc_security_group_ids      = [aws_security_group.win2025.id]
-  key_name                    = aws_key_pair.win2025.key_name
+  key_name                    = local.resolved_key_name
   associate_public_ip_address = true
   user_data_replace_on_change = true
 

@@ -22,7 +22,7 @@ windows_instance_type = "m5a.xlarge"
 windows_market_type   = "spot"   # "spot" 或 "on-demand"
 
 # Aurora 設定
-aurora_engine_version = "15.4"
+aurora_engine_version = "16.6"
 aurora_min_acu        = 0.5
 aurora_max_acu        = 2.0
 

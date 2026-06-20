@@ -1,6 +1,6 @@
 #==============================================================
 # Lab 48 - Aurora + Windows Bastion 整合範例
-# 架構：aws-vpc + aws-windows-spot + aws-aurora-postgresql
+# 架構：aws-vpc + aws-windows + aws-aurora-postgresql
 #
 # 拓樸：
 #   你的電腦 --RDP--> Windows Spot (Public Subnet)
@@ -25,7 +25,7 @@ module "vpc" {
 # ── 2. Windows Spot (Bastion) ─────────────────────────────
 
 module "windows" {
-  source = "../../modules/aws-windows-spot"
+  source = "../../modules/aws-windows"
 
   region      = var.region
   name_prefix = "${var.project}-bastion"

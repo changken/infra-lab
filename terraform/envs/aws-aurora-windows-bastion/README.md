@@ -30,7 +30,7 @@
 | Module | 用途 |
 |--------|------|
 | `aws-vpc` | 建立自訂 VPC、Public/Private Subnet |
-| `aws-windows-spot` | Windows Bastion，掛到 Public Subnet |
+| `aws-windows` | Windows Bastion，掛到 Public Subnet |
 | `aws-aurora-postgresql` | Aurora Serverless v2，放在 Private Subnet |
 
 ## 快速開始
