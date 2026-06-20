@@ -4,9 +4,10 @@ aws-billing-guard: Lambda handler
 
 流程:
   1. 停止所有 running EC2 instances
-  2. 刪除所有 ALB/NLB 的 Listeners（ELB 本身無法停止，刪 listener 停止流量計費）
-  3. 列出所有 RDS instances（狀態 available）→ snapshot + delete
-  4. 記錄結果
+  2. 列出所有 RDS instances（狀態 available）→ snapshot + delete
+  3. 記錄結果
+
+注意: ELB / ASG 不處理
 """
 
 import boto3
@@ -18,7 +19,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 ec2 = boto3.client("ec2")
-elbv2 = boto3.client("elbv2")
 rds = boto3.client("rds")
 
 
@@ -48,33 +48,6 @@ def stop_ec2_instances(dry_run: bool) -> list:
         for iid in instance_ids:
             logger.info("Stopped EC2: %s", iid)
             results.append({"resource": iid, "type": "ec2", "action": "stopped"})
-
-    return results
-
-
-def delete_elb_listeners(dry_run: bool) -> list:
-    results = []
-    lbs = elbv2.describe_load_balancers()["LoadBalancers"]
-
-    if not lbs:
-        logger.info("No load balancers found.")
-        return results
-
-    for lb in lbs:
-        lb_arn = lb["LoadBalancerArn"]
-        lb_name = lb["LoadBalancerName"]
-        listeners = elbv2.describe_listeners(LoadBalancerArn=lb_arn)["Listeners"]
-
-        for listener in listeners:
-            l_arn = listener["ListenerArn"]
-            port = listener["Port"]
-            if dry_run:
-                logger.info("[DRY RUN] Would delete listener port=%s on %s", port, lb_name)
-                results.append({"resource": lb_name, "type": "elb_listener", "port": port, "action": "dry_run"})
-            else:
-                elbv2.delete_listener(ListenerArn=l_arn)
-                logger.info("Deleted listener port=%s on %s", port, lb_name)
-                results.append({"resource": lb_name, "type": "elb_listener", "port": port, "action": "deleted"})
 
     return results
 
@@ -139,7 +112,6 @@ def lambda_handler(event, context):
 
     results = []
     results += stop_ec2_instances(dry_run)
-    results += delete_elb_listeners(dry_run)
     results += snapshot_and_delete_rds(dry_run)
 
     logger.info("Billing guard complete. Results: %s", results)

@@ -63,16 +63,6 @@ resource "aws_iam_role_policy" "guard_rds" {
         Resource = "*"
       },
       {
-        Sid    = "ELBManage"
-        Effect = "Allow"
-        Action = [
-          "elasticloadbalancing:DescribeLoadBalancers",
-          "elasticloadbalancing:DescribeListeners",
-          "elasticloadbalancing:DeleteListener",
-        ]
-        Resource = "*"
-      },
-      {
         Sid    = "CloudWatchLogs"
         Effect = "Allow"
         Action = [
@@ -166,9 +156,14 @@ resource "aws_budgets_budget" "monthly" {
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
+  # 追蹤 gross spending（不扣 credits），確保 credit 用量也能觸發告警
+  cost_types {
+    include_credit = false
+  }
+
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                  = 100 # 100% of limit = $38
+    threshold                  = 100 # 100% of limit = $48
     threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_sns_topic_arns  = [aws_sns_topic.billing_alert.arn]
