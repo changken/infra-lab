@@ -58,12 +58,16 @@ variable "db_password" {
 variable "allowed_cidr" {
   description = "允許連入 PostgreSQL port 5432 的 CIDR（你的 IP，例如 1.2.3.4/32）"
   type        = string
+  validation {
+    condition     = can(cidrhost(var.allowed_cidr, 0)) && !contains(["0.0.0.0/0", "::/0"], var.allowed_cidr) && tonumber(split("/", var.allowed_cidr)[1]) >= 24
+    error_message = "allowed_cidr 必須是具體的 CIDR（前綴長度 >= /24），不允許 0.0.0.0/0。"
+  }
 }
 
 variable "publicly_accessible" {
-  description = "RDS 是否開放公開存取（Lab 用 true）"
+  description = "RDS 是否開放公開存取（需要從外部連線時才設 true）"
   type        = bool
-  default     = true
+  default     = false
 }
 
 # ── Lab 保護 ──

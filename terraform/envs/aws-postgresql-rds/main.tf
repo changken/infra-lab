@@ -66,6 +66,20 @@ resource "aws_db_subnet_group" "main" {
   tags       = merge(local.common_tags, { Name = "${var.project}-subnet-group" })
 }
 
+# ── Parameter Group (強制 SSL) ─────────────────────────────
+
+resource "aws_db_parameter_group" "postgresql" {
+  name   = "${var.project}-pgsql-pg"
+  family = "postgres${split(".", var.engine_version)[0]}"
+
+  parameter {
+    name  = "rds.force_ssl"
+    value = "1"
+  }
+
+  tags = merge(local.common_tags, { Name = "${var.project}-pgsql-pg" })
+}
+
 # ── RDS PostgreSQL ─────────────────────────────────────────
 
 resource "aws_db_instance" "postgresql" {
@@ -79,6 +93,7 @@ resource "aws_db_instance" "postgresql" {
   instance_class    = var.instance_class
   allocated_storage = var.allocated_storage
   storage_type      = "gp3"
+  storage_encrypted = true
 
   # Credentials
   db_name  = var.db_name
@@ -91,6 +106,10 @@ resource "aws_db_instance" "postgresql" {
   vpc_security_group_ids = [aws_security_group.postgresql_rds.id]
   publicly_accessible    = var.publicly_accessible
   multi_az               = false
+
+  # Security
+  parameter_group_name                = aws_db_parameter_group.postgresql.name
+  iam_database_authentication_enabled = true
 
   # Lab 設定：避免額外費用
   skip_final_snapshot = var.skip_final_snapshot

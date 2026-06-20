@@ -12,5 +12,6 @@ db_name     = "labdb"
 db_username = "pgadmin"
 db_password = "YourStrongPassword123!"  # 改成你自己的密碼
 
-# 網路（改成你的 IP）
-allowed_cidr = "0.0.0.0/0"  # ⚠️  改成你的 IP，例如 1.2.3.4/32
+# 網路（必須填入你的 IP，不可用 0.0.0.0/0）
+allowed_cidr        = "1.2.3.4/32"  # ⚠️  改成你的實際 IP（curl ifconfig.me）
+publicly_accessible = true           # 從外部連線才需要 true
