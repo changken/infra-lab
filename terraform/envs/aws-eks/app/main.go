@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	version   = getEnv("VERSION", "v1")
+	version   = getEnv("VERSION", "v2")
 	startTime = time.Now()
 )
 
@@ -49,6 +49,11 @@ func main() {
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok")
+	})
+
+	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"version":"%s","go_version":"%s"}`, version, runtime.Version())
 	})
 
 	port := getEnv("PORT", "8080")
