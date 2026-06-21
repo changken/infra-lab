@@ -45,6 +45,23 @@ resource "aws_iam_role_policy" "custom_app_s3" {
   })
 }
 
+resource "aws_iam_role_policy" "custom_app_bedrock" {
+  name = "${local.name_prefix}-custom-app-bedrock"
+  role = aws_iam_role.custom_app.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "bedrock:InvokeModel",
+        "bedrock:Converse"
+      ]
+      Resource = "arn:aws:bedrock:${var.region}::foundation-model/*"
+    }]
+  })
+}
+
 output "custom_app_role_arn" {
   description = "custom-app IRSA Role ARN（ServiceAccount annotation 用）"
   value       = aws_iam_role.custom_app.arn

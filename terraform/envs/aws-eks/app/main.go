@@ -11,13 +11,24 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	brt "github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+	brtypes "github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 var (
-	version   = getEnv("VERSION", "v3")
+	version   = getEnv("VERSION", "v4")
 	startTime = time.Now()
+	region    = getEnv("AWS_REGION", "us-east-1")
 )
+
+// model shortcuts → full Bedrock model ID
+var modelAliases = map[string]string{
+	"nova":     "amazon.nova-lite-v1:0",
+	"llama":    "meta.llama3-8b-instruct-v1:0",
+	"deepseek": "deepseek.r1-v1:0",
+	"mistral":  "mistral.mistral-7b-instruct-v0:2",
+}
 
 type Info struct {
 	Hostname  string `json:"hostname"`
@@ -33,6 +44,10 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func loadAWSConfig(ctx context.Context) (aws.Config, error) {
+	return config.LoadDefaultConfig(ctx, config.WithRegion(region))
 }
 
 func main() {
@@ -61,37 +76,97 @@ func main() {
 		fmt.Fprintf(w, `{"version":"%s","go_version":"%s"}`, version, runtime.Version())
 	})
 
-	// IRSA demo: 透過 ServiceAccount 的 IAM Role 呼叫 S3，不需要 hardcoded credentials
+	// IRSA demo: S3 ListBuckets
 	mux.HandleFunc("/aws", func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.Background()
-		cfg, err := config.LoadDefaultConfig(ctx)
+		cfg, err := loadAWSConfig(r.Context())
 		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to load AWS config: %v", err), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		client := s3.NewFromConfig(cfg)
-		result, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
+		result, err := client.ListBuckets(r.Context(), &s3.ListBucketsInput{})
 		if err != nil {
 			http.Error(w, fmt.Sprintf("s3:ListBuckets failed: %v", err), http.StatusForbidden)
 			return
 		}
-
 		buckets := make([]string, len(result.Buckets))
 		for i, b := range result.Buckets {
 			buckets[i] = aws.ToString(b.Name)
 		}
-
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
 			"note":    "called via IRSA — no hardcoded credentials",
-			"region":  cfg.Region,
+			"region":  region,
 			"buckets": buckets,
 			"count":   len(buckets),
 		})
 	})
 
+	// Bedrock Converse API — supports nova / llama / deepseek / mistral
+	// Usage: GET /chat?q=<question>&model=<alias|full-model-id>
+	mux.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("q")
+		if query == "" {
+			http.Error(w, `{"error":"missing ?q=<question>"}`, http.StatusBadRequest)
+			return
+		}
+
+		modelAlias := r.URL.Query().Get("model")
+		if modelAlias == "" {
+			modelAlias = "nova"
+		}
+		modelID, ok := modelAliases[modelAlias]
+		if !ok {
+			modelID = modelAlias // allow passing full model ID directly
+		}
+
+		cfg, err := loadAWSConfig(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		client := brt.NewFromConfig(cfg)
+		resp, err := client.Converse(r.Context(), &brt.ConverseInput{
+			ModelId: aws.String(modelID),
+			Messages: []brtypes.Message{{
+				Role: brtypes.ConversationRoleUser,
+				Content: []brtypes.ContentBlock{
+					&brtypes.ContentBlockMemberText{Value: query},
+				},
+			}},
+		})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("bedrock error: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		var reply string
+		if msg, ok := resp.Output.(*brtypes.ConverseOutputMemberMessage); ok {
+			for _, block := range msg.Value.Content {
+				if text, ok := block.(*brtypes.ContentBlockMemberText); ok {
+					reply = text.Value
+					break
+				}
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"model": modelID,
+			"query": query,
+			"reply": reply,
+			"via":   "IRSA → bedrock:Converse",
+		})
+	})
+
+	// list supported model aliases
+	mux.HandleFunc("/models", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(modelAliases)
+	})
+
 	port := getEnv("PORT", "8080")
-	fmt.Printf("Listening on :%s\n", port)
+	fmt.Printf("Listening on :%s (version=%s)\n", port, version)
 	http.ListenAndServe(":"+port, mux)
 }
