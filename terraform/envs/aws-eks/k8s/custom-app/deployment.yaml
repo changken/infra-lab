@@ -13,9 +13,10 @@ spec:
       labels:
         app: custom-app
     spec:
+      serviceAccountName: custom-app
       containers:
         - name: app
-          image: 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v2
+          image: 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v3
           ports:
             - containerPort: 8080
           env:
