@@ -57,7 +57,12 @@ resource "aws_iam_role_policy" "custom_app_bedrock" {
         "bedrock:InvokeModel",
         "bedrock:Converse"
       ]
-      Resource = "arn:aws:bedrock:${var.region}::foundation-model/*"
+      Resource = [
+        "arn:aws:bedrock:${var.region}::foundation-model/amazon.nova-lite-v1:0",
+        "arn:aws:bedrock:${var.region}::foundation-model/meta.llama3-8b-instruct-v1:0",
+        "arn:aws:bedrock:${var.region}::foundation-model/deepseek.r1-v1:0",
+        "arn:aws:bedrock:${var.region}::foundation-model/mistral.mistral-7b-instruct-v0:2",
+      ]
     }]
   })
 }

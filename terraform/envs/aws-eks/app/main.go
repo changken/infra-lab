@@ -103,8 +103,14 @@ func main() {
 	})
 
 	// Bedrock Converse API — supports nova / llama / deepseek / mistral
-	// Usage: GET /chat?q=<question>&model=<alias|full-model-id>
+	// Usage: GET /chat?q=<question>&model=<alias>
+	// Requires X-API-Key header matching CHAT_API_KEY env var (prevents public LLM proxy abuse)
+	chatAPIKey := getEnv("CHAT_API_KEY", "")
 	mux.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
+		if chatAPIKey != "" && r.Header.Get("X-API-Key") != chatAPIKey {
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
 		query := r.URL.Query().Get("q")
 		if query == "" {
 			http.Error(w, `{"error":"missing ?q=<question>"}`, http.StatusBadRequest)
@@ -117,7 +123,8 @@ func main() {
 		}
 		modelID, ok := modelAliases[modelAlias]
 		if !ok {
-			modelID = modelAlias // allow passing full model ID directly
+			http.Error(w, `{"error":"unknown model, use: nova, llama, deepseek, mistral"}`, http.StatusBadRequest)
+			return
 		}
 
 		cfg, err := loadAWSConfig(r.Context())

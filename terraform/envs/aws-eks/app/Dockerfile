@@ -1,4 +1,5 @@
 FROM golang:1.24-alpine AS builder
+ENV GONOSUMDB=*
 WORKDIR /app
 COPY main.go .
 RUN go mod init demo && \
