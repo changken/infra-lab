@@ -1,0 +1,27 @@
+region      = "us-east-1"
+project     = "infra-lab"
+environment = "dev"
+
+# ── VPC ─────────────────────────────────────────────────────
+vpc_cidr = "10.0.0.0/16"
+azs      = ["us-east-1a", "us-east-1b"]
+
+# ── EKS ─────────────────────────────────────────────────────
+kubernetes_version = "1.32"
+
+# SPOT 比 ON_DEMAND 便宜 ~70%
+# t3.medium SPOT ≈ $0.014/hr vs ON_DEMAND $0.046/hr
+node_instance_types = ["t3.medium"]
+node_capacity_type  = "SPOT"
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 3
+node_disk_size      = 20
+
+# true = 在 AWS Console 可以看到 Pods / Nodes，kubectl 也能用
+enable_console_access = true
+
+# ── AWS Load Balancer Controller ────────────────────────────
+# 對應 Helm chart 版本，詳見:
+# https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
+aws_lbc_version = "v2.7.2"

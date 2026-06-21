@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: custom-app
+  namespace: custom-app
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # 與 podinfo 共用同一個 ALB（省費用）
+    alb.ingress.kubernetes.io/group.name: eks-demo
+    alb.ingress.kubernetes.io/group.order: "20"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: custom-app
+                port:
+                  number: 80

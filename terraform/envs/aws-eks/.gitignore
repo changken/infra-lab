@@ -1,0 +1,10 @@
+# Terraform state & credentials
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+
+# kubeconfig（只排除這個目錄，不排除 k8s manifests）
+kubeconfig/
