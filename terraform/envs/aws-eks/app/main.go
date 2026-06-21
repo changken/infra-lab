@@ -22,12 +22,13 @@ var (
 	region    = getEnv("AWS_REGION", "us-east-1")
 )
 
-// model shortcuts → full Bedrock model ID
+// model shortcuts → Bedrock cross-region inference profile ID
+// on-demand throughput requires "us." prefix inference profiles
 var modelAliases = map[string]string{
-	"nova":     "amazon.nova-lite-v1:0",
-	"llama":    "meta.llama3-8b-instruct-v1:0",
-	"deepseek": "deepseek.r1-v1:0",
-	"mistral":  "mistral.mistral-7b-instruct-v0:2",
+	"nova":     "us.amazon.nova-lite-v1:0",
+	"llama":    "us.meta.llama3-1-8b-instruct-v1:0",
+	"deepseek": "us.deepseek.r1-v1:0",
+	"llama4":   "us.meta.llama4-scout-17b-instruct-v1:0",
 }
 
 type Info struct {
