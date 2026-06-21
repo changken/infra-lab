@@ -15,8 +15,7 @@ spec:
     spec:
       containers:
         - name: app
-          # scripts/deploy.sh 會自動替換這個 placeholder
-          image: REPLACE_WITH_ECR_URL
+          image: 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v1
           ports:
             - containerPort: 8080
           env:
