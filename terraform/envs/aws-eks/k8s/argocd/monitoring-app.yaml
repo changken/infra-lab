@@ -10,8 +10,7 @@ spec:
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    # TODO: 確認最新版本 → https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
-    targetRevision: "70.3.0"
+    targetRevision: "86.3.2"
     helm:
       valuesObject:
         # ── Grafana ──────────────────────────────────────────────
