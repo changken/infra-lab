@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: custom-app
+  namespace: monitoring
+  labels:
+    # 這個 label 讓 kube-prometheus-stack 的 Prometheus 識別並抓取此 ServiceMonitor
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - custom-app
+  selector:
+    matchLabels:
+      app: custom-app
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

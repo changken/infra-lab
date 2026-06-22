@@ -6,6 +6,7 @@ RUN go mod init demo && \
     go get github.com/aws/aws-sdk-go-v2/config && \
     go get github.com/aws/aws-sdk-go-v2/service/s3 && \
     go get github.com/aws/aws-sdk-go-v2/service/bedrockruntime && \
+    go get github.com/prometheus/client_golang/prometheus/promhttp && \
     go build -o server .
 
 FROM alpine:3.19
