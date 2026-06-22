@@ -156,10 +156,89 @@ curl -H "X-API-Key: $API_KEY" "http://$ALB/chat?q=Hello&model=nova"
 }
 ```
 
+## Mistral 與 GitOps 部署紀錄
+
+後續檢查發現 `main.go` 的註解與錯誤訊息提到 `mistral`，但 `modelAliases` 尚未實作，因此補上：
+
+```go
+"mistral": "mistral.mistral-large-2402-v1:0",
+```
+
+同時將 app 版本與 Kubernetes manifest image tag 從 `v4` 更新為 `v5`：
+
+```yaml
+image: 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v5
+```
+
+Build 並推送 image：
+
+```bash
+docker build -t 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v5 terraform/envs/aws-eks/app
+docker push 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v5
+```
+
+因為 `custom-app` 由 ArgoCD 管理，Application 來源是：
+
+```text
+repoURL: https://github.com/changken/infra-lab
+path: terraform/envs/aws-eks/k8s/custom-app
+targetRevision: HEAD
+selfHeal: true
+```
+
+直接使用 `kubectl apply` 或 `kubectl set image` 修改 live Deployment 會被 ArgoCD 自動還原成 GitHub 上的版本。因此正確流程是：
+
+```bash
+git add terraform/envs/aws-eks/app/main.go \
+  terraform/envs/aws-eks/irsa.tf \
+  terraform/envs/aws-eks/k8s/custom-app/deployment.yaml \
+  terraform/envs/aws-eks/docs/bedrock-irsa-403-fix.md
+
+git commit -m "fix: add bedrock mistral support"
+git push origin main
+```
+
+本次提交：
+
+```text
+30f6b5c fix: add bedrock mistral support
+```
+
+Push 後觸發 ArgoCD hard refresh：
+
+```bash
+kubectl annotate application custom-app -n argocd argocd.argoproj.io/refresh=hard --overwrite
+```
+
+確認 ArgoCD 已同步到新 revision：
+
+```text
+30f6b5c3c278c2ef60bbba018d8edf47d0410c63 Synced Healthy
+```
+
+確認 live Deployment image：
+
+```text
+661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v5
+```
+
+確認 `/models` 已包含 `mistral`：
+
+```json
+{
+  "deepseek": "us.deepseek.r1-v1:0",
+  "llama": "us.meta.llama3-1-8b-instruct-v1:0",
+  "llama4": "us.meta.llama4-scout-17b-instruct-v1:0",
+  "mistral": "mistral.mistral-large-2402-v1:0",
+  "nova": "us.amazon.nova-lite-v1:0"
+}
+```
+
 ## 注意事項
 
 - 使用 `us.` 開頭的 Bedrock model ID 時，通常代表使用 cross-region inference profile。
 - IAM policy 需要同時考慮 foundation model ARN 與 inference profile ARN。
 - `mistral.mistral-large-2402-v1:0` 是直接 foundation model ID，因此只需要 foundation model ARN。
 - 錯誤訊息中的 `resource` ARN 是最直接的修正依據。
+- ArgoCD 開啟 `selfHeal` 時，live cluster 變更必須回寫 Git，否則會被還原。
 - 不建議直接使用 `Resource = "*"`，除非只是短暫除錯。
