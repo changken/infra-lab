@@ -495,6 +495,7 @@ curl http://$ALB/metrics | grep custom_app
 |------|------|
 | [rag-demo.md](./rag-demo.md) | 以 IRSA 為基礎，同時串接 S3 + Bedrock 實作 Poor Man's RAG |
 | [monitoring-demo.md](./monitoring-demo.md) | kube-prometheus-stack 可觀測性，觀察 IRSA 呼叫次數指標 |
+| [argocd-demo.md](./argocd-demo.md) | ArgoCD GitOps + ALB Ingress，管理本文所有 workload 的 CD 層 |
 
 **IRSA 應用演進路徑：**
 
