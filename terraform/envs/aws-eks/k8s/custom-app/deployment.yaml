@@ -16,11 +16,14 @@ spec:
       serviceAccountName: custom-app
       containers:
         - name: app
-          image: 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v6
+          image: 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v7
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
+            - name: KNOWLEDGE_BUCKET
+              # terraform output rag_knowledge_bucket
+              value: "infra-lab-dev-rag-661515655645"
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
