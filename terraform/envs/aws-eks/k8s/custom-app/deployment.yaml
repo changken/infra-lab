@@ -16,7 +16,7 @@ spec:
       serviceAccountName: custom-app
       containers:
         - name: app
-          image: 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v4
+          image: 661515655645.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:v5
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

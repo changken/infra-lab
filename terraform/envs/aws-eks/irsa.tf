@@ -58,12 +58,17 @@ resource "aws_iam_role_policy" "custom_app_bedrock" {
         "bedrock:Converse"
       ]
       # us.* inference profiles route across us-east-1/us-east-2/us-west-2
-      # region wildcard is required; model IDs are explicitly locked
+      # region wildcard is required; model/profile IDs are explicitly locked
       Resource = [
         "arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0",
         "arn:aws:bedrock:*::foundation-model/meta.llama3-1-8b-instruct-v1:0",
         "arn:aws:bedrock:*::foundation-model/deepseek.r1-v1:0",
         "arn:aws:bedrock:*::foundation-model/meta.llama4-scout-17b-instruct-v1:0",
+        "arn:aws:bedrock:*::foundation-model/mistral.mistral-large-2402-v1:0",
+        "arn:aws:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.amazon.nova-lite-v1:0",
+        "arn:aws:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.meta.llama3-1-8b-instruct-v1:0",
+        "arn:aws:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.deepseek.r1-v1:0",
+        "arn:aws:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.meta.llama4-scout-17b-instruct-v1:0",
       ]
     }]
   })

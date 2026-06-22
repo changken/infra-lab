@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	version   = getEnv("VERSION", "v4")
+	version   = getEnv("VERSION", "v5")
 	startTime = time.Now()
 	region    = getEnv("AWS_REGION", "us-east-1")
 )
@@ -29,6 +29,7 @@ var modelAliases = map[string]string{
 	"llama":    "us.meta.llama3-1-8b-instruct-v1:0",
 	"deepseek": "us.deepseek.r1-v1:0",
 	"llama4":   "us.meta.llama4-scout-17b-instruct-v1:0",
+	"mistral":  "mistral.mistral-large-2402-v1:0",
 }
 
 type Info struct {
