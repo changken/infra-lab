@@ -489,5 +489,30 @@ curl http://$ALB/metrics | grep custom_app
 
 ---
 
+## 延伸閱讀
+
+| 文件 | 說明 |
+|------|------|
+| [rag-demo.md](./rag-demo.md) | 以 IRSA 為基礎，同時串接 S3 + Bedrock 實作 Poor Man's RAG |
+| [monitoring-demo.md](./monitoring-demo.md) | kube-prometheus-stack 可觀測性，觀察 IRSA 呼叫次數指標 |
+
+**IRSA 應用演進路徑：**
+
+```
+Step 1: IRSA 基礎（本文）
+  └── IAM Role + ServiceAccount + OIDC
+        └── /aws → s3:ListAllMyBuckets
+
+Step 2: IRSA × Bedrock（本文）
+  └── bedrock:Converse policy
+        └── /chat → 4 個 open LLM model
+
+Step 3: IRSA × S3 × Bedrock（rag-demo.md）
+  └── s3:GetObject policy
+        └── /rag → S3 knowledge base → Bedrock system prompt → RAG
+```
+
+---
+
 *紀錄日期：2026-06-22*
 *環境：AWS EKS 1.36 / aws-sdk-go-v2 v1.42.0 / Go 1.24 / Bedrock Converse API*
