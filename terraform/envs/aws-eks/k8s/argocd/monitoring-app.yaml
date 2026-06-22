@@ -16,8 +16,16 @@ spec:
       valuesObject:
         # ── Grafana ──────────────────────────────────────────────
         grafana:
-          # TODO: 改成你自己的密碼（或改用 secretKeyRef 從 Secret 讀取）
-          adminPassword: "admin-change-me"
+          # 密碼從 K8s Secret 讀取，不寫進 Git
+          # 部署前先執行：
+          #   kubectl create secret generic grafana-admin \
+          #     --from-literal=admin-user=admin \
+          #     --from-literal=admin-password=<你的密碼> \
+          #     -n monitoring
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
           ingress:
             enabled: true
             ingressClassName: alb
