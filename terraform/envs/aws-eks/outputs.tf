@@ -59,6 +59,47 @@ output "ecr_login_command" {
   value       = "aws ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin ${aws_ecr_repository.app.repository_url}"
 }
 
+# ── Karpenter ───────────────────────────────────────────────
+
+output "karpenter_role_arn" {
+  description = "Karpenter Controller IRSA Role ARN（Helm values 用）"
+  value       = aws_iam_role.karpenter.arn
+}
+
+output "karpenter_node_role_name" {
+  description = "Karpenter Node IAM Role 名稱（EC2NodeClass spec.role 用）"
+  value       = aws_iam_role.karpenter_node.name
+}
+
+output "karpenter_interruption_queue_name" {
+  description = "SQS Queue 名稱（Karpenter Helm settings.interruptionQueue 用）"
+  value       = aws_sqs_queue.karpenter_interruption.name
+}
+
+output "karpenter_helm_command" {
+  description = "安裝 Karpenter 的 Helm 指令"
+  value       = <<-EOT
+    # 1. 加入 Helm repo
+    helm repo add karpenter https://charts.karpenter.sh
+    helm repo update
+
+    # 2. 安裝 Karpenter controller
+    helm install karpenter karpenter/karpenter \
+      --namespace karpenter --create-namespace \
+      --version ${var.karpenter_version} \
+      --set "settings.clusterName=${aws_eks_cluster.main.name}" \
+      --set "settings.interruptionQueue=${aws_sqs_queue.karpenter_interruption.name}" \
+      --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=${aws_iam_role.karpenter.arn}" \
+      --set "controller.resources.requests.cpu=250m" \
+      --set "controller.resources.requests.memory=256Mi" \
+      --wait
+
+    # 3. 套用 NodeClass + NodePool（見 k8s/karpenter/）
+    kubectl apply -f k8s/karpenter/ec2nodeclass.yaml
+    kubectl apply -f k8s/karpenter/nodepool.yaml
+  EOT
+}
+
 # ── AWS Load Balancer Controller ────────────────────────────
 
 output "aws_lbc_role_arn" {

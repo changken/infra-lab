@@ -90,6 +90,14 @@ variable "enable_console_access" {
   default     = true
 }
 
+# ── Karpenter ───────────────────────────────────────────────
+
+variable "karpenter_version" {
+  description = "Karpenter Helm chart version（對應 github.com/aws/karpenter/releases）"
+  type        = string
+  default     = "1.3.3"
+}
+
 # ── AWS Load Balancer Controller ────────────────────────────
 
 variable "aws_lbc_version" {

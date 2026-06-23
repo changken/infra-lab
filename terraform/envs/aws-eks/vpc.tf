@@ -57,6 +57,8 @@ resource "aws_subnet" "private" {
     Name                                          = "${local.name_prefix}-private-${each.key}"
     "kubernetes.io/role/internal-elb"             = "1"
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    # Karpenter EC2NodeClass subnetSelectorTerms 用此 tag 發現 private subnets
+    "karpenter.sh/discovery"                      = local.cluster_name
   })
 }
 

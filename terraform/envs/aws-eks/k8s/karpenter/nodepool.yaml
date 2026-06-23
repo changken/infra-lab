@@ -1,0 +1,83 @@
+#==============================================================
+# NodePool — 告訴 Karpenter「啟動什麼樣的節點」
+#
+# 這是排程層的設定：
+#   機型約束、容量類型、資源上限、節點生命週期
+#
+# 類比：好比 Auto Scaling Group，但更聰明（per-pod 選最佳機型）
+#
+# 學習重點：
+#   requirements 裡的 key 對應 K8s well-known labels
+#   Karpenter 會在 requirements 範圍內挑最便宜/最合適的機型
+#==============================================================
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: default
+spec:
+  template:
+    metadata:
+      labels:
+        provisioner: karpenter
+    spec:
+      # 引用上面的 EC2NodeClass
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: default
+
+      # ── 機型約束（Requirements）────────────────────────────
+      # TODO: 填入適合 lab 的限制條件
+      #
+      # 常用 key：
+      #   karpenter.sh/capacity-type       → spot | on-demand
+      #   kubernetes.io/arch               → amd64 | arm64
+      #   karpenter.k8s.aws/instance-category → c | m | r | t
+      #   karpenter.k8s.aws/instance-size  → medium | large | xlarge
+      #
+      # 提示：
+      #   - SPOT 省錢 60-80%，但隨時可能被回收（要配 SQS 中斷處理）
+      #   - t 系列有 burst credit，不適合穩定高負載
+      #   - 建議至少允許 3+ 個機型，提高 SPOT 可用性
+      requirements:
+        # TODO: 設定容量類型（spot 或 on-demand，或兩者都允許）
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]
+
+        # TODO: 限制 CPU 架構
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+
+        # TODO: 限制機型類別（避免太貴的 r / p 系列）
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: ["c", "m", "t"]  # TODO: 你想允許哪些？為什麼排除 r / p？
+
+        # TODO: 限制機型大小（避免啟動太大的機型）
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["medium", "large", "xlarge"]
+
+      # ── Node 存活時間 ──────────────────────────────────────
+      # 強制定期輪換節點（drift + bin-packing 優化）
+      # TODO: 設定 expireAfter（太短頻繁替換，太長浪費資源）
+      #   提示：lab 環境建議 24h；生產通常 720h（30天）
+      expireAfter: 24h
+
+  # ── 資源上限（NodePool 總量限制）────────────────────────────
+  # 超過此上限，Karpenter 不再新增 Node（防止 runaway scaling）
+  #
+  # TODO: 設定合理的 lab 上限
+  #   提示：lab 不需要太多資源，避免帳單爆炸
+  limits:
+    cpu: "8"       # TODO: lab 需要幾核？
+    memory: 16Gi   # TODO: lab 需要多少記憶體？
+
+  # ── 縮容策略 ──────────────────────────────────────────────
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    # TODO: 縮容延遲（避免頻繁縮縮擴擴）
+    #   WhenEmptyOrUnderutilized：節點使用率低於閾值後等多久縮容？
+    consolidateAfter: 30s  # TODO: 生產建議多少？

@@ -1,0 +1,57 @@
+#==============================================================
+# EC2NodeClass — 告訴 Karpenter「如何啟動 EC2 節點」
+#
+# 這是基礎設施層的設定：
+#   AMI 系列、Subnet、Security Group、Node IAM Role、Block Device
+#
+# 類比：好比 Launch Template，但由 Karpenter 管理
+#==============================================================
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: default
+spec:
+  # ── AMI 選擇 ───────────────────────────────────────────────
+  # Karpenter v1.x 改用 amiSelectorTerms（取代舊版 amiFamily）
+  # alias 格式：<family>@<version>
+  #   al2023@latest     → 永遠用最新 AL2023 AMI
+  #   bottlerocket@latest → Bottlerocket（不可變 OS，更安全）
+  #   al2023@v20240807  → 鎖定特定版本（生產建議）
+  amiSelectorTerms:
+    - alias: al2023@latest
+
+  # ── Node IAM Role ──────────────────────────────────────────
+  # Terraform output: karpenter_node_role_name
+  # 替換成你的實際值（terraform output karpenter_node_role_name）
+  role: "infra-lab-dev-karpenter-node-role"
+
+  # ── Subnet 選擇（Karpenter 把 Node 放在哪些 subnet）──────
+  # 使用 karpenter.sh/discovery tag（terraform/vpc.tf 已加）
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "infra-lab-dev-eks"
+
+  # ── Security Group 選擇 ────────────────────────────────────
+  # 使用 EKS cluster 自動建立的 managed security group
+  securityGroupSelectorTerms:
+    - tags:
+        kubernetes.io/cluster/infra-lab-dev-eks: owned
+
+  # ── Block Device（Root Volume）────────────────────────────
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 20Gi
+        volumeType: gp3
+        encrypted: true
+        deleteOnTermination: true
+
+  # ── User Data（可選：自訂 node bootstrap 行為）────────────
+  # 預設不需要，AL2023 會自動 bootstrap
+  # userData: |
+  #   #!/bin/bash
+  #   echo "custom init"
+
+  tags:
+    Environment: dev
+    ManagedBy: karpenter
