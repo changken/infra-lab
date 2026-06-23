@@ -343,6 +343,14 @@ resource "aws_sqs_queue_policy" "karpenter_interruption" {
       Principal = { Service = ["events.amazonaws.com", "sqs.amazonaws.com"] }
       Action    = "sqs:SendMessage"
       Resource  = aws_sqs_queue.karpenter_interruption.arn
+      Condition = {
+        ArnLike = {
+          "aws:SourceArn" = "arn:aws:events:${var.region}:${data.aws_caller_identity.current.account_id}:rule/*"
+        }
+        StringEquals = {
+          "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+        }
+      }
     }]
   })
 }
