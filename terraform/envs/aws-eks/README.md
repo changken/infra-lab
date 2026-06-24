@@ -67,6 +67,7 @@ IAM: infra-lab-dev-custom-app-role (IRSA: S3 + Bedrock)
 | [rag-demo.md](./docs/rag-demo.md) | Poor Man's RAG — S3 知識庫 + Bedrock | S3 / Bedrock |
 | [monitoring-demo.md](./docs/monitoring-demo.md) | kube-prometheus-stack 可觀測性 | — |
 | [argocd-demo.md](./docs/argocd-demo.md) | ArgoCD GitOps + ALB Ingress | ALB / ALB Controller |
+| [gitops-cicd-demo.md](./docs/gitops-cicd-demo.md) | GitHub Actions OIDC → ECR → ArgoCD CD Pipeline | IAM / ECR / GitHub Actions |
 | [hpa-demo.md](./docs/hpa-demo.md) | Horizontal Pod Autoscaler | — |
 | [bedrock-irsa-403-fix.md](./docs/bedrock-irsa-403-fix.md) | Bedrock cross-region inference profile 403 修正 | Bedrock / IAM |
 
