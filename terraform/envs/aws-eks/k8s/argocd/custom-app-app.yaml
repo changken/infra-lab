@@ -8,9 +8,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/changken/infra-lab
+    repoURL: https://github.com/changken/eks-app
     targetRevision: HEAD
-    path: terraform/envs/aws-eks/k8s/custom-app
+    path: k8s
   destination:
     server: https://kubernetes.default.svc
     namespace: custom-app
