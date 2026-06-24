@@ -19,7 +19,8 @@ resource "aws_secretsmanager_secret" "custom_app" {
   name        = "${local.name_prefix}/custom-app"
   description = "custom-app 應用程式的 API keys（由 ESO 同步至 K8s）"
 
-  # 防止意外刪除（destroy 時需先手動關掉）
+  # ⚠️ Lab 環境設 0 讓 terraform destroy 可以立刻清除。
+  # 正式環境應設 7-30（天），讓誤刪有恢復視窗。
   recovery_window_in_days = 0
 
   tags = local.common_tags
@@ -28,13 +29,14 @@ resource "aws_secretsmanager_secret" "custom_app" {
 resource "aws_secretsmanager_secret_version" "custom_app" {
   secret_id = aws_secretsmanager_secret.custom_app.id
 
-  # 初始佔位值，實際 key 請到 Secrets Manager console 更新
+  # 僅用於 bootstrap：建立 secret 結構（key 名稱），值是明顯的佔位符。
+  # apply 後請到 Secrets Manager console 填入真實值。
+  # ignore_changes 確保後續 apply 不會覆蓋 console 更新的值。
   secret_string = jsonencode({
-    chat-api-key = "demo-lab-key-9f5d36bc5a62449d"
+    chat-api-key = "PLACEHOLDER-REPLACE-IN-CONSOLE"
   })
 
   lifecycle {
-    # 避免 terraform apply 覆蓋掉 console 手動更新的值
     ignore_changes = [secret_string]
   }
 }
