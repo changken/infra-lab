@@ -1,0 +1,32 @@
+region      = "us-east-1"
+project     = "infra-lab"
+environment = "dev"
+
+# ── VPC ─────────────────────────────────────────────────────
+# 10.1.x.x 避免與 EKS lab (10.0.x.x) 衝突
+vpc_cidr = "10.1.0.0/16"
+azs      = ["us-east-1a", "us-east-1b"]
+
+# ── Container ────────────────────────────────────────────────
+# 第一次 apply 前還沒有 ECR image，先用 nginx 佔位
+# 待 build + push 完成後換成: <account>.dkr.ecr.us-east-1.amazonaws.com/infra-lab-dev-app:latest
+# 初始佔位：nginx 監聽 port 80，health check path 用 /
+# 換 Go app 後：container_port = 8080, health_check_path = "/health"
+container_image   = "public.ecr.aws/nginx/nginx:stable-alpine"
+container_cpu     = 256   # 0.25 vCPU
+container_memory  = 512   # 512 MiB
+container_port    = 80
+health_check_path = "/"   # nginx 沒有 /health；Go app 才有
+app_version       = "1.0.0"
+
+# ── ECS Service ──────────────────────────────────────────────
+service_desired_count = 2
+
+# ── Auto Scaling ─────────────────────────────────────────────
+autoscaling_min_capacity  = 1
+autoscaling_max_capacity  = 5
+autoscaling_cpu_target    = 70
+autoscaling_memory_target = 80
+
+# ── GitHub OIDC ──────────────────────────────────────────────
+github_repo = "changken/ecs-app"

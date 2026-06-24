@@ -1,0 +1,25 @@
+# Terraform state（含密鑰，不入版本控制）
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+
+# 含密鑰的變數檔
+*.tfvars
+!*.tfvars.example
+
+# Terraform 工作目錄
+.terraform/
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Crash log
+crash.log
+crash.*.log
+
+# Terraform plan（含敏感值）
+tfplan
+*.tfplan
