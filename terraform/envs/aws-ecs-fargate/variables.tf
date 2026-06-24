@@ -109,6 +109,31 @@ variable "health_check_path" {
   default     = "/health"
 }
 
+# ── CodeDeploy ───────────────────────────────────────────────
+
+variable "codedeploy_config" {
+  description = "CodeDeploy deployment config（流量切換策略）"
+  type        = string
+  default     = "CodeDeployDefault.ECSAllAtOnce"
+
+  validation {
+    condition = contains([
+      "CodeDeployDefault.ECSAllAtOnce",
+      "CodeDeployDefault.ECSLinear10PercentEvery1Minutes",
+      "CodeDeployDefault.ECSLinear10PercentEvery3Minutes",
+      "CodeDeployDefault.ECSCanary10Percent5Minutes",
+      "CodeDeployDefault.ECSCanary10Percent15Minutes",
+    ], var.codedeploy_config)
+    error_message = "必須是有效的 ECS CodeDeploy deployment config。"
+  }
+}
+
+variable "blue_termination_wait_minutes" {
+  description = "流量切換完成後，等幾分鐘才刪除舊 Blue tasks（觀察 / 回滾緩衝）"
+  type        = number
+  default     = 5
+}
+
 variable "github_repo" {
   description = "GitHub repo in 'owner/name' format for OIDC trust (e.g. changken/ecs-app)"
   type        = string

@@ -47,3 +47,46 @@ output "exec_command" {
   description = "ECS Exec 進入容器（類似 kubectl exec）"
   value       = "aws ecs execute-command --cluster ${aws_ecs_cluster.main.name} --task <TASK_ID> --container app --interactive --command /bin/sh"
 }
+
+# ── Blue/Green ───────────────────────────────────────────────
+
+output "alb_test_url" {
+  description = "Test Listener（:8080）→ Green TG，部署期間預覽新版本用"
+  value       = "http://${aws_lb.main.dns_name}:8080"
+}
+
+output "codedeploy_app_name" {
+  description = "CodeDeploy Application 名稱"
+  value       = aws_codedeploy_app.app.name
+}
+
+output "codedeploy_deployment_group" {
+  description = "CodeDeploy Deployment Group 名稱"
+  value       = aws_codedeploy_deployment_group.app.deployment_group_name
+}
+
+output "blue_target_group_name" {
+  description = "Blue Target Group 名稱（CodeDeploy appspec 用）"
+  value       = aws_lb_target_group.blue.name
+}
+
+output "green_target_group_name" {
+  description = "Green Target Group 名稱（CodeDeploy appspec 用）"
+  value       = aws_lb_target_group.green.name
+}
+
+output "deploy_command" {
+  description = "觸發 Blue/Green 部署的 CLI 指令範例"
+  value       = <<-EOT
+    # 1. 取得最新 task definition ARN
+    TASK_DEF_ARN=$(aws ecs describe-task-definition \
+      --task-definition ${aws_ecs_cluster.main.name} \
+      --query 'taskDefinition.taskDefinitionArn' --output text)
+
+    # 2. 觸發 CodeDeploy deployment
+    aws deploy create-deployment \
+      --application-name ${aws_codedeploy_app.app.name} \
+      --deployment-group-name ${aws_codedeploy_deployment_group.app.deployment_group_name} \
+      --revision '{"revisionType":"AppSpecContent","appSpecContent":{"content":"{\"version\":0.0,\"Resources\":[{\"TargetService\":{\"Type\":\"AWS::ECS::Service\",\"Properties\":{\"TaskDefinition\":\"'$TASK_DEF_ARN'\",\"LoadBalancerInfo\":{\"ContainerName\":\"app\",\"ContainerPort\":${var.container_port}}}}}]}"}}'
+  EOT
+}

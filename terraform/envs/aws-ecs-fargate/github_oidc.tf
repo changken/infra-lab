@@ -107,6 +107,23 @@ resource "aws_iam_policy" "github_actions_deploy" {
           aws_iam_role.task.arn,
         ]
       },
+      {
+        # CodeDeploy Blue/Green 部署（取代 ECS UpdateService 直接部署）
+        Sid    = "CodeDeployDeploy"
+        Effect = "Allow"
+        Action = [
+          "codedeploy:CreateDeployment",
+          "codedeploy:GetDeployment",
+          "codedeploy:GetDeploymentConfig",
+          "codedeploy:RegisterApplicationRevision",
+          "codedeploy:GetApplicationRevision",
+        ]
+        Resource = [
+          aws_codedeploy_app.app.arn,
+          "arn:aws:codedeploy:${var.region}:${data.aws_caller_identity.current.account_id}:deploymentgroup:${aws_codedeploy_app.app.name}/${aws_codedeploy_deployment_group.app.deployment_group_name}",
+          "arn:aws:codedeploy:${var.region}:${data.aws_caller_identity.current.account_id}:deploymentconfig:*",
+        ]
+      },
     ]
   })
 

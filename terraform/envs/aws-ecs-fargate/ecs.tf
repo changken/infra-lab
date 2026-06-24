@@ -95,13 +95,24 @@ resource "aws_ecs_task_definition" "app" {
 }
 
 # ── ECS Service ──────────────────────────────────────────────
+#
+# deployment_controller = "CODE_DEPLOY"：
+#   - 停用 ECS rolling update，改由 CodeDeploy 控制 Blue/Green 切換
+#   - 不相容：deployment_circuit_breaker、deployment_min/max_percent
+#   - CodeDeploy 負責：task 啟動、health check、流量切換、舊 task 清除
+#
+# ⚠️ 注意：從 ECS rolling 改成 CODE_DEPLOY 需要重建 Service（ForceNew）
 
 resource "aws_ecs_service" "app" {
   name                   = "${local.name_prefix}-app-service"
   cluster                = aws_ecs_cluster.main.arn
   task_definition        = aws_ecs_task_definition.app.arn
   desired_count          = var.service_desired_count
-  enable_execute_command = true # 允許 aws ecs execute-command（類似 kubectl exec）
+  enable_execute_command = true
+
+  deployment_controller {
+    type = "CODE_DEPLOY"
+  }
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
@@ -112,21 +123,14 @@ resource "aws_ecs_service" "app" {
   network_configuration {
     subnets          = [for s in aws_subnet.public : s.id]
     security_groups  = [aws_security_group.ecs_tasks.id]
-    assign_public_ip = true # 無 NAT Gateway：task 需要 public IP 出外網
+    assign_public_ip = true
   }
 
+  # Blue TG 為初始生產目標；CodeDeploy 部署後會自動切換
   load_balancer {
-    target_group_arn = aws_lb_target_group.app.arn
+    target_group_arn = aws_lb_target_group.blue.arn
     container_name   = "app"
     container_port   = var.container_port
-  }
-
-  deployment_minimum_healthy_percent = 50
-  deployment_maximum_percent         = 200
-
-  deployment_circuit_breaker {
-    enable   = true
-    rollback = true
   }
 
   depends_on = [
@@ -138,8 +142,8 @@ resource "aws_ecs_service" "app" {
   tags = local.common_tags
 
   lifecycle {
-    # desired_count 由 Auto Scaling 管理；task_definition 由 Terraform 管理
-    # 待 GitHub Actions CI/CD 設好後，可加回 task_definition
-    ignore_changes = [desired_count]
+    # task_definition 和 load_balancer 由 CodeDeploy 管理，Terraform 不應覆蓋
+    # desired_count 由 Application Auto Scaling 管理
+    ignore_changes = [task_definition, load_balancer, desired_count]
   }
 }
