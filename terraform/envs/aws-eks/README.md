@@ -69,6 +69,7 @@ IAM: infra-lab-dev-custom-app-role (IRSA: S3 + Bedrock)
 | [argocd-demo.md](./docs/argocd-demo.md) | ArgoCD GitOps + ALB Ingress | ALB / ALB Controller |
 | [gitops-cicd-demo.md](./docs/gitops-cicd-demo.md) | GitHub Actions OIDC → ECR → ArgoCD CD Pipeline | IAM / ECR / GitHub Actions |
 | [eso-demo.md](./docs/eso-demo.md) | External Secrets Operator — Secrets Manager → K8s Secret | Secrets Manager / IAM / ESO |
+| [secret-rotation-demo.md](./docs/secret-rotation-demo.md) | Secrets Manager 自動 Rotation — Lambda 4-step protocol | Secrets Manager / Lambda |
 | [hpa-demo.md](./docs/hpa-demo.md) | Horizontal Pod Autoscaler | — |
 | [bedrock-irsa-403-fix.md](./docs/bedrock-irsa-403-fix.md) | Bedrock cross-region inference profile 403 修正 | Bedrock / IAM |
 
