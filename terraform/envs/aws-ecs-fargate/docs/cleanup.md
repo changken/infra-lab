@@ -16,51 +16,59 @@
 
 ### Step 1：停用 EventBridge Scheduler
 
-```bash
-aws scheduler update-schedule \
-  --name infra-lab-dev-job \
-  --state DISABLED \
-  --region us-east-1 \
-  --flexible-time-window '{"Mode":"OFF"}' \
-  --schedule-expression "rate(5 minutes)" \
-  --target '{
-    "Arn": "arn:aws:ecs:us-east-1:661515655645:cluster/infra-lab-dev-cluster",
-    "RoleArn": "arn:aws:iam::661515655645:role/infra-lab-dev-scheduler-role",
-    "EcsParameters": {
-      "TaskDefinitionArn": "arn:aws:ecs:us-east-1:661515655645:task-definition/infra-lab-dev-job",
-      "LaunchType": "FARGATE",
-      "NetworkConfiguration": {
-        "AwsvpcConfiguration": {
-          "Subnets": ["subnet-0bd00388343c719d2","subnet-035df59fb4c4de89e"],
-          "SecurityGroups": ["sg-0088b5ca737ef0e43"],
-          "AssignPublicIp": "ENABLED"
-        }
-      }
-    }
-  }'
+`aws scheduler update-schedule` 需要帶入現有的 target 設定，
+最簡單的方式是先讀出再更新（PowerShell）：
+
+```powershell
+# PowerShell（Windows）
+$schedule = aws scheduler get-schedule --name infra-lab-dev-job --region us-east-1 | ConvertFrom-Json
+
+aws scheduler update-schedule `
+  --name infra-lab-dev-job `
+  --region us-east-1 `
+  --state DISABLED `
+  --flexible-time-window '{"Mode":"OFF"}' `
+  --schedule-expression "rate(5 minutes)" `
+  --target ($schedule.Target | ConvertTo-Json -Compress -Depth 10)
 ```
 
-> 也可以直接在 `scheduled_task.tf` 加 `state = "DISABLED"` 後 `terraform apply`，效果相同。
+> 也可以在 `scheduled_task.tf` 加 `state = "DISABLED"` 後 `terraform apply`，效果相同。
 
 ### Step 2：清空 ECR images
 
+⚠️ `--image-ids` 不接受 shell 變數直接傳入，需寫入暫存檔再用 `file://` 讀取。
+
+```powershell
+# PowerShell（Windows）
+$REPO = "infra-lab-dev-app"
+
+$imageIds = aws ecr list-images `
+  --repository-name $REPO `
+  --region us-east-1 `
+  --query 'imageIds[*]' `
+  --output json | ConvertFrom-Json
+
+Write-Output "Images to delete: $($imageIds.Count)"
+
+$imageIds | ConvertTo-Json | Out-File -FilePath "$env:TEMP\ecr-images.json" -Encoding utf8
+
+aws ecr batch-delete-image `
+  --repository-name $REPO `
+  --region us-east-1 `
+  --image-ids "file://$env:TEMP\ecr-images.json" `
+  --query '{deleted:imageIds | length(@), failures:failures | length(@)}' `
+  --output json
+# 預期：{"deleted": N, "failures": 0}
+```
+
 ```bash
+# Bash（macOS/Linux）
 REPO="infra-lab-dev-app"
-
-# 列出所有 image IDs
-IMAGE_IDS=$(aws ecr list-images \
-  --repository-name "$REPO" \
-  --region us-east-1 \
-  --query 'imageIds[*]' \
-  --output json)
-
-echo "Images to delete: $(echo $IMAGE_IDS | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))')"
-
-# 批次刪除
-aws ecr batch-delete-image \
-  --repository-name "$REPO" \
-  --region us-east-1 \
-  --image-ids "$IMAGE_IDS"
+aws ecr list-images --repository-name "$REPO" --region us-east-1 \
+  --query 'imageIds[*]' --output json > /tmp/ecr-images.json
+aws ecr batch-delete-image --repository-name "$REPO" --region us-east-1 \
+  --image-ids file:///tmp/ecr-images.json \
+  --query '{deleted:imageIds | length(@), failures:failures | length(@)}' --output json
 ```
 
 ### Step 3：確認無 InProgress CodeDeploy deployment
@@ -87,38 +95,40 @@ terraform destroy -auto-approve
 
 ### Step 5：驗證清除完成
 
-```bash
-# ECS Cluster
-aws ecs describe-clusters \
-  --clusters infra-lab-dev-cluster \
-  --region us-east-1 \
+```powershell
+# PowerShell（Windows）
+Write-Output "=== ECS Cluster ==="
+aws ecs describe-clusters --clusters infra-lab-dev-cluster --region us-east-1 `
   --query 'clusters[0].status' --output text
-# 預期：INACTIVE 或空結果
+# 預期：INACTIVE
 
-# ALB
-aws elbv2 describe-load-balancers \
-  --names infra-lab-dev-alb \
-  --region us-east-1 2>&1 | grep -c LoadBalancerNotFound
-# 預期：1
+Write-Output "=== ALB ==="
+aws elbv2 describe-load-balancers --names infra-lab-dev-alb --region us-east-1 2>&1 | `
+  Select-String "LoadBalancerNotFound" | ForEach-Object { "NOT FOUND (OK)" }
 
-# VPC（用 tag 找）
-aws ec2 describe-vpcs \
-  --region us-east-1 \
-  --filters Name=tag:Project,Values=infra-lab Name=tag:Environment,Values=dev \
+Write-Output "=== VPC ==="
+aws ec2 describe-vpcs --region us-east-1 `
+  --filters Name=tag:Project,Values=infra-lab Name=tag:Environment,Values=dev `
   --query 'Vpcs | length(@)' --output text
 # 預期：0
 
-# ECR（應已刪除）
-aws ecr describe-repositories \
-  --repository-names infra-lab-dev-app \
-  --region us-east-1 2>&1 | grep -c RepositoryNotFoundException
-# 預期：1
+Write-Output "=== ECR Repository ==="
+aws ecr describe-repositories --repository-names infra-lab-dev-app --region us-east-1 2>&1 | `
+  Select-String "RepositoryNotFoundException" | ForEach-Object { "NOT FOUND (OK)" }
 
-# Secrets Manager（recovery_window=0，應立即刪除）
-aws secretsmanager describe-secret \
-  --secret-id "infra-lab-dev/ecs/app-config" \
-  --region us-east-1 2>&1 | grep -c ResourceNotFoundException
-# 預期：1
+Write-Output "=== Secrets Manager ==="
+aws secretsmanager describe-secret --secret-id "infra-lab-dev/ecs/app-config" `
+  --region us-east-1 2>&1 | Select-String "ResourceNotFoundException" | `
+  ForEach-Object { "NOT FOUND (OK)" }
+```
+
+```bash
+# Bash（macOS/Linux）
+echo "ECS:" && aws ecs describe-clusters --clusters infra-lab-dev-cluster --region us-east-1 --query 'clusters[0].status' --output text
+echo "ALB:" && aws elbv2 describe-load-balancers --names infra-lab-dev-alb --region us-east-1 2>&1 | grep -o LoadBalancerNotFound
+echo "VPC:" && aws ec2 describe-vpcs --region us-east-1 --filters Name=tag:Project,Values=infra-lab Name=tag:Environment,Values=dev --query 'Vpcs | length(@)' --output text
+echo "ECR:" && aws ecr describe-repositories --repository-names infra-lab-dev-app --region us-east-1 2>&1 | grep -o RepositoryNotFoundException
+echo "Secret:" && aws secretsmanager describe-secret --secret-id "infra-lab-dev/ecs/app-config" --region us-east-1 2>&1 | grep -o ResourceNotFoundException
 ```
 
 ### Step 6：ecs-app repo 處理（選擇性）
@@ -127,14 +137,20 @@ aws secretsmanager describe-secret \
 - ECR push（已刪除 → 失敗）
 - CodeDeploy deployment（已刪除 → 失敗）
 
-若之後不再重建此 lab，建議停用 workflow：
+若之後不再重建此 lab，建議停用 workflow。
+
+**方法 A：GitHub UI（最簡單）**
+
+前往：`https://github.com/changken/ecs-app/actions/workflows/deploy.yml`
+→ 右上角 `⋯` → **Disable workflow**
+
+**方法 B：gh CLI（需先安裝）**
 
 ```bash
-# GitHub CLI
 gh workflow disable deploy.yml --repo changken/ecs-app
 ```
 
-或在 `ecs-app` repo 的 Actions 設定頁面手動停用。
+> gh CLI 安裝：https://cli.github.com/
 
 ---
 
