@@ -48,6 +48,30 @@ output "exec_command" {
   value       = "aws ecs execute-command --cluster ${aws_ecs_cluster.main.name} --task <TASK_ID> --container app --interactive --command /bin/sh"
 }
 
+# ── Scheduled Task ───────────────────────────────────────────
+
+output "job_task_definition" {
+  description = "Job Task Definition family（手動觸發測試用）"
+  value       = aws_ecs_task_definition.job.family
+}
+
+output "job_run_command" {
+  description = "手動觸發一次 job task 的指令"
+  value       = <<-EOT
+    aws ecs run-task \
+      --cluster ${aws_ecs_cluster.main.name} \
+      --task-definition ${aws_ecs_task_definition.job.family} \
+      --launch-type FARGATE \
+      --network-configuration 'awsvpcConfiguration={subnets=[${join(",", [for s in aws_subnet.public : s.id])}],securityGroups=[${aws_security_group.ecs_tasks.id}],assignPublicIp=ENABLED}' \
+      --query 'tasks[0].taskArn' --output text
+  EOT
+}
+
+output "job_logs_command" {
+  description = "查看 job 執行日誌"
+  value       = "aws logs tail ${aws_cloudwatch_log_group.app.name} --log-stream-name-prefix job --follow"
+}
+
 # ── Blue/Green ───────────────────────────────────────────────
 
 output "alb_test_url" {
