@@ -18,6 +18,7 @@
 | CI/CD | GitOps (ArgoCD) | GitHub Actions → ECS deploy |
 | Blue/Green 部署 | Argo Rollouts（CRD）| CodeDeploy（AWS 托管）|
 | 定時任務 | CronJob | EventBridge Scheduler → ECS RunTask |
+| 監控 | Prometheus + Grafana（Helm）| Container Insights + CloudWatch Dashboard |
 | 費用複雜度 | 高（Control Plane + Nodes + NAT）| 低（Task CPU/Memory 按需計費）|
 
 ## 網路架構比較
