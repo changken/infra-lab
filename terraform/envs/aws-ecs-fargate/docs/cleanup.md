@@ -66,6 +66,55 @@ terraform apply -auto-approve
 - `name_prefix`（非固定 `name`）→ create_before_destroy 時名稱不衝突
 - `lifecycle { create_before_destroy = true }` → 先建新 TG，Listener 切換後再刪舊 TG
 
+### 快速連續部署導致 ECS_UPDATE_ERROR
+
+**症狀**
+
+短時間內多次 push，前一個 CodeDeploy deployment 還沒完全結束，
+下一個就啟動，出現：
+
+```
+"code": "ECS_UPDATE_ERROR",
+"message": "TaskSet <ecs-svc/xxx> is behind prod listener ... Verify that the TaskSet is still serving production traffic."
+```
+
+**原因**
+
+CodeDeploy 在 deployment 結束後需要時間更新 task set 狀態（PRIMARY/DRAINING swap）。
+若此期間新 deployment 啟動，CodeDeploy 的 prod listener 紀錄與實際 ALB 狀態短暫不一致。
+
+**影響**
+
+服務不中斷（前一個 deployment 已成功，task 仍在跑）。
+只有那次 deployment 標記為 Failed，服務本身健康。
+
+**確認服務正常**
+
+```bash
+ALB="http://<alb-dns>"
+curl $ALB/health  # 應回傳 ok
+
+aws ecs describe-services \
+  --cluster infra-lab-dev-cluster \
+  --services infra-lab-dev-app-service \
+  --query 'services[0].{Running:runningCount,TaskSets:taskSets[].{Status:status,TG:loadBalancers[0].targetGroupArn}}' \
+  --output json
+# PRIMARY task set 正常即可
+```
+
+**解法**
+
+等前一個 deployment 完全結束（DRAINING task set 消失）後再觸發新的：
+```bash
+# 確認沒有 InProgress deployment 再 push
+aws deploy list-deployments \
+  --application-name infra-lab-dev-app \
+  --deployment-group-name infra-lab-dev-dg \
+  --include-only-statuses InProgress \
+  --query 'deployments' --output json
+# 回傳 [] 才 push
+```
+
 ### 切換到 CODE_DEPLOY 後 task 起不來（INVALID_ECS_SERVICE）
 
 **症狀**

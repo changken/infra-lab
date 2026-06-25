@@ -156,6 +156,49 @@ aws deploy stop-deployment \
 codedeploy_config = "CodeDeployDefault.ECSCanary10Percent5Minutes"
 ```
 
+套用後 terraform apply：
+```bash
+terraform apply -target=aws_codedeploy_deployment_group.app
+```
+
+## Canary 流量觀察
+
+Canary 策略下，ALB 會用 **weighted target group** 把流量按比例分給 Blue/Green TG。
+`ECSCanary10Percent5Minutes` = 前 5 分鐘 10% 打新版，之後一次全切。
+
+**觀察時機**：Green task 從啟動到 health check 通過約需 30-60 秒，
+這段時間就在消耗 canary window。建議用較長的策略或在部署觸發後立即開始採樣。
+
+### 推薦觀察指令（PowerShell）
+
+```powershell
+# 部署觸發後立即執行，持續採樣
+$ALB = "http://<alb-dns>"
+1..200 | ForEach-Object {
+    $r = try { Invoke-RestMethod "$ALB/version" -TimeoutSec 2 } catch { $null }
+    [PSCustomObject]@{ deploy = $r.deploy ?? "[old]"; git = $r.git_commit }
+    Start-Sleep -Milliseconds 500
+} | Group-Object deploy | Select-Object Name, Count
+```
+
+**預期輸出（canary 期間）**：
+```
+Name         Count
+----         -----
+[old]          170   # ~85% 舊版（Blue TG）
+canary-test     30   # ~15% 新版（Green TG）
+```
+
+> Green task 起來前的 503 會被 catch 忽略，不影響統計。
+
+### 各策略 window 長度建議
+
+| 策略 | Canary Window | 適合觀察時間 |
+|------|--------------|-------------|
+| `ECSCanary10Percent5Minutes` | 5 分鐘 | task 啟動後剩 ~4 分鐘可採樣 |
+| `ECSCanary10Percent15Minutes` | 15 分鐘 | **推薦 lab 練習**，足夠觀察 |
+| `ECSLinear10PercentEvery1Minutes` | 10 分鐘（漸進）| 可看到比例從 10% 爬升至 100% |
+
 ## Troubleshooting
 
 ### CodeDeploy 部署立即失敗：INVALID_ECS_SERVICE
