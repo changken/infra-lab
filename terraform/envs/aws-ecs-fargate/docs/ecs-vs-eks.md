@@ -11,7 +11,7 @@
 | 水平擴縮 | HPA + Karpenter | Application Auto Scaling |
 | 密鑰管理 | ESO → K8s Secret → envFrom | Task Def secrets block（直接） |
 | 日誌 | Fluent Bit DaemonSet | awslogs driver（原生） |
-| 進入容器 | `kubectl exec` | `aws ecs execute-command` |
+| 進入容器 | `kubectl exec`（走 API Server → kubelet）| `aws ecs execute-command`（走 SSM Session Manager）|
 | 查看日誌 | `kubectl logs` | `aws logs tail` |
 | 網路模式 | VPC CNI（Pod 有 VPC IP）| awsvpc（Task 有獨立 ENI）|
 | 服務帳號 | IRSA（K8s SA → IAM Role）| Task Role（直接綁 Task）|
