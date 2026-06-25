@@ -48,6 +48,13 @@ output "exec_command" {
   value       = "aws ecs execute-command --cluster ${aws_ecs_cluster.main.name} --task <TASK_ID> --container app --interactive --command /bin/sh"
 }
 
+# ── CloudWatch Dashboard ─────────────────────────────────────
+
+output "dashboard_url" {
+  description = "CloudWatch Dashboard URL"
+  value       = "https://${var.region}.console.aws.amazon.com/cloudwatch/home?region=${var.region}#dashboards:name=${local.name_prefix}"
+}
+
 # ── Scheduled Task ───────────────────────────────────────────
 
 output "job_task_definition" {
