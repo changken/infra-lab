@@ -29,47 +29,23 @@ ECS Service（deployment_controller = CODE_DEPLOY）
 
 ### 步驟 1：修改 app（模擬新版本）
 
-```go
-// app/main.go：改一下 version，模擬有新版本
-APP_VERSION = "2.0.0"  // 在 terraform.tfvars 改 app_version
-```
-
-或直接在 `terraform.tfvars` 改：
-```hcl
-app_version = "2.0.0"
-```
-
-### 步驟 2：Build & Push 新 image
+app 程式碼位於獨立 repo [changken/ecs-app](https://github.com/changken/ecs-app)。
 
 ```bash
-ECR=$(terraform output -raw ecr_repository_url)
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR
+# clone app repo（第一次）
+git clone https://github.com/changken/ecs-app.git
+cd ecs-app
 
-# 打新 tag 方便區分
-docker build -t $ECR:v2 ./app
-docker push $ECR:v2
+# 改任何東西，例如在 main.go 加個 endpoint 或改回傳內容
 ```
 
-### 步驟 3：註冊新 Task Definition
+### 步驟 2 & 3：Build、Push、註冊 Task Definition（自動）
 
-```bash
-# 取得現有 task definition，換 image tag
-CURRENT_TASK_DEF=$(aws ecs describe-task-definition \
-  --task-definition infra-lab-dev-app \
-  --query 'taskDefinition' --output json)
+push 到 `main` 後，GitHub Actions 自動完成：
+- `docker build` → ECR push（`:$SHA` + `:latest`）
+- `aws ecs register-task-definition`（只換 image，其他設定不動）
 
-NEW_TASK_DEF=$(echo "$CURRENT_TASK_DEF" | jq \
-  --arg IMAGE "$ECR:v2" \
-  '.containerDefinitions[0].image = $IMAGE |
-   del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
-       .compatibilities, .registeredAt, .registeredBy)')
-
-NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
-  --cli-input-json "$NEW_TASK_DEF" \
-  --query 'taskDefinition.taskDefinitionArn' --output text)
-
-echo "New Task Definition: $NEW_TASK_DEF_ARN"
-```
+> 手動操作請參考 [ecs-app README](https://github.com/changken/ecs-app#cicd-流程)。
 
 ### 步驟 4：觸發 CodeDeploy 部署
 
