@@ -66,6 +66,47 @@ terraform apply -auto-approve
 - `name_prefix`（非固定 `name`）→ create_before_destroy 時名稱不衝突
 - `lifecycle { create_before_destroy = true }` → 先建新 TG，Listener 切換後再刪舊 TG
 
+### 切換到 CODE_DEPLOY 後 task 起不來（INVALID_ECS_SERVICE）
+
+**症狀**
+
+切換 `deployment_controller = "CODE_DEPLOY"` 並 apply 後，ECS Service running count 變 0，
+觸發 CodeDeploy 部署立即失敗：
+
+```
+"code": "INVALID_ECS_SERVICE",
+"message": "The target ECS service must be configured using one of those two target groups."
+```
+
+**原因**
+
+`deployment_controller` 改變會讓 Terraform 標記 ECS Service 為 ForceNew，
+但實際上 AWS 有時不會完整清除舊 task set。
+舊 PRIMARY task set 可能仍指向切換前的 TG（已被 Terraform 刪除）。
+CodeDeploy 要求 service 的 current TG 必須是 Blue 或 Green 其中之一，兩者都不是就報錯。
+
+**診斷**
+
+```bash
+aws ecs describe-services \
+  --cluster infra-lab-dev-cluster \
+  --services infra-lab-dev-app-service \
+  --query 'services[0].taskSets[].{ID:id,Status:status,TG:loadBalancers[0].targetGroupArn}' \
+  --output json
+# 如果 TG ARN 不是 blue 或 green，就是這個問題
+```
+
+**解法：強制重建 ECS Service**
+
+```bash
+terraform apply -replace=aws_ecs_service.app
+```
+
+此指令：
+1. 刪除舊 service（含所有 task sets）
+2. 重建 service，新 PRIMARY task set 正確指向 `blue` TG
+3. 完成後 2 tasks 正常 running，CodeDeploy 可正常部署
+
 ## 清除後驗證
 
 ```bash

@@ -180,6 +180,59 @@ aws deploy stop-deployment \
 codedeploy_config = "CodeDeployDefault.ECSCanary10Percent5Minutes"
 ```
 
+## Troubleshooting
+
+### CodeDeploy 部署立即失敗：INVALID_ECS_SERVICE
+
+```
+"code": "INVALID_ECS_SERVICE",
+"message": "The target ECS service must be configured using one of those two target groups."
+```
+
+**原因**：ECS service 的 PRIMARY task set 指向的 TG 不是 blue 或 green（通常是切換 `deployment_controller` 時的舊 TG 殘留）。
+
+**修復**：
+```bash
+terraform apply -replace=aws_ecs_service.app
+```
+
+詳細診斷步驟請參閱 [cleanup.md](./cleanup.md#切換到-code_deploy-後-task-起不來invalid_ecs_service)。
+
+---
+
+### 503 Bad Gateway（ALB 返回）
+
+**診斷**：
+```bash
+aws ecs describe-services \
+  --cluster infra-lab-dev-cluster \
+  --services infra-lab-dev-app-service \
+  --query 'services[0].{Running:runningCount,Events:events[:3]}' \
+  --output json
+```
+
+常見原因：
+- task 啟動失敗（image pull error → 確認 ECR image 存在且 task execution role 有 ECR 權限）
+- health check 未通過（確認 `/health` path 正確，container port 與 TG port 一致）
+- SG 沒開 ALB → task 的 port（確認 `aws_security_group.ecs_tasks` ingress 規則）
+
+---
+
+### CodeDeploy 部署卡在 BeforeInstall / Install
+
+```bash
+# 查看詳細 lifecycle event log
+aws deploy get-deployment \
+  --deployment-id $DEPLOYMENT_ID \
+  --query 'deploymentInfo.deploymentStatusMessages' \
+  --output text
+```
+
+通常是新 task set 的 task 啟動失敗，參考 CloudWatch Logs：
+```bash
+aws logs tail /ecs/infra-lab-dev-app --follow
+```
+
 ## 搭配 CloudWatch Alarm 自動回滾
 
 ```hcl
