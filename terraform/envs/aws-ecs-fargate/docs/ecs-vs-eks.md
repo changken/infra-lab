@@ -17,6 +17,7 @@
 | 服務帳號 | IRSA（K8s SA → IAM Role）| Task Role（直接綁 Task）|
 | CI/CD | GitOps (ArgoCD) | GitHub Actions → ECS deploy |
 | Blue/Green 部署 | Argo Rollouts（CRD）| CodeDeploy（AWS 托管）|
+| 定時任務 | CronJob | EventBridge Scheduler → ECS RunTask |
 | 費用複雜度 | 高（Control Plane + Nodes + NAT）| 低（Task CPU/Memory 按需計費）|
 
 ## 網路架構比較
