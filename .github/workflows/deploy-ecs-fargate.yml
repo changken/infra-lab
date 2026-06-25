@@ -1,0 +1,141 @@
+name: Deploy ECS Fargate (Blue/Green)
+
+# app/ 有變動才觸發，避免 Terraform 改動也跑 CI
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'terraform/envs/aws-ecs-fargate/app/**'
+  workflow_dispatch:  # 允許手動觸發（測試用）
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: infra-lab-dev-app
+  ECS_CLUSTER: infra-lab-dev-cluster
+  TASK_DEFINITION_FAMILY: infra-lab-dev-app
+  CONTAINER_NAME: app
+  CONTAINER_PORT: "8080"
+  CODEDEPLOY_APP: infra-lab-dev-app
+  CODEDEPLOY_DG: infra-lab-dev-dg
+
+jobs:
+  deploy:
+    name: Build & Blue/Green Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC token 取得
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 1. AWS 身份（OIDC，不需要長效金鑰）────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::661515655645:role/infra-lab-dev-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── 2. ECR 登入 ─────────────────────────────────────────────────
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── 3. Build & Push（commit SHA tag + latest）───────────────────
+      - name: Build, tag, and push image
+        id: build-image
+        working-directory: terraform/envs/aws-ecs-fargate/app
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          # latest tag 方便手動拉取，SHA tag 確保可追蹤
+          docker tag "$IMAGE" "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      # ── 4. 更新 Task Definition（只換 image，其他設定保持不變）──────
+      - name: Register new task definition
+        id: task-def
+        env:
+          NEW_IMAGE: ${{ steps.build-image.outputs.image }}
+        run: |
+          TASK_DEF_ARN=$(
+            aws ecs describe-task-definition \
+              --task-definition "$TASK_DEFINITION_FAMILY" \
+              --query taskDefinition \
+              --output json \
+            | jq --arg IMAGE "$NEW_IMAGE" \
+                '.containerDefinitions[0].image = $IMAGE
+                 | del(.taskDefinitionArn, .revision, .status,
+                       .requiresAttributes, .compatibilities,
+                       .registeredAt, .registeredBy)' \
+            | aws ecs register-task-definition \
+                --cli-input-json file:///dev/stdin \
+                --query 'taskDefinition.taskDefinitionArn' \
+                --output text
+          )
+          echo "arn=$TASK_DEF_ARN" >> "$GITHUB_OUTPUT"
+          echo "Registered: $TASK_DEF_ARN"
+
+      # ── 5. 觸發 CodeDeploy Blue/Green 部署 ─────────────────────────
+      - name: Trigger CodeDeploy deployment
+        id: deploy
+        env:
+          TASK_DEF_ARN: ${{ steps.task-def.outputs.arn }}
+        run: |
+          # 用 jq 建構 AppSpec，避免 JSON 手動 escape
+          APPSPEC=$(jq -cn \
+            --arg taskDef  "$TASK_DEF_ARN" \
+            --arg container "$CONTAINER_NAME" \
+            --argjson port  "$CONTAINER_PORT" \
+            '{
+              version: 0.0,
+              Resources: [{
+                TargetService: {
+                  Type: "AWS::ECS::Service",
+                  Properties: {
+                    TaskDefinition: $taskDef,
+                    LoadBalancerInfo: {
+                      ContainerName: $container,
+                      ContainerPort: $port
+                    }
+                  }
+                }
+              }]
+            }')
+
+          REVISION=$(jq -cn --arg content "$APPSPEC" \
+            '{revisionType: "AppSpecContent", appSpecContent: {content: $content}}')
+
+          DEPLOYMENT_ID=$(aws deploy create-deployment \
+            --application-name   "$CODEDEPLOY_APP" \
+            --deployment-group-name "$CODEDEPLOY_DG" \
+            --revision "$REVISION" \
+            --query 'deploymentId' \
+            --output text)
+
+          echo "deployment-id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+          echo "Deployment started: $DEPLOYMENT_ID"
+          echo "Track at: https://console.aws.amazon.com/codesuite/codedeploy/deployments/$DEPLOYMENT_ID"
+
+      # ── 6. 等待部署完成（預設 timeout: 30 min）─────────────────────
+      - name: Wait for deployment
+        run: |
+          aws deploy wait deployment-successful \
+            --deployment-id "${{ steps.deploy.outputs.deployment-id }}"
+          echo "Blue/Green deployment succeeded!"
+
+      # ── 7. 驗證（smoke test）────────────────────────────────────────
+      - name: Smoke test
+        run: |
+          ALB_URL="http://infra-lab-dev-alb-17053701.us-east-1.elb.amazonaws.com"
+          VERSION=$(curl -sf "$ALB_URL" | jq -r '.version')
+          echo "Deployed version: $VERSION"
+          # 確認回傳的 image SHA 包含 commit SHA 前 7 碼
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "Expected SHA prefix: $SHORT_SHA"
