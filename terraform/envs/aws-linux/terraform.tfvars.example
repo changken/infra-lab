@@ -1,0 +1,21 @@
+# 複製此檔案為 terraform.tfvars 並填入實際值
+# cp terraform.tfvars.example terraform.tfvars
+
+region      = "us-east-1"
+project     = "linux-bastion"
+environment = "dev"
+
+# 你的公網 IP（執行 curl ifconfig.me 取得）
+my_ip = "1.2.3.4/32"
+
+# 網路設定（使用預設值即可）
+vpc_cidr             = "10.20.0.0/16"
+public_subnet_cidrs  = ["10.20.1.0/24", "10.20.3.0/24"]
+private_subnet_cidrs = ["10.20.2.0/24", "10.20.4.0/24"]
+availability_zones   = ["us-east-1a", "us-east-1b"]
+
+# 費用：t3.micro Spot ~$0.003/hr（~$2.2/月）
+# 若需要更多資源可改 t3.small / t3.medium
+instance_type    = "t3.micro"
+market_type      = "spot"
+root_volume_size = 20

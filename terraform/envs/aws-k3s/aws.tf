@@ -16,63 +16,23 @@ locals {
 # Tailscale network as the Azure VM.
 # ============================================================================
 
-# 1. VPC
-resource "aws_vpc" "main" {
-  cidr_block           = "10.1.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+# 1. VPC (via aws-vpc module)
+module "vpc" {
+  source = "../../modules/aws-vpc"
 
-  tags = merge(local.common_tags, {
-    Name = "my-k3s-lab-vpc"
-  })
+  vpc_cidr             = "10.1.0.0/16"
+  public_subnet_cidrs  = ["10.1.1.0/24"]
+  private_subnet_cidrs = []
+  availability_zones   = [var.aws_availability_zone != "" ? var.aws_availability_zone : "us-east-1a"]
+  personal_pc_cidr     = var.ssh_allowed_cidr
 }
 
-# 2. Internet Gateway
-resource "aws_internet_gateway" "main" {
-  vpc_id = aws_vpc.main.id
-
-  tags = merge(local.common_tags, {
-    Name = "my-k3s-lab-igw"
-  })
-}
-
-# 3. Subnet
-resource "aws_subnet" "main" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.1.1.0/24"
-  availability_zone       = var.aws_availability_zone != "" ? var.aws_availability_zone : null
-  map_public_ip_on_launch = false # No public IP, Tailscale only
-
-  tags = merge(local.common_tags, {
-    Name = "my-k3s-lab-subnet"
-  })
-}
-
-# 4. Route Table
-resource "aws_route_table" "main" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.main.id
-  }
-
-  tags = merge(local.common_tags, {
-    Name = "my-k3s-lab-rt"
-  })
-}
-
-# 5. Route Table Association
-resource "aws_route_table_association" "main" {
-  subnet_id      = aws_subnet.main.id
-  route_table_id = aws_route_table.main.id
-}
-
-# 6. Security Group (Tailscale-first, minimal rules)
+# 2. Security Group (Tailscale-first, minimal rules)
+# 保留 inline SG：使用 self = true 做節點互通，規則與 aws-vpc module 的 k3s SG 不同
 resource "aws_security_group" "k3s" {
   name        = "my-k3s-lab-sg"
   description = "Security group for K3s node (Tailscale-first access)"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = module.vpc.vpc_id
 
   # Egress: Allow all outbound (for apt, K3s, Tailscale)
   egress {
@@ -192,7 +152,7 @@ resource "aws_eip" "k3s_cp" {
   })
 }
 
-# 7. SSH Key Pair
+# 3. SSH Key Pair
 resource "aws_key_pair" "emergency" {
   key_name   = "my-k3s-lab-emergency-key"
   public_key = file(pathexpand(var.aws_ssh_public_key_path))
@@ -202,13 +162,13 @@ resource "aws_key_pair" "emergency" {
   })
 }
 
-# 8. K3s Control Plane EC2 Instance
+# 4. K3s Control Plane EC2 Instance
 resource "aws_instance" "k3s_cp" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.cp_instance_type
   key_name      = aws_key_pair.emergency.key_name
 
-  subnet_id                   = aws_subnet.main.id
+  subnet_id                   = values(module.vpc.public_subnet_ids)[0]
   vpc_security_group_ids      = [aws_security_group.k3s.id]
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.k3s_node.name
@@ -256,7 +216,7 @@ resource "aws_instance" "k3s_worker" {
   instance_type = var.worker_instance_type
   key_name      = aws_key_pair.emergency.key_name
 
-  subnet_id                   = aws_subnet.main.id
+  subnet_id                   = values(module.vpc.public_subnet_ids)[0]
   vpc_security_group_ids      = [aws_security_group.k3s.id]
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.k3s_node.name
@@ -290,7 +250,7 @@ resource "aws_instance" "k3s_worker" {
   })
 }
 
-# 9. Data Source: Latest Ubuntu 24.04 LTS AMI
+# 5. Data Source: Latest Ubuntu 24.04 LTS AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
   owners      = ["099720109477"] # Canonical
