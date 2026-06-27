@@ -75,6 +75,14 @@ terraform/
 │   ├── aws-billing-guard/     # 帳單上限護欄
 │   ├── aws-rds-scheduler/     # RDS 排程開關（省錢）
 │   └── aws-eks/               # EKS Cluster 封裝
+├── azure-labs/            # Azure 學習 labs（對比 AWS，Student Credit $100）
+│   ├── AGENTS.md              # Azure Labs 專屬 AI 規範
+│   ├── A-01-container-apps/   # Azure Container Apps（對比 ECS Fargate）
+│   ├── A-02-acr/              # Azure Container Registry（對比 ECR）
+│   ├── A-03-aks-cluster/      # AKS 基礎（對比 EKS）
+│   ├── A-04-aks-workload-identity/ # AKS Workload Identity（對比 IRSA）
+│   ├── A-05-azure-sql-serverless/  # Azure SQL Serverless（對比 RDS）
+│   └── A-06-azure-devops-pipeline/ # Azure DevOps CI/CD（對比 CodePipeline）
 └── envs/                  # 長駐獨立環境（有自己的 tfstate，非 lab 練習用）
     ├── aws-windows/           # Windows Server 2025 開發 / 跳板機（純 Windows）
     ├── aws-linux/             # Amazon Linux 2023 開發 / 跳板機（純 Linux）
@@ -241,6 +249,7 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-06-27: 新增 azure-labs/ 目錄（A-01 ~ A-06 Azure 學習路線，Student Credit $100）
 - 2026-06-27: 新增 modules/aws-linux、envs/aws-windows、envs/aws-linux；aws-k3s VPC 改用 aws-vpc module
 - 2026-05-21: 強化程式碼美化 (fmt)、Provider 鎖定 (lock file) 與動態驗證標準
 - 2026-05-21: 更新目錄結構（labs/ 架構）、學習路線（15 週）、新增容器化和 EKS 內容
