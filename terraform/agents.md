@@ -70,15 +70,20 @@ terraform/
 ├── modules/               # 可重用模組（供多個 lab/env 共用呼叫）
 │   ├── aws-vpc/               # 通用 VPC + Subnet
 │   ├── aws-aurora-postgresql/ # Aurora Serverless v2 封裝
-│   ├── aws-windows/           # Windows Bastion（Spot / On-demand）
+│   ├── aws-windows/           # Windows Server 2025 Bastion（Spot / On-demand）
+│   ├── aws-linux/             # Amazon Linux 2023 Bastion（Spot / On-demand）
 │   ├── aws-billing-guard/     # 帳單上限護欄
 │   ├── aws-rds-scheduler/     # RDS 排程開關（省錢）
 │   └── aws-eks/               # EKS Cluster 封裝
 └── envs/                  # 長駐獨立環境（有自己的 tfstate，非 lab 練習用）
+    ├── aws-windows/           # Windows Server 2025 開發 / 跳板機（純 Windows）
+    ├── aws-linux/             # Amazon Linux 2023 開發 / 跳板機（純 Linux）
     ├── aws-aurora-windows-bastion/ # Aurora + Windows Bastion 整合環境
     ├── aws-oracle-ec2/        # Oracle XE on Docker（省費替代 RDS Oracle）
     ├── aws-oracle-rds/        # Oracle on RDS（正式授權版）
-    ├── aws-k3s/               # K3s on AWS EC2（輕量 Kubernetes）
+    ├── aws-postgresql-rds/    # PostgreSQL on RDS
+    ├── aws-eks/               # EKS 長駐叢集
+    ├── aws-k3s/               # K3s on AWS EC2（輕量 Kubernetes，VPC 用 aws-vpc module）
     └── azure-k3s/             # K3s 跨雲實驗（AWS + Azure via Tailscale）
 ```
 
@@ -236,6 +241,7 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-06-27: 新增 modules/aws-linux、envs/aws-windows、envs/aws-linux；aws-k3s VPC 改用 aws-vpc module
 - 2026-05-21: 強化程式碼美化 (fmt)、Provider 鎖定 (lock file) 與動態驗證標準
 - 2026-05-21: 更新目錄結構（labs/ 架構）、學習路線（15 週）、新增容器化和 EKS 內容
 - 2026-02-03: 初始版本建立
