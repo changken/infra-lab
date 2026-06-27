@@ -1,0 +1,20 @@
+# 複製此檔案為 terraform.tfvars 並填入你的值
+# cp terraform.tfvars.example terraform.tfvars
+
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# 從 A-03 取得（在 A-03 目錄執行）：
+#   terraform output -raw oidc_issuer_url
+#   terraform output -raw cluster_name
+#   terraform output -raw resource_group_name
+aks_oidc_issuer_url     = "https://japaneast.oic.prod-aks.azure.com/xxx/xxx/"
+aks_cluster_name        = "aks-lab-dev-aks"
+aks_resource_group_name = "aks-lab-dev-rg"
+
+# 可選覆寫
+# location             = "japaneast"
+# project              = "wi-lab"
+# environment          = "dev"
+# namespace            = "default"
+# service_account_name = "workload-identity-sa"
+# key_vault_secret_value = "hello-from-keyvault"
