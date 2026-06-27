@@ -98,18 +98,44 @@ terraform output test_pod_manifest > test-pod.yaml
 kubectl apply -f test-pod.yaml
 kubectl wait --for=condition=Ready pod/wi-test --timeout=60s
 
-# 4. 在 Pod 內讀取 Key Vault secret（核心驗證）
-kubectl exec -it wi-test -- \
-  az keyvault secret show \
-    --vault-name $(terraform output -raw key_vault_name) \
-    --name demo-secret \
-    --query value -o tsv
+# 4. 進入 Pod
+kubectl exec -it wi-test -- bash
+
+# ── 以下在 Pod 內執行 ─────────────────────────────────────────
+# Workload Identity 會自動注入三個環境變數：
+#   AZURE_CLIENT_ID            ← User Assigned Identity 的 client_id
+#   AZURE_TENANT_ID            ← Azure AD tenant
+#   AZURE_FEDERATED_TOKEN_FILE ← OIDC token 檔案路徑（/var/run/secrets/azure/tokens/...）
+
+# 確認環境變數有注入（若都是空的，代表 SA annotation 或 Pod label 有問題）
+env | grep AZURE_
+
+# 5. 用 Federated Token 登入（不能用互動式 az login，要這樣）
+az login --federated-token "$(cat $AZURE_FEDERATED_TOKEN_FILE)" \
+  --service-principal \
+  -u $AZURE_CLIENT_ID \
+  --tenant $AZURE_TENANT_ID
+
+# 6. 讀取 Key Vault secret
+az keyvault secret show \
+  --vault-name <key_vault_name> \
+  --name demo-secret \
+  --query value -o tsv
 # 應顯示：hello-from-keyvault
+# ─────────────────────────────────────────────────────────────
+
+# 離開 Pod
+exit
 
 # 清理
 kubectl delete pod wi-test
 kubectl delete serviceaccount workload-identity-sa
 ```
+
+> **為什麼不能直接 `az keyvault secret show`？**
+> `az` CLI 在 Pod 內預設沒有登入狀態，Workload Identity 注入的是 OIDC token 檔案（`$AZURE_FEDERATED_TOKEN_FILE`），
+> 不是 `az login` 的 session。必須用 `--federated-token` 先換取 Azure AD token，`az` 才知道用哪個身份。
+> 這和 AWS IRSA 不同——IRSA 會自動注入 `AWS_WEB_IDENTITY_TOKEN_FILE`，AWS SDK 會自動讀取，不需要手動換 token。
 
 ## 清除資源
 
@@ -125,5 +151,7 @@ terraform destroy -auto-approve
 | `federated_identity_credential` subject 錯誤 | 格式必須是 `system:serviceaccount:<ns>:<sa-name>`，大小寫敏感 |
 | Pod 拿不到 token | SA 的 annotation `client-id` 填錯，或 Pod 缺少 label `azure.workload.identity/use: "true"` |
 | Key Vault secret 寫入失敗 | TODO 6 的 `terraform_kv_admin` role assignment 沒建，或 `depends_on` 缺少 |
+| `az keyvault secret show` 401 / login required | Pod 內需先執行 `az login --federated-token`，不能直接呼叫 CLI |
 | `az keyvault secret show` 403 | TODO 7 的 `workload_kv_read` role assignment 的 `principal_id` 填錯 |
+| `AZURE_FEDERATED_TOKEN_FILE` 是空的 | Pod label `azure.workload.identity/use: "true"` 缺少，或 AKS 未啟用 `workload_identity_enabled` |
 | Key Vault 名稱衝突 | 全域唯一，在 project 名稱加個隨機數字 |
