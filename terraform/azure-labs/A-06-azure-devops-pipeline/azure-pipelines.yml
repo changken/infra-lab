@@ -1,0 +1,101 @@
+# Azure DevOps Pipeline
+# 對比 AWS：CodePipeline + CodeBuild（lab 26）/ GitHub Actions（lab 27）
+#
+# 流程：build Docker image → push ACR → deploy Container App
+# 觸發：push 到 main branch
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src/**         # 只有 src/ 有改動才觸發（對比 GitHub Actions 的 paths）
+
+# TODO A: 定義 pipeline 變數
+# 對比 AWS CodeBuild：buildspec.yml 的 env.variables
+# 對比 GitHub Actions：env: 區塊
+variables:
+  # TODO: 填入你的 ACR login server（來自 A-02 output）
+  ACR_LOGIN_SERVER: "acrdevacr.azurecr.io"
+  IMAGE_NAME: "hello-azure"
+  # TODO: 填入 A-01 的 Container App 名稱與 Resource Group
+  CONTAINER_APP_NAME: "aca-lab-dev-app"
+  CONTAINER_APP_RG:   "aca-lab-dev-rg"
+
+stages:
+
+  #------------------------------------------------------------
+  # Stage 1：Build & Push
+  # 對比 AWS：CodeBuild stage
+  # 對比 GitHub Actions：build job
+  #------------------------------------------------------------
+  - stage: Build
+    displayName: "Build & Push to ACR"
+    jobs:
+      - job: BuildAndPush
+        displayName: "Docker Build & Push"
+        pool:
+          vmImage: "ubuntu-latest"   # Microsoft-hosted agent，對比 GitHub Actions runner
+        steps:
+
+          # TODO B: 登入 ACR
+          # 對比 GitHub Actions：aws-actions/amazon-ecr-login
+          # 對比 CodeBuild：buildspec 中的 aws ecr get-login-password
+          - task: AzureCLI@2
+            displayName: "Login to ACR"
+            inputs:
+              azureSubscription: "azure-subscription"  # Service Connection 名稱（來自 output）
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                # TODO: 填入正確的 az acr login 指令
+                az acr login --name $(ACR_LOGIN_SERVER | cut -d. -f1)
+
+          # TODO C: Docker Build & Push
+          - task: Docker@2
+            displayName: "Build and Push Image"
+            inputs:
+              # TODO: containerRegistry 填入在 Azure DevOps 設定的 ACR service connection 名稱
+              # （需在 portal 手動加一個 Docker Registry service connection，或用 AzureCLI task）
+              command: "buildAndPush"
+              repository: "$(IMAGE_NAME)"
+              dockerfile: "src/Dockerfile"
+              tags: |
+                $(Build.BuildId)
+                latest
+
+  #------------------------------------------------------------
+  # Stage 2：Deploy to Container App
+  # 對比 AWS：CodePipeline Deploy stage → ECS 更新
+  # 對比 GitHub Actions：deploy job with needs: [build]
+  #------------------------------------------------------------
+  - stage: Deploy
+    displayName: "Deploy to Container App"
+    dependsOn: Build
+    condition: succeeded()   # 對比 GitHub Actions：needs + if: success()
+    jobs:
+      - deployment: DeployACA
+        displayName: "Update Container App"
+        pool:
+          vmImage: "ubuntu-latest"
+        environment: "dev"   # Azure DevOps Environment（支援 approval gate）
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+
+                # TODO D: 更新 Container App image
+                - task: AzureCLI@2
+                  displayName: "Update Container App"
+                  inputs:
+                    azureSubscription: "azure-subscription"
+                    scriptType: "bash"
+                    scriptLocation: "inlineScript"
+                    inlineScript: |
+                      # TODO: 填入正確的 az containerapp update 指令
+                      # 提示：az containerapp update --name <app> --resource-group <rg> --image <image>:<tag>
+                      az containerapp update \
+                        --name $(CONTAINER_APP_NAME) \
+                        --resource-group $(CONTAINER_APP_RG) \
+                        --image $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(Build.BuildId)

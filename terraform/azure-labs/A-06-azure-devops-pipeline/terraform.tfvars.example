@@ -1,0 +1,22 @@
+# 複製此檔案為 terraform.tfvars 並填入你的值
+# cp terraform.tfvars.example terraform.tfvars
+
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Azure DevOps 設定
+# 1. 前往 https://dev.azure.com 建立或確認你的 org
+# 2. 建立 PAT：User Settings → Personal Access Tokens
+#    需要的 scope：Project（Read & Write）、Build（Read & Execute）、
+#                  Service Connections（Read, query, & manage）
+azuredevops_org_url    = "https://dev.azure.com/your-org-name"
+azuredevops_pat        = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+devops_project_name    = "azure-labs-pipeline"
+
+# 可選覆寫
+# location    = "japaneast"
+# project     = "ado-lab"
+# environment = "dev"
+
+# 選填：串接 A-02 ACR（pipeline 推送 image 用）
+# acr_name           = "acrdevacr"
+# acr_resource_group = "acr-lab-dev-rg"
