@@ -1,0 +1,16 @@
+# 複製此檔案為 terraform.tfvars 並填入你的值
+# cp terraform.tfvars.example terraform.tfvars
+
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# 可選覆寫
+# location           = "japaneast"
+# project            = "aks-lab"
+# environment        = "dev"
+# node_vm_size       = "Standard_B2s"
+# node_count         = 1
+# kubernetes_version = null   # null = Azure 選最新穩定版
+
+# 選填：串接 A-02 的 ACR（填入 ACR resource ID 讓 AKS 自動取得 AcrPull 權限）
+# 查詢指令：cd ../A-02-acr && terraform output -raw acr_id  （需先在 outputs.tf 加此 output）
+# acr_id = "/subscriptions/xxx/resourceGroups/xxx/providers/Microsoft.ContainerRegistry/registries/xxx"
