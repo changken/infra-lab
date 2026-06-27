@@ -1,0 +1,14 @@
+# 複製此檔案為 terraform.tfvars 並填入你的值
+# cp terraform.tfvars.example terraform.tfvars
+
+# 必填：你的 Azure Subscription ID
+# 查詢指令：az account show --query id -o tsv
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# 可選：覆寫預設值
+# location        = "japaneast"
+# project         = "aca-lab"
+# environment     = "dev"
+# container_image = "nginx:latest"
+# min_replicas    = 0
+# max_replicas    = 1
