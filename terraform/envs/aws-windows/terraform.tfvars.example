@@ -1,0 +1,21 @@
+# 複製此檔案為 terraform.tfvars 並填入實際值
+# cp terraform.tfvars.example terraform.tfvars
+
+region      = "us-east-1"
+project     = "windows-bastion"
+environment = "dev"
+
+# 你的公網 IP（執行 curl ifconfig.me 取得）
+my_ip = "1.2.3.4/32"
+
+# 網路設定（使用預設值即可）
+vpc_cidr             = "10.30.0.0/16"
+public_subnet_cidrs  = ["10.30.1.0/24", "10.30.3.0/24"]
+private_subnet_cidrs = ["10.30.2.0/24", "10.30.4.0/24"]
+availability_zones   = ["us-east-1a", "us-east-1b"]
+
+# 費用：m5a.xlarge Spot ~$0.04/hr
+# 輕量開發可改 t3.medium Spot ~$0.013/hr
+instance_type    = "m5a.xlarge"
+market_type      = "spot"
+root_volume_size = 50
