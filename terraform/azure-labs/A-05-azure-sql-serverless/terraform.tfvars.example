@@ -1,0 +1,18 @@
+# 複製此檔案為 terraform.tfvars 並填入你的值
+# cp terraform.tfvars.example terraform.tfvars
+
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+admin_password  = "P@ssw0rd!ChangeMe"   # 必填，換成強密碼
+
+# 可選覆寫
+# location                 = "japaneast"
+# project                  = "sql-lab"
+# environment              = "dev"
+# admin_login              = "sqladmin"
+# min_capacity             = 0.5
+# max_capacity             = 1
+# auto_pause_delay_minutes = 60     # 閒置 1 小時自動暫停（-1 = 不暫停）
+
+# 選填：填入本機 IP 讓 SSMS / sqlcmd 可以直連
+# 查詢：curl -s https://api.ipify.org
+# allowed_client_ip = "1.2.3.4"
