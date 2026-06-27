@@ -10,6 +10,9 @@
 
 resource "azurerm_resource_group" "rg" {
   # TODO
+  name     = "${local.name_prefix}-rg"
+  location = var.location
+  tags     = local.common_tags
 }
 
 #--------------------------------------------------------------
@@ -34,6 +37,13 @@ resource "azurerm_resource_group" "rg" {
 
 resource "azurerm_mssql_server" "server" {
   # TODO
+  name                         = local.sql_server_name # 全域唯一
+  resource_group_name          = azurerm_resource_group.rg.name
+  location                     = azurerm_resource_group.rg.location
+  version                      = "12.0" # SQL Server 版本，12.0 = 2014+（固定用這個）
+  administrator_login          = var.admin_login
+  administrator_login_password = var.admin_password
+  tags                         = local.common_tags
 }
 
 #--------------------------------------------------------------
@@ -62,6 +72,13 @@ resource "azurerm_mssql_server" "server" {
 
 resource "azurerm_mssql_database" "db" {
   # TODO
+  name                        = local.database_name
+  server_id                   = azurerm_mssql_server.server.id
+  tags                        = local.common_tags
+  sku_name                    = "GP_S_Gen5_1"
+  min_capacity                = var.min_capacity
+  max_size_gb                 = 32
+  auto_pause_delay_in_minutes = var.auto_pause_delay_minutes
 }
 
 #--------------------------------------------------------------
@@ -80,6 +97,10 @@ resource "azurerm_mssql_database" "db" {
 
 resource "azurerm_mssql_firewall_rule" "allow_azure" {
   # TODO
+  name             = "allow-azure-services"
+  server_id        = azurerm_mssql_server.server.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
 }
 
 #--------------------------------------------------------------
@@ -99,4 +120,9 @@ resource "azurerm_mssql_firewall_rule" "allow_azure" {
 
 resource "azurerm_mssql_firewall_rule" "allow_client" {
   # TODO（選填）
+  count            = var.allowed_client_ip != "" ? 1 : 0
+  name             = "allow-client-ip"
+  server_id        = azurerm_mssql_server.server.id
+  start_ip_address = var.allowed_client_ip
+  end_ip_address   = var.allowed_client_ip
 }

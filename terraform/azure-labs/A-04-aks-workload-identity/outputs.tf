@@ -1,19 +1,19 @@
 output "identity_client_id" {
   description = "User Assigned Identity 的 client_id（kubectl annotation 用）"
   # TODO: azurerm_user_assigned_identity.workload.client_id
-  value = null
+  value = azurerm_user_assigned_identity.workload.client_id
 }
 
 output "key_vault_name" {
   description = "Key Vault 名稱"
   # TODO: azurerm_key_vault.kv.name
-  value = null
+  value = azurerm_key_vault.kv.name
 }
 
 output "key_vault_uri" {
   description = "Key Vault URI（Pod 連線用）"
   # TODO: azurerm_key_vault.kv.vault_uri
-  value = null
+  value = azurerm_key_vault.kv.vault_uri
 }
 
 output "service_account_manifest" {

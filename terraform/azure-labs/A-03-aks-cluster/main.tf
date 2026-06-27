@@ -10,6 +10,9 @@
 
 resource "azurerm_resource_group" "rg" {
   # TODO
+  name     = "${local.name_prefix}-rg"
+  location = var.location
+  tags     = local.common_tags
 }
 
 #--------------------------------------------------------------
@@ -44,6 +47,25 @@ resource "azurerm_resource_group" "rg" {
 
 resource "azurerm_kubernetes_cluster" "aks" {
   # TODO
+  name                = local.cluster_name
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  dns_prefix          = local.cluster_name
+  kubernetes_version  = var.kubernetes_version
+  tags                = local.common_tags
+
+  default_node_pool {
+    name       = "system"
+    node_count = var.node_count
+    vm_size    = var.node_vm_size
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
 }
 
 #--------------------------------------------------------------
@@ -65,4 +87,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
 resource "azurerm_role_assignment" "acr_pull" {
   # TODO（選填，acr_id 有值才需要）
+  scope                = var.acr_id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
 }

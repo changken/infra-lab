@@ -5,6 +5,6 @@ locals {
     ManagedBy   = "terraform"
   }
 
-  name_prefix   = "${var.project}-${var.environment}"
-  cluster_name  = "${local.name_prefix}-aks"
+  name_prefix  = "${var.project}-${var.environment}"
+  cluster_name = "${local.name_prefix}-aks"
 }

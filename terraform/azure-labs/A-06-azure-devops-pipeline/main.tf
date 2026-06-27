@@ -10,6 +10,9 @@
 
 resource "azurerm_resource_group" "rg" {
   # TODO
+  name     = "${local.name_prefix}-rg"
+  location = var.location
+  tags     = local.common_tags
 }
 
 #--------------------------------------------------------------
@@ -28,6 +31,10 @@ resource "azurerm_resource_group" "rg" {
 
 resource "azuredevops_project" "project" {
   # TODO
+  name               = var.devops_project_name
+  visibility         = "private"
+  version_control    = "Git"
+  work_item_template = "Agile"
 }
 
 #--------------------------------------------------------------
@@ -54,6 +61,16 @@ resource "azuredevops_project" "project" {
 
 resource "azuredevops_service_endpoint_azurerm" "azure_connection" {
   # TODO
+  project_id            = azuredevops_project.project.id
+  service_endpoint_name = "azure-subscription"
+  credentials {
+    serviceprincipalid  = ""
+    serviceprincipalkey = ""
+  }
+  settings {
+    subscription_id   = var.subscription_id
+    subscription_name = data.azurerm_subscription.current.display_name
+  }
 }
 
 #--------------------------------------------------------------
@@ -73,6 +90,9 @@ resource "azuredevops_service_endpoint_azurerm" "azure_connection" {
 
 resource "azurerm_role_assignment" "devops_contributor" {
   # TODO
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Contributor"
+  principal_id         = azuredevops_service_endpoint_azurerm.azure_connection.service_principal_id
 }
 
 #--------------------------------------------------------------
@@ -100,4 +120,15 @@ resource "azurerm_role_assignment" "devops_contributor" {
 
 resource "azuredevops_build_definition" "pipeline" {
   # TODO
+  project_id = azuredevops_project.project.id
+  name       = "azure-labs-ci-cd"
+
+  ci_trigger { use_yaml = true }
+
+  repository {
+    repo_type   = "TfsGit"
+    repo_id     = azuredevops_project.project.id
+    branch_name = "refs/heads/main"
+    yml_path    = "azure-pipelines.yml"
+  }
 }

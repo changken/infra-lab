@@ -10,6 +10,9 @@
 
 resource "azurerm_resource_group" "rg" {
   # TODO
+  name     = "${local.name_prefix}-rg"
+  location = var.location
+  tags     = local.common_tags
 }
 
 #--------------------------------------------------------------
@@ -28,6 +31,10 @@ resource "azurerm_resource_group" "rg" {
 
 resource "azurerm_user_assigned_identity" "workload" {
   # TODO
+  name                = "${local.name_prefix}-identity"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  tags                = local.common_tags
 }
 
 #--------------------------------------------------------------
@@ -51,6 +58,12 @@ resource "azurerm_user_assigned_identity" "workload" {
 
 resource "azurerm_federated_identity_credential" "workload" {
   # TODO
+  name                = "${local.name_prefix}-federated"
+  resource_group_name = azurerm_resource_group.rg.name
+  parent_id           = azurerm_user_assigned_identity.workload.id
+  issuer              = var.aks_oidc_issuer_url
+  subject             = local.federated_subject
+  audience            = ["api://AzureADTokenExchange"]
 }
 
 #--------------------------------------------------------------
@@ -74,6 +87,13 @@ resource "azurerm_federated_identity_credential" "workload" {
 
 resource "azurerm_key_vault" "kv" {
   # TODO
+  name                       = local.key_vault_name
+  location                   = azurerm_resource_group.rg.location
+  resource_group_name        = azurerm_resource_group.rg.name
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  sku_name                   = "standard"
+  rbac_authorization_enabled = true
+  tags                       = local.common_tags
 }
 
 #--------------------------------------------------------------
@@ -93,7 +113,11 @@ resource "azurerm_key_vault" "kv" {
 
 resource "azurerm_key_vault_secret" "demo" {
   # TODO
-  depends_on = [azurerm_role_assignment.terraform_kv_admin]
+  name         = "demo-secret"
+  value        = var.key_vault_secret_value
+  key_vault_id = azurerm_key_vault.kv.id
+  tags         = local.common_tags
+  depends_on   = [azurerm_role_assignment.terraform_kv_admin]
 }
 
 #--------------------------------------------------------------
@@ -109,6 +133,9 @@ resource "azurerm_key_vault_secret" "demo" {
 
 resource "azurerm_role_assignment" "terraform_kv_admin" {
   # TODO
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
 }
 
 #--------------------------------------------------------------
@@ -124,4 +151,7 @@ resource "azurerm_role_assignment" "terraform_kv_admin" {
 
 resource "azurerm_role_assignment" "workload_kv_read" {
   # TODO
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.workload.principal_id
 }
