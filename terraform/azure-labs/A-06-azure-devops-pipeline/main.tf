@@ -45,32 +45,29 @@ resource "azuredevops_project" "project" {
 #
 # 文件: https://registry.terraform.io/providers/microsoft/azuredevops/latest/docs/resources/service_endpoint_azurerm
 #
-# 需要設定：
-#   project_id            = azuredevops_project.project.id
-#   service_endpoint_name = "azure-subscription"
-#   credentials {
-#     serviceprincipalid  = （留空，Terraform 自動建立 Service Principal）
-#     serviceprincipalkey = （留空）
-#   }
-#   settings {
-#     subscription_id   = var.subscription_id
-#     subscription_name = data.azurerm_subscription.current.display_name
-#   }
+# ⚠️ 注意：subscription 資訊放在頂層屬性，不使用 settings{} 或 credentials{} block
 #
-# ⚠️ 注意：Terraform 會自動建立一個 Service Principal 並設定 Azure AD 授權
+# 需要設定：
+#   service_endpoint_authentication_scheme = "WorkloadIdentityFederation"
+#   azurerm_spn_tenantid      = var.tenant_id
+#   azurerm_subscription_id   = var.subscription_id
+#   azurerm_subscription_name = data.azurerm_subscription.current.display_name
+#
+# WorkloadIdentityFederation：Terraform 會自動建立 Service Principal 並設定 Azure AD 授權
+# 不需要手動管理 Client ID / Secret，是目前官方推薦的安全做法
 
-resource "azuredevops_service_endpoint_azurerm" "azure_connection" {
+resource "azuredevops_serviceendpoint_azurerm" "azure_connection" {
   # TODO
   project_id            = azuredevops_project.project.id
   service_endpoint_name = "azure-subscription"
-  credentials {
-    serviceprincipalid  = ""
-    serviceprincipalkey = ""
-  }
-  settings {
-    subscription_id   = var.subscription_id
-    subscription_name = data.azurerm_subscription.current.display_name
-  }
+
+  # ⚠️ 正確語法：subscription 資訊放在頂層屬性，而非 settings{} block
+  # 使用 WorkloadIdentityFederation，Terraform 會自動建立 Service Principal
+  service_endpoint_authentication_scheme = "WorkloadIdentityFederation"
+
+  azurerm_spn_tenantid      = var.tenant_id
+  azurerm_subscription_id   = var.subscription_id
+  azurerm_subscription_name = data.azurerm_subscription.current.display_name
 }
 
 #--------------------------------------------------------------
@@ -92,7 +89,7 @@ resource "azurerm_role_assignment" "devops_contributor" {
   # TODO
   scope                = azurerm_resource_group.rg.id
   role_definition_name = "Contributor"
-  principal_id         = azuredevops_service_endpoint_azurerm.azure_connection.service_principal_id
+  principal_id         = azuredevops_serviceendpoint_azurerm.azure_connection.service_principal_id
 }
 
 #--------------------------------------------------------------

@@ -13,5 +13,5 @@ output "pipeline_url" {
 output "service_connection_name" {
   description = "Service Connection 名稱（pipeline YAML 中 azureSubscription 用）"
   # TODO: azuredevops_service_endpoint_azurerm.azure_connection.service_endpoint_name
-  value = azuredevops_service_endpoint_azurerm.azure_connection.service_endpoint_name
+  value = azuredevops_serviceendpoint_azurerm.azure_connection.service_endpoint_name
 }
