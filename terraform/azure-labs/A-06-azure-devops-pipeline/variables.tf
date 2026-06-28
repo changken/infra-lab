@@ -3,6 +3,11 @@ variable "subscription_id" {
   type        = string
 }
 
+variable "tenant_id" {
+  description = "Azure Tenant ID (Entra ID)"
+  type        = string
+}
+
 variable "location" {
   description = "Azure region（Service Connection 的 RG 位置）"
   type        = string

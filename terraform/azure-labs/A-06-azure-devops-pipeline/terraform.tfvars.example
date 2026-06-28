@@ -2,11 +2,13 @@
 # cp terraform.tfvars.example terraform.tfvars
 
 subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+tenant_id       = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # az account show --query tenantId -o tsv
+
 
 # Azure DevOps 設定
 # 1. 前往 https://dev.azure.com 建立或確認你的 org
 # 2. 建立 PAT：User Settings → Personal Access Tokens
-#    需要的 scope：Project（Read & Write）、Build（Read & Execute）、
+#    需要的 scope：Project and Team（Read, write, & manage）、Build（Read & Execute）、
 #                  Service Connections（Read, query, & manage）
 azuredevops_org_url    = "https://dev.azure.com/your-org-name"
 azuredevops_pat        = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

@@ -39,31 +39,27 @@ stages:
           vmImage: "ubuntu-latest"   # Microsoft-hosted agent，對比 GitHub Actions runner
         steps:
 
-          # TODO B: 登入 ACR
-          # 對比 GitHub Actions：aws-actions/amazon-ecr-login
-          # 對比 CodeBuild：buildspec 中的 aws ecr get-login-password
+          # Build & Push to ACR（用 az acr build 雲端 build，不需要本地 Docker daemon）
+          # 對比 AWS CodeBuild：buildspec 的 docker build + docker push
+          # 對比 GitHub Actions：docker/build-push-action
+          #
+          # az acr build 優點：
+          #   - 不需要額外的 Docker Registry service connection
+          #   - build 在 ACR 端執行，agent 不需要 Docker daemon
+          #   - 對比 AWS：類似 CodeBuild 直接 buildspec 推 ECR
           - task: AzureCLI@2
-            displayName: "Login to ACR"
+            displayName: "Build and Push to ACR (az acr build)"
             inputs:
-              azureSubscription: "azure-subscription"  # Service Connection 名稱（來自 output）
+              azureSubscription: "azure-subscription"   # Service Connection 名稱（terraform output service_connection_name）
               scriptType: "bash"
               scriptLocation: "inlineScript"
               inlineScript: |
-                # TODO: 填入正確的 az acr login 指令
-                az acr login --name $(ACR_LOGIN_SERVER | cut -d. -f1)
-
-          # TODO C: Docker Build & Push
-          - task: Docker@2
-            displayName: "Build and Push Image"
-            inputs:
-              # TODO: containerRegistry 填入在 Azure DevOps 設定的 ACR service connection 名稱
-              # （需在 portal 手動加一個 Docker Registry service connection，或用 AzureCLI task）
-              command: "buildAndPush"
-              repository: "$(IMAGE_NAME)"
-              dockerfile: "src/Dockerfile"
-              tags: |
-                $(Build.BuildId)
-                latest
+                ACR_NAME=$(echo "$(ACR_LOGIN_SERVER)" | cut -d. -f1)
+                az acr build \
+                  --registry "$ACR_NAME" \
+                  --image "$(IMAGE_NAME):$(Build.BuildId)" \
+                  --image "$(IMAGE_NAME):latest" \
+                  src/
 
   #------------------------------------------------------------
   # Stage 2：Deploy to Container App

@@ -52,8 +52,8 @@ Service Connection（SP）
 
 # 2. 建立 Personal Access Token (PAT)
 #    右上角頭像 → Personal Access Tokens → New Token
-#    需要的 scope：
-#      - Project and Team: Read & Write
+#    需要的 scope（⚠️ 注意：Project and Team 需要勾 manage，否則建立 project 會 401）：
+#      - Project and Team: Read, write, & manage
 #      - Build: Read & Execute
 #      - Service Connections: Read, query, & manage
 
@@ -68,7 +68,7 @@ Service Connection（SP）
 |------|------|------|
 | TODO 1 | `azurerm_resource_group` | Azure 資源容器 |
 | TODO 2 | `azuredevops_project` | DevOps 專案 |
-| TODO 3 | `azuredevops_service_endpoint_azurerm` | Service Connection |
+| TODO 3 | `azuredevops_serviceendpoint_azurerm` | Service Connection（WorkloadIdentityFederation，自動建立 SP）|
 | TODO 4 | `azurerm_role_assignment` | SP 取得 Contributor 權限 |
 | TODO 5 | `azuredevops_build_definition` | Pipeline 定義 |
 
@@ -86,7 +86,14 @@ Service Connection（SP）
 ```bash
 # 1. 填寫 terraform.tfvars
 cp terraform.tfvars.example terraform.tfvars
-# 填入 subscription_id、azuredevops_org_url、azuredevops_pat
+
+# 填入 subscription_id
+az account show --query id -o tsv
+
+# 填入 tenant_id
+az account show --query tenantId -o tsv
+
+# 填入 azuredevops_org_url、azuredevops_pat
 
 # 2. 部署
 terraform init
@@ -127,8 +134,10 @@ terraform destroy -auto-approve
 
 | 症狀 | 原因 |
 |------|------|
-| PAT 403 | PAT scope 不夠，重建 PAT 確認勾選所有需要的 scope |
-| `service_principal_id` 找不到 | `azuredevops_service_endpoint_azurerm` apply 後需等 30 秒 SP 才同步到 Azure AD |
+| `401 Unauthorized`（建立 project） | PAT 的 **Project and Team** scope 缺少 `manage`，重建 PAT 確認勾選 **Read, write, & manage** |
+| `403 Forbidden` | PAT scope 不夠，確認 Build 與 Service Connections 也有勾選正確 scope |
+| `azurerm_spn_tenantid` 錯誤 | `credentials {}` / `settings {}` block 是錯誤用法，應改用頂層屬性，見 main.tf TODO 3 |
+| `service_principal_id` 找不到 | `azuredevops_serviceendpoint_azurerm` apply 後需等 30 秒 SP 才同步到 Entra ID |
 | Pipeline 找不到 YAML | `yml_path` 相對路徑，確認 YAML 在 repo 根目錄且命名正確 |
 | Stage 2 等待 approval | ADO Environment 預設需要手動審核，到 Environments 頁面點 Approve |
 | `az containerapp update` 失敗 | Service Connection 的 SP 缺少 Container App 的 Contributor 權限 |
