@@ -1,0 +1,9 @@
+# Terraform state & secrets
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+tfplan
+
+# Auto-generated password file
+*-password.txt

@@ -1,0 +1,83 @@
+# ── 全域 ──────────────────────────────────────────────────
+
+variable "subscription_id" {
+  type        = string
+  description = "Azure Subscription ID（執行 az account show --query id -o tsv 取得）"
+}
+
+variable "location" {
+  type        = string
+  default     = "japaneast"
+  description = "Azure 部署區域"
+}
+
+variable "project" {
+  type        = string
+  default     = "az-win-bastion"
+  description = "專案名稱前綴，用於所有資源命名"
+}
+
+variable "environment" {
+  type        = string
+  default     = "dev"
+  description = "環境標籤"
+}
+
+# ── 網路 ──────────────────────────────────────────────────
+
+variable "my_ip" {
+  type        = string
+  description = "你的公網 IP（CIDR 格式），用於限制 RDP 連入。例如：1.2.3.4/32"
+  validation {
+    condition     = can(cidrhost(var.my_ip, 0)) && tonumber(split("/", var.my_ip)[1]) >= 16
+    error_message = "必須是合法的 CIDR 格式且 prefix >= 16，例如 1.2.3.4/32"
+  }
+}
+
+variable "vnet_cidr" {
+  type    = string
+  default = "10.50.0.0/16"
+}
+
+variable "public_subnets" {
+  type    = map(string)
+  default = { "public-1" = "10.50.1.0/24" }
+}
+
+variable "private_subnets" {
+  type    = map(string)
+  default = { "private-1" = "10.50.11.0/24" }
+}
+
+# ── Windows VM ─────────────────────────────────────────────
+
+variable "vm_size" {
+  type        = string
+  default     = "Standard_B2s"
+  description = "Azure VM 規格（Windows 建議至少 Standard_B2s ~$0.04/hr）"
+}
+
+variable "os_disk_size_gb" {
+  type        = number
+  default     = 128
+  description = "OS 磁碟大小 GB（Windows Server 最少 128）"
+}
+
+variable "admin_password" {
+  type        = string
+  default     = null
+  description = "RDP 登入密碼（不填則自動生成 20 字元強密碼，存至本地 .txt 檔）"
+  sensitive   = true
+}
+
+variable "enable_winrm" {
+  type        = bool
+  default     = false
+  description = "是否開放 WinRM HTTPS (5986) 連入（遠端 PowerShell 管理用）"
+}
+
+variable "timezone" {
+  type        = string
+  default     = "Tokyo Standard Time"
+  description = "VM 時區（使用 Windows 時區名稱）"
+}

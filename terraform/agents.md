@@ -95,7 +95,9 @@ terraform/
     ├── aws-postgresql-rds/    # PostgreSQL on RDS
     ├── aws-eks/               # EKS 長駐叢集
     ├── aws-k3s/               # K3s on AWS EC2（輕量 Kubernetes，VPC 用 aws-vpc module）
-    └── azure-k3s/             # K3s 跨雲實驗（AWS + Azure via Tailscale）
+    ├── azure-k3s/             # K3s 跨雲實驗（AWS + Azure via Tailscale）
+    ├── azure-linux/           # Azure Ubuntu 24.04 LTS 開發 / 跳板機（azure-vnet + azure-linux module）
+    └── azure-windows/         # Azure Windows Server 2025 開發 / 跳板機（azure-vnet + azure-windows module）
 ```
 
 ## 學習路線（共 15+ 週）
@@ -252,6 +254,7 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-06-29: 新增 envs/azure-linux、envs/azure-windows（Azure 長駐環境，呼叫 azure-vnet + azure-linux/azure-windows module）
 - 2026-06-29: 新增 modules/azure-vnet、modules/azure-linux、modules/azure-windows（Azure 可重用模組，對標 aws-vpc / aws-linux / aws-windows）
 - 2026-06-27: 新增 azure-labs/ 目錄（A-01 ~ A-06 Azure 學習路線，Student Credit $100）
 - 2026-06-27: 新增 modules/aws-linux、envs/aws-windows、envs/aws-linux；aws-k3s VPC 改用 aws-vpc module
