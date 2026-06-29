@@ -202,5 +202,5 @@ azure-windows/
 | `admin_username` 錯誤 | 不可使用 `administrator`、`admin`、`root`、`guest` 等保留名稱 |
 | Trusted Launch 不支援 | 改用 Windows Server 2019+ 映像；舊版（2016 以前）不支援 |
 | apply 後 VM 一直 Creating | 正常現象，Windows VM 佈建需要 3-8 分鐘 |
-| WinRM 連不上 | 需設 `enable_winrm = true`，並在 VM 內執行 `winrm quickconfig` |
+| WinRM 連不上 | 需設 `enable_winrm = true`；模組僅開放 5986（HTTPS），VM 內需執行 `winrm quickconfig -transport:https` |
 | VM 大小不可用 | 執行 `az vm list-sizes --location japaneast -o table` 確認可用規格 |

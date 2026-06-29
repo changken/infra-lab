@@ -36,13 +36,13 @@ resource "azurerm_network_security_group" "vm" {
   dynamic "security_rule" {
     for_each = var.enable_winrm ? [1] : []
     content {
-      name                       = "AllowWinRM"
+      name                       = "AllowWinRMHttps"
       priority                   = 110
       direction                  = "Inbound"
       access                     = "Allow"
       protocol                   = "Tcp"
       source_port_range          = "*"
-      destination_port_range     = "5985-5986"
+      destination_port_range     = "5986" # HTTPS only — 5985 (HTTP cleartext) 刻意排除
       source_address_prefix      = var.my_ip
       destination_address_prefix = "*"
     }

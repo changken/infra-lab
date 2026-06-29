@@ -42,8 +42,8 @@ variable "my_ip" {
   type        = string
   description = "Your public IP in CIDR notation for RDP/WinRM access (e.g. 1.2.3.4/32)."
   validation {
-    condition     = can(cidrhost(var.my_ip, 0))
-    error_message = "Must be a valid CIDR block (e.g. 1.2.3.4/32)."
+    condition     = can(cidrhost(var.my_ip, 0)) && tonumber(split("/", var.my_ip)[1]) >= 16
+    error_message = "Must be a valid CIDR block with prefix length >= 16 (e.g. 1.2.3.4/32). 0.0.0.0/0 is not allowed."
   }
 }
 
