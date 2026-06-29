@@ -74,7 +74,10 @@ terraform/
 │   ├── aws-linux/             # Amazon Linux 2023 Bastion（Spot / On-demand）
 │   ├── aws-billing-guard/     # 帳單上限護欄
 │   ├── aws-rds-scheduler/     # RDS 排程開關（省錢）
-│   └── aws-eks/               # EKS Cluster 封裝
+│   ├── aws-eks/               # EKS Cluster 封裝
+│   ├── azure-vnet/            # Azure VNet + Subnet + NSG（對標 aws-vpc）
+│   ├── azure-linux/           # Azure Ubuntu 24.04 LTS VM（對標 aws-linux）
+│   └── azure-windows/         # Azure Windows Server 2025 VM（對標 aws-windows）
 ├── azure-labs/            # Azure 學習 labs（對比 AWS，Student Credit $100）
 │   ├── AGENTS.md              # Azure Labs 專屬 AI 規範
 │   ├── A-01-container-apps/   # Azure Container Apps（對比 ECS Fargate）
