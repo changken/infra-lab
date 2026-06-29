@@ -93,15 +93,16 @@ resource "azurerm_network_interface_security_group_association" "vm" {
 # Windows Virtual Machine
 #--------------------------------------------------------------
 resource "azurerm_windows_virtual_machine" "vm" {
-  name                = "${var.name_prefix}-vm"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  size                = var.vm_size
-  admin_username      = var.admin_username
-  admin_password      = local.effective_password
-  timezone            = var.timezone
+  name                  = "${var.name_prefix}-vm"
+  computer_name         = "${var.name_prefix}-vm"
+  resource_group_name   = var.resource_group_name
+  location              = var.location
+  size                  = var.vm_size
+  admin_username        = var.admin_username
+  admin_password        = local.effective_password
+  timezone              = var.timezone
   network_interface_ids = [azurerm_network_interface.vm.id]
-  tags                = local.common_tags
+  tags                  = local.common_tags
 
   os_disk {
     name                 = "${var.name_prefix}-osdisk"
@@ -116,6 +117,9 @@ resource "azurerm_windows_virtual_machine" "vm" {
     sku       = var.os_image.sku
     version   = var.os_image.version
   }
+
+  # Azure Edition hotpatch 映像強制要求 AutomaticByPlatform
+  patch_mode = "AutomaticByPlatform"
 
   # Trusted Launch（Windows Server 2019+ 支援）
   secure_boot_enabled = true

@@ -26,6 +26,7 @@ output "resource_group_name" {
 output "ssh_command" {
   description = "SSH 連線指令"
   value       = module.linux.ssh_command
+  sensitive   = true
 }
 
 output "connection_guide" {
@@ -44,6 +45,7 @@ output "connection_guide" {
     │     terraform output -raw private_key_path      │
     └─────────────────────────────────────────────────┘
   EOT
+  sensitive   = true
 }
 
 output "private_key_path" {

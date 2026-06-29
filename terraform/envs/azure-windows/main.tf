@@ -20,14 +20,15 @@ module "vnet" {
   environment     = var.environment
   my_ip           = var.my_ip
 
-  vnet_cidr       = var.vnet_cidr
-  public_subnets  = var.public_subnets
-  private_subnets = var.private_subnets
+  vnet_cidr          = var.vnet_cidr
+  public_subnets     = var.public_subnets
+  private_subnets    = var.private_subnets
+  extra_public_ports = [3389]
 }
 
 # ── 2. Windows VM (Bastion / Dev) ──────────────────────────
-# 注意：RDP NSG 規則由 azure-windows module 在 NIC 層自動建立，
-#       不需要在 azure-vnet 的 extra_public_ports 額外開放 3389
+# Azure 流量需通過兩道 NSG：Subnet NSG → NIC NSG
+# extra_public_ports = [3389] 確保 Subnet 層放行，NIC 層再做細部限制
 
 module "windows" {
   source = "../../modules/azure-windows"
