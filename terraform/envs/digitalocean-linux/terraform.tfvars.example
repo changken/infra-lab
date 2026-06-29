@@ -1,0 +1,31 @@
+# 複製此檔案為 terraform.tfvars 並填入實際值
+# cp terraform.tfvars.example terraform.tfvars
+
+# ⚠️ DigitalOcean API Token（從 https://cloud.digitalocean.com/account/api/tokens 取得）
+do_token = "dop_v1_YOUR_TOKEN_HERE"
+
+project     = "do-linux"
+environment = "dev"
+
+# 你的公網 IP（執行 curl ifconfig.me 取得）
+my_ip = "1.2.3.4/32"
+
+# SSH 公鑰內容（執行 cat ~/.ssh/id_rsa.pub 取得）
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2E..."
+
+# 區域：sgp1=新加坡、nrt1=東京、nyc3=紐約、sfo3=舊金山、blr1=班加羅爾
+# 完整列表：https://docs.digitalocean.com/platform/regional-availability/
+region = "sgp1"
+
+# 規格 slug：s-1vcpu-1gb ~$6/月
+# 完整列表：doctl compute size list
+size = "s-1vcpu-1gb"
+
+# 映像 slug：ubuntu-22-04-x64、debian-12-x64、ubuntu-24-04-x64
+# 完整列表：doctl compute image list --public
+image = "ubuntu-22-04-x64"
+
+droplet_name = "do-dev-vm"
+ipv6         = false
+monitoring   = true
+backups      = false

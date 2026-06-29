@@ -1,0 +1,16 @@
+# Terraform 敏感檔案（含 API Token，絕對不可 commit）
+*.tfvars
+*.tfvars.json
+
+# Terraform 狀態（含基礎設施資訊）
+*.tfstate
+*.tfstate.backup
+tfplan
+
+# Terraform 工作目錄
+.terraform/
+.terraform.lock.hcl
+
+# 金鑰檔
+*.pem
+*.key
