@@ -1,0 +1,32 @@
+# 複製此檔案為 terraform.tfvars 並填入實際值
+# cp terraform.tfvars.example terraform.tfvars
+
+# ⚠️ Linode Personal Access Token
+# 從 https://cloud.linode.com/profile/tokens > Create A Personal Access Token 取得
+# 權限：Linodes (Read/Write)、Firewalls (Read/Write)
+linode_token = "YOUR_LINODE_TOKEN_HERE"
+
+project     = "linode-linux"
+environment = "dev"
+
+# 你的公網 IP（執行 curl ifconfig.me 取得，後面加 /32）
+my_ip = "1.2.3.4/32"
+
+# SSH 公鑰內容（執行 cat ~/.ssh/id_rsa.pub 取得）
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2E..."
+
+# 區域：ap-southeast=新加坡、us-east=紐約、eu-central=法蘭克福、ap-south=孟買
+# 完整列表：https://api.linode.com/v4/regions
+region = "ap-southeast"
+
+# 規格：g6-nanode-1=1vCPU/1GB ~$5/月（最便宜 Nanode）
+# 完整列表：https://api.linode.com/v4/linode/types
+type = "g6-nanode-1"
+
+# 映像：linode/ubuntu24.04、linode/ubuntu22.04、linode/debian12
+# 完整列表：https://api.linode.com/v4/images
+image = "linode/ubuntu24.04"
+
+label           = "linode-dev"
+backups_enabled = false
+swap_size       = 512
