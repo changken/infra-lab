@@ -1,0 +1,41 @@
+# 複製此檔案為 terraform.tfvars 並填入實際值
+# cp terraform.tfvars.example terraform.tfvars
+
+# GCP 專案 ID（在 GCP Console 右上角或 `gcloud config get-value project` 取得）
+project_id = "your-gcp-project-id"
+
+project     = "gcp-linux"
+environment = "dev"
+
+# 你的公網 IP（執行 curl ifconfig.me 取得，後面加 /32）
+my_ip = "1.2.3.4/32"
+
+# SSH 使用者名稱（GCP 不允許直接 root 登入，需自訂使用者）
+ssh_user = "devuser"
+
+# SSH 公鑰內容（執行 cat ~/.ssh/id_rsa.pub 取得）
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2E..."
+
+# 區域與 Zone
+# asia-east1    = 台灣彰化（距台灣最近！）
+# asia-east1-b / asia-east1-c / asia-east1-a
+# asia-northeast1 = 東京；asia-southeast1 = 新加坡
+region = "asia-east1"
+zone   = "asia-east1-b"
+
+# 機器類型
+# e2-micro  = 0.25 vCPU shared / 1GB RAM  ~$6/月（Free Tier 每月 1 台免費）
+# e2-small  = 0.5  vCPU shared / 2GB RAM  ~$12/月
+# e2-medium = 1    vCPU shared / 4GB RAM  ~$25/月
+machine_type = "e2-micro"
+
+# 映像
+# ubuntu-os-cloud/ubuntu-2404-lts-amd64
+# ubuntu-os-cloud/ubuntu-2204-lts
+# debian-cloud/debian-12
+boot_image = "ubuntu-os-cloud/ubuntu-2404-lts-amd64"
+
+# 磁碟大小（GB）— Free Tier：單帳號每月 30GB 以內免費
+disk_size_gb = 20
+
+instance_name = "gcp-dev-vm"
