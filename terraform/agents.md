@@ -252,6 +252,7 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-06-29: 新增 modules/azure-vnet、modules/azure-linux、modules/azure-windows（Azure 可重用模組，對標 aws-vpc / aws-linux / aws-windows）
 - 2026-06-27: 新增 azure-labs/ 目錄（A-01 ~ A-06 Azure 學習路線，Student Credit $100）
 - 2026-06-27: 新增 modules/aws-linux、envs/aws-windows、envs/aws-linux；aws-k3s VPC 改用 aws-vpc module
 - 2026-05-21: 強化程式碼美化 (fmt)、Provider 鎖定 (lock file) 與動態驗證標準
