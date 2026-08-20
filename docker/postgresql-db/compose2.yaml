@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine # 建議指定版本，alpine 版本體積較小
+    container_name: my_postgres_db
+    restart: always # 確保當容器崩潰或 Docker 重啟時會自動啟動
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mysecretpassword}
+      POSTGRES_DB: ${DB_NAME:-mydatabase}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data # 資料持久化（重要！）
+      # - ./init:/docker-entrypoint-initdb.d # (選填) 如果有初始化 SQL 腳本可以放在這
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: my_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: adminpassword
+    ports:
+      - "8080:80" # 瀏覽器輸入 http://localhost:8080 即可登入管理界面
+    depends_on:
+      - db
+
+volumes:
+  pgdata: # 定義具名的 Volume

@@ -1,0 +1,27 @@
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-07-18T21-56-31Z # 固定版本，避免使用 latest
+    container_name: myminio
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      TZ: ${TZ:-Asia/Taipei}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT:-19000}:9000"    # S3 API 端點
+      - "${MINIO_CONSOLE_PORT:-19001}:9001" # Web 管理介面
+    volumes:
+      - minio-data:/data # 資料持久化
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  minio-data:
+    external: true
+    name: minio_minio-data

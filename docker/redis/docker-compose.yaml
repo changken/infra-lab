@@ -1,0 +1,28 @@
+services:
+  redis:
+    image: redis:7.4-alpine # 固定版本，alpine 體積較小
+    container_name: myredis
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --appendfsync everysec
+    ports:
+      - "${REDIS_PORT:-16379}:6379"
+    volumes:
+      - redis-data:/data # 資料持久化（AOF + RDB）
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+
+volumes:
+  redis-data:
+    external: true
+    name: redis_redis-data

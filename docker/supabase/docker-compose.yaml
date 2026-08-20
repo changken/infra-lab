@@ -1,0 +1,310 @@
+###############################################################
+# Supabase Self-Hosted — docker-compose.yaml
+# 參考: https://supabase.com/docs/guides/self-hosting/docker
+###############################################################
+
+name: supabase-lab
+
+services:
+
+  # ──────────────────────────────────────────────
+  # 1. PostgreSQL (Supabase 客製版)
+  # ──────────────────────────────────────────────
+  db:
+    image: supabase/postgres:15.8.1.060
+    container_name: supabase_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      TZ: ${TZ:-Asia/Taipei}
+    ports:
+      - "${POSTGRES_PORT:-15433}:5432"
+    volumes:
+      - supabase-db-data:/var/lib/postgresql/data
+      - ./volumes/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ──────────────────────────────────────────────
+  # 2. GoTrue — Auth 服務
+  # ──────────────────────────────────────────────
+  auth:
+    image: supabase/gotrue:v2.170.0
+    container_name: supabase_auth
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL:-http://localhost:18000}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgresql://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}?search_path=auth
+      GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:13000}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Supabase Lab}
+      TZ: ${TZ:-Asia/Taipei}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ──────────────────────────────────────────────
+  # 3. PostgREST — 自動 REST API
+  # ──────────────────────────────────────────────
+  rest:
+    image: postgrest/postgrest:v12.2.3
+    container_name: supabase_rest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PGRST_DB_URI: postgresql://authenticator:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ──────────────────────────────────────────────
+  # 4. Realtime — WebSocket 訂閱
+  # ──────────────────────────────────────────────
+  realtime:
+    image: supabase/realtime:v2.34.47
+    container_name: supabase_realtime
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_realtime_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB:-postgres}
+      DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY_BASE: ${JWT_SECRET}
+      RLIMIT_NOFILE: "10000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sSfL", "--head", "-o", "/dev/null", "http://localhost:4000/api/tenants"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ──────────────────────────────────────────────
+  # 5. Storage — 物件儲存
+  # ──────────────────────────────────────────────
+  storage:
+    image: supabase/storage-api:v1.16.4
+    container_name: supabase_storage
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgresql://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}
+      FILE_SIZE_LIMIT: "52428800"  # 50MB
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-file}
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: local
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:8080
+    volumes:
+      - supabase-storage-data:/var/lib/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ──────────────────────────────────────────────
+  # 6. imgproxy — 圖片轉換 (Storage 使用)
+  # ──────────────────────────────────────────────
+  imgproxy:
+    image: darthsim/imgproxy:v3.24
+    container_name: supabase_imgproxy
+    restart: unless-stopped
+    environment:
+      IMGPROXY_BIND: ":8080"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+    volumes:
+      - supabase-storage-data:/var/lib/storage:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ──────────────────────────────────────────────
+  # 7. Meta — Postgres Meta API (Studio 使用)
+  # ──────────────────────────────────────────────
+  meta:
+    image: supabase/postgres-meta:v0.86.0
+    container_name: supabase_meta
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: ${POSTGRES_DB:-postgres}
+      PG_META_DB_USER: supabase
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ──────────────────────────────────────────────
+  # 8. Kong — API Gateway (統一對外入口)
+  # ──────────────────────────────────────────────
+  kong:
+    image: kong:3.9.0-alpine
+    container_name: supabase_kong
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: "64 160k"
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:-supabase}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
+    ports:
+      - "${KONG_HTTP_PORT:-18000}:8000"   # API Gateway HTTP
+      - "${KONG_HTTPS_PORT:-18443}:8443"  # API Gateway HTTPS
+    volumes:
+      - ./volumes/api/kong.yml:/home/kong/kong.yml:ro
+    depends_on:
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_healthy
+
+  # ──────────────────────────────────────────────
+  # 9. Studio — Supabase 管理介面
+  # ──────────────────────────────────────────────
+  studio:
+    image: supabase/studio:20250113-83c9420
+    container_name: supabase_studio
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEFAULT_ORGANIZATION_NAME: "Infra Lab"
+      DEFAULT_PROJECT_NAME: "Local Dev"
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${API_EXTERNAL_URL:-http://localhost:18000}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+      LOGFLARE_API_KEY: ${LOGFLARE_API_KEY:-your-logflare-key}
+      LOGFLARE_URL: http://analytics:4000
+      NEXT_PUBLIC_ENABLE_LOGS: "true"
+      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+    ports:
+      - "${STUDIO_PORT:-13000}:3000"      # Studio Web UI
+    depends_on:
+      meta:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/profile', (r) => { process.exit(r.statusCode !== 200 ? 1 : 0) })"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ──────────────────────────────────────────────
+  # 10. Analytics — 日誌分析 (Logflare)
+  # ──────────────────────────────────────────────
+  analytics:
+    image: supabase/logflare:1.12.0
+    container_name: supabase_analytics
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      LOGFLARE_NODE_HOST: 127.0.0.1
+      DB_USERNAME: supabase_admin
+      DB_DATABASE: ${POSTGRES_DB:-postgres}
+      DB_HOSTNAME: db
+      DB_PORT: 5432
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_SCHEMA: _analytics
+      LOGFLARE_API_KEY: ${LOGFLARE_API_KEY:-your-logflare-key}
+      LOGFLARE_SINGLE_TENANT: "true"
+      LOGFLARE_SUPABASE_MODE: "true"
+      LOGFLARE_MIN_CLUSTER_SIZE: 1
+      POSTGRES_BACKEND_URL: postgresql://supabase_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}
+      POSTGRES_BACKEND_SCHEMA: _analytics
+      LOGFLARE_FEATURE_FLAG_OVERRIDE: multibackend=true
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sSf", "http://localhost:4000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  supabase-db-data:
+    external: true
+    name: supabase_db-data
+  supabase-storage-data:
+    external: true
+    name: supabase_storage-data
