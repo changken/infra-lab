@@ -62,6 +62,9 @@ Internet
 | `os_image` | Ubuntu 24.04 LTS | 來源映像（object）|
 | `create_public_ip` | `true` | 是否建立公開 IP |
 | `user_data` | `null` | Cloud-init 腳本（純文字）|
+| `enable_spot` | `false` | 是否以 Spot 模式部署（**選用，預設關閉**，見下方說明）|
+| `spot_max_price` | `-1` | Spot 最高出價（USD/hr），`-1` = 願付到隨需價格 |
+| `spot_eviction_policy` | `Deallocate` | Spot 被回收時：`Deallocate`（保留磁碟）或 `Delete`（VM+磁碟一併刪除）|
 
 ---
 
@@ -75,6 +78,32 @@ Internet
 | `ssh_command` | 直接可用的 SSH 連線指令 |
 | `private_key_path` | 自動生成金鑰的本地路徑（sensitive）|
 | `nic_id` | NIC 資源 ID |
+| `is_spot` | 是否為 Spot 部署 |
+
+---
+
+## Spot VM（選用）
+
+> ⚠️ **不建議**用於本模組預設的常駐跳板機情境 —— Spot VM 可能因容量不足或
+> 超過出價上限**隨時被回收（evict）**，會直接斷線失去 SSH 存取路徑。
+> 僅建議在改做「短期、可容忍中斷、可重跑」的實驗環境時開啟。
+
+```hcl
+module "vm" {
+  source              = "../../modules/azure-linux"
+  subscription_id     = var.subscription_id
+  resource_group_name = module.vnet.resource_group_name
+  subnet_id           = values(module.vnet.public_subnet_ids)[0]
+
+  enable_spot          = true
+  spot_max_price       = -1          # 願付到隨需價格，只因容量不足被回收
+  spot_eviction_policy = "Deallocate" # 被回收時保留磁碟，之後可重新啟動
+}
+```
+
+被回收後：
+- `eviction_policy = "Deallocate"`：VM 停止運算計費，磁碟仍保留（仍計費），可手動重新啟動。
+- `eviction_policy = "Delete"`：VM 與磁碟一併刪除，需重新 `terraform apply`。
 
 ---
 

@@ -56,6 +56,7 @@
 | `create_resource_group` | `true` | false 時傳入已存在的 RG |
 | `resource_group_name` | `null` | 已存在的 RG 名稱（create_resource_group = false 時用）|
 | `extra_public_ports` | `[]` | 額外開放給 my_ip 的 TCP port（如 `[80, 3389]`）|
+| `public_open_ports` | `[]` | ⚠️ 對外全開（0.0.0.0/0）的 TCP port / port range（如 `["80", "443", "6443", "30000-32767"]`），僅供刻意公開的服務使用 |
 
 ---
 

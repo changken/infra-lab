@@ -94,3 +94,30 @@ variable "user_data" {
   default     = null
   description = "Cloud-init script content (plain text). Will be base64-encoded automatically."
 }
+
+# ── Spot VM（選用，預設關閉）─────────────────────────────────────
+# ⚠️ Spot VM 可能隨時因容量不足或超過出價上限被回收（evict），
+#    不適合當作常駐用途（例如跳板機），僅建議用於可容忍中斷的
+#    短期實驗 / 可重跑的 workload。
+
+variable "enable_spot" {
+  type        = bool
+  default     = false
+  description = "是否以 Spot 模式部署（有折扣但可能隨時被回收）。不建議用於常駐跳板機。"
+}
+
+variable "spot_max_price" {
+  type        = number
+  default     = -1
+  description = "Spot 最高出價（USD/hr）。-1 表示願意支付到隨需（on-demand）價格，僅會因容量不足被回收，不會因價格被回收。僅在 enable_spot = true 時生效。"
+}
+
+variable "spot_eviction_policy" {
+  type        = string
+  default     = "Deallocate"
+  description = "Spot VM 被回收時的處置：Deallocate（保留磁碟，停止計費運算但磁碟仍計費，可之後重新啟動）或 Delete（VM 與磁碟一併刪除）。僅在 enable_spot = true 時生效。"
+  validation {
+    condition     = contains(["Deallocate", "Delete"], var.spot_eviction_policy)
+    error_message = "spot_eviction_policy 必須是 Deallocate 或 Delete。"
+  }
+}

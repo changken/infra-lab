@@ -65,4 +65,9 @@ resource "azurerm_linux_virtual_machine" "vm" {
   # Trusted Launch（Ubuntu 20.04+ 支援）
   secure_boot_enabled = true
   vtpm_enabled        = true
+
+  # Spot VM（選用，預設關閉；見 variables.tf enable_spot 說明）
+  priority        = var.enable_spot ? "Spot" : "Regular"
+  eviction_policy = var.enable_spot ? var.spot_eviction_policy : null
+  max_bid_price   = var.enable_spot ? var.spot_max_price : null
 }

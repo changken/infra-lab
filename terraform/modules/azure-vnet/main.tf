@@ -78,6 +78,22 @@ resource "azurerm_network_security_group" "public" {
       destination_address_prefix = "*"
     }
   }
+
+  # ⚠️ 對外全開（0.0.0.0/0），僅供刻意公開的服務使用（見 public_open_ports 說明）
+  dynamic "security_rule" {
+    for_each = { for idx, port in var.public_open_ports : tostring(idx) => port }
+    content {
+      name                       = "AllowPublicPort${replace(security_rule.value, "-", "_")}"
+      priority                   = 300 + tonumber(security_rule.key)
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = security_rule.value
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+    }
+  }
 }
 
 #--------------------------------------------------------------

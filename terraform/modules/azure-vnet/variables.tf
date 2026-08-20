@@ -69,3 +69,9 @@ variable "extra_public_ports" {
   default     = []
   description = "Extra TCP ports allowed from my_ip on the public NSG (e.g. [80, 443, 8080])."
 }
+
+variable "public_open_ports" {
+  type        = list(string)
+  default     = []
+  description = "Extra TCP ports/ranges allowed from ANY source (0.0.0.0/0) on the public NSG. Supports single ports and ranges as strings (e.g. [\"80\", \"443\", \"6443\", \"30000-32767\"]). ⚠️ Opens to the entire internet — only use for services meant to be publicly reachable."
+}

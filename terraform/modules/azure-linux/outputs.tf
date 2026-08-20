@@ -32,3 +32,8 @@ output "nic_id" {
   description = "ID of the Network Interface"
   value       = azurerm_network_interface.vm.id
 }
+
+output "is_spot" {
+  description = "Whether the VM is deployed as a Spot instance"
+  value       = var.enable_spot
+}

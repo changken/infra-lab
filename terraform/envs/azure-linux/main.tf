@@ -23,6 +23,8 @@ module "vnet" {
   vnet_cidr       = var.vnet_cidr
   public_subnets  = var.public_subnets
   private_subnets = var.private_subnets
+
+  public_open_ports = var.public_open_ports
 }
 
 # ── 2. Linux VM (Bastion / Dev) ────────────────────────────
@@ -40,4 +42,8 @@ module "linux" {
   vm_size              = var.vm_size
   os_disk_size_gb      = var.os_disk_size_gb
   admin_ssh_public_key = var.admin_ssh_public_key
+
+  enable_spot          = var.enable_spot
+  spot_max_price       = var.spot_max_price
+  spot_eviction_policy = var.spot_eviction_policy
 }
