@@ -1,0 +1,9 @@
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # az account show --query id -o tsv
+admin_password  = "YourP@ssw0rd123!"
+
+# 以下為可選覆蓋（不填則使用 variables.tf 的 default 值）
+# project        = "az-avd"
+# location       = "japaneast"
+# vm_count       = 1
+# vm_size        = "Standard_E2as_v4"
+# max_sessions   = 5

@@ -97,7 +97,8 @@ terraform/
     ├── aws-k3s/               # K3s on AWS EC2（輕量 Kubernetes，VPC 用 aws-vpc module）
     ├── azure-k3s/             # K3s 跨雲實驗（AWS + Azure via Tailscale）
     ├── azure-linux/           # Azure Ubuntu 24.04 LTS 開發 / 跳板機（azure-vnet + azure-linux module）
-    └── azure-windows/         # Azure Windows Server 2025 開發 / 跳板機（azure-vnet + azure-windows module）
+    ├── azure-windows/         # Azure Windows Server 2025 開發 / 跳板機（azure-vnet + azure-windows module）
+    └── azure-avd/             # Azure Virtual Desktop (AVD) 長駐桌面環境
 ```
 
 ## 學習路線（共 15+ 週）
