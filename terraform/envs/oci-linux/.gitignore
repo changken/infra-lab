@@ -1,0 +1,10 @@
+# Terraform state & secrets
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+tfplan
+
+# 一次性 import 用，整理完設定後即可刪除（含 OCID）
+imports.tf
+generated.tf

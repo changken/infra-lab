@@ -1,0 +1,4 @@
+compartment_id = "ocid1.compartment.oc1..xxxx"                  # oci-governance output
+subnet_id      = "ocid1.subnet.oc1.ap-singapore-1.xxxx"         # oci-vcn output
+nsg_id         = "ocid1.networksecuritygroup.oc1.ap-singapore-1.xxxx" # oci-vcn output
+ssh_public_key = "ssh-ed25519 AAAA... you@example.com"
