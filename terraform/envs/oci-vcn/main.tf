@@ -51,7 +51,8 @@ resource "oci_core_route_table" "ken_routetable" {
   }
 }
 
-# ⚠️ 目前對 0.0.0.0/0 開放 SSH（22），與 NSG 的 IP 限制疊加後等於沒限制
+# SSH（22）已收緊為 var.ssh_allowed_cidr。
+# 注意：Security List 與 NSG 規則是「疊加」的，兩邊都要限制才有效。
 resource "oci_core_default_security_list" "default" {
   manage_default_resource_id = oci_core_vcn.ken_vcn.default_security_list_id
   display_name               = "Default Security List for ken-vcn"
@@ -64,8 +65,8 @@ resource "oci_core_default_security_list" "default" {
   }
 
   ingress_security_rules {
-    protocol    = "6" # TCP
-    source      = "0.0.0.0/0"
+    protocol    = "6" # TCP：SSH 僅允許指定來源（與 NSG my-sg 一致）
+    source      = var.ssh_allowed_cidr
     source_type = "CIDR_BLOCK"
     stateless   = false
     tcp_options {
