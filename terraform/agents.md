@@ -98,8 +98,15 @@ terraform/
     ├── azure-k3s/             # K3s 跨雲實驗（AWS + Azure via Tailscale）
     ├── azure-linux/           # Azure Ubuntu 24.04 LTS 開發 / 跳板機（azure-vnet + azure-linux module）
     ├── azure-windows/         # Azure Windows Server 2025 開發 / 跳板機（azure-vnet + azure-windows module）
-    └── azure-avd/             # Azure Virtual Desktop (AVD) 長駐桌面環境
+    ├── azure-avd/             # Azure Virtual Desktop (AVD) 長駐桌面環境
+    ├── oci-governance/        # OCI tenancy 層級：compartment / Identity Domain group / policy / network source / budget（import 而來）
+    ├── oci-vcn/               # OCI VCN + subnet + IGW + route table + security list + NSG（import 而來）
+    └── oci-linux/             # OCI Always Free A1.Flex 實例（import 而來，prevent_destroy）
 ```
+
+> **OCI envs 依賴順序**：`oci-governance`（輸出 compartment_id）→ `oci-vcn`（輸出 subnet_id / nsg_id）→ `oci-linux`。
+> 各 env 獨立 tfstate，以 variable 傳遞 OCID（不用 remote_state）。
+> A1 在 ap-singapore-1 常缺貨，**`oci-linux` 的實例絕不可 destroy / replace**；plan 出現 `must be replaced` 一律不要 apply。
 
 ## 學習路線（共 15+ 週）
 
@@ -255,6 +262,7 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-11-06: 新增 envs/oci-governance、envs/oci-vcn、envs/oci-linux（以 import block + `-generate-config-out` 將手動建立的 OCI 資源收進 Terraform）
 - 2026-06-29: 新增 envs/azure-linux、envs/azure-windows（Azure 長駐環境，呼叫 azure-vnet + azure-linux/azure-windows module）
 - 2026-06-29: 新增 modules/azure-vnet、modules/azure-linux、modules/azure-windows（Azure 可重用模組，對標 aws-vpc / aws-linux / aws-windows）
 - 2026-06-27: 新增 azure-labs/ 目錄（A-01 ~ A-06 Azure 學習路線，Student Credit $100）
