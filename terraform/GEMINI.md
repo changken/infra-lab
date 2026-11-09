@@ -30,26 +30,90 @@ terraform/
 │   ├── 07-lambda-api-gateway/     ✅ 完成
 │   ├── 08-lambda-dynamodb-crud/   ✅ 完成
 │   ├── 09-lambda-s3-trigger/      ✅ 完成
-│   ├── 10-ecr-repository/         （待做）
-│   ├── 11-ecs-fargate/            （待做）
-│   ├── 12-ecs-fargate-alb/        （待做）
-│   ├── 13-app-runner/             （待做）
-│   ├── 14-ecs-fargate-rds/        （待做）
-│   ├── 15-eks-cluster/            （待做）
-│   ├── 16-eks-workloads/          （待做）
-│   ├── 17-eks-irsa/               （待做）
-│   ├── 18-eks-helm/               （待做）
-│   ├── 19-cloudwatch-monitoring/  （待做）
-│   └── 20-iam-advanced/           （待做）
-└── modules/               # 可重用模組（參考用）
-    ├── aws-k3s/           # 輕量 K8s（EKS 替代方案）
-    ├── aws-windows-spot/
-    └── azure-k3s/
+│   ├── 10-ecr-repository/         ✅ 完成
+│   ├── 11-ecs-fargate/            ✅ 完成
+│   ├── 12-ecs-fargate-alb/        ✅ 完成
+│   ├── 13-app-runner/             ✅ 完成
+│   ├── 13-ecs-express-gateway/    ✅ 完成
+│   ├── 14-ecs-fargate-rds/        ✅ 完成
+│   ├── 15-eks-cluster/            ✅ 完成
+│   ├── 16-eks-workloads/          ✅ 完成
+│   ├── 17-eks-irsa/               ✅ 完成
+│   ├── 18-eks-helm/               ✅ 完成
+│   ├── 19-cloudwatch-monitoring/  ✅ 完成
+│   ├── 20-iam-advanced/           ✅ 完成
+│   ├── 21-sqs-standard/           ✅ 完成
+│   ├── 22-sns-topic/              ✅ 完成
+│   ├── 23-eventbridge-rules/      ✅ 完成
+│   ├── 24-sns-sqs-fanout/         ✅ 完成
+│   ├── 25-codebuild/              ✅ 完成
+│   ├── 26-codepipeline-ecs/       ✅ 完成
+│   ├── 27-github-actions-oidc/    ✅ 完成
+│   ├── 28-cloudfront-s3/          ✅ 完成
+│   ├── 29-route53-basic/          ✅ 完成
+│   ├── 30-elasticache-redis/      ✅ 完成
+│   ├── 31-cognito-userpool/       ✅ 完成
+│   ├── 32-xray-lambda/            ✅ 完成
+│   ├── 33-secrets-manager/        ✅ 完成
+│   ├── 34-ssm-session-manager/    ✅ 完成
+│   ├── 35-cloudtrail-config/      ✅ 完成
+│   ├── 36-asg-alb/                ✅ 完成
+│   ├── 37-order-backend/          ✅ 完成
+│   ├── 38-cicd-pipeline/          （待做）
+│   ├── 39-image-processor/        ✅ 完成
+│   ├── 40-multitenant-api/        ✅ 完成
+│   ├── 41-observability-stack/    ✅ 完成
+│   ├── 42-security-compliance/    ✅ 完成
+│   ├── 43-terraform-modules/     ✅ 完成
+│   ├── 44-step-functions/         ✅ 完成
+│   └── 45-kinesis-data-streams/   ✅ 完成
+├── modules/               # 可重用模組（供多個 lab/env 共用呼叫）
+│   ├── aws-vpc/               # 通用 VPC + Subnet
+│   ├── aws-aurora-postgresql/ # Aurora Serverless v2 封裝
+│   ├── aws-windows/           # Windows Server 2025 Bastion（Spot / On-demand）
+│   ├── aws-linux/             # Amazon Linux 2023 Bastion（Spot / On-demand）
+│   ├── aws-billing-guard/     # 帳單上限護欄
+│   ├── aws-rds-scheduler/     # RDS 排程開關（省錢）
+│   ├── aws-eks/               # EKS Cluster 封裝
+│   ├── azure-vnet/            # Azure VNet + Subnet + NSG（對標 aws-vpc）
+│   ├── azure-linux/           # Azure Ubuntu 24.04 LTS VM（對標 aws-linux）
+│   └── azure-windows/         # Azure Windows Server 2025 VM（對標 aws-windows）
+├── azure-labs/            # Azure 學習 labs（對比 AWS，Student Credit $100）
+│   ├── AGENTS.md              # Azure Labs 專屬 AI 規範
+│   ├── A-01-container-apps/   # Azure Container Apps（對比 ECS Fargate）
+│   ├── A-02-acr/              # Azure Container Registry（對比 ECR）
+│   ├── A-03-aks-cluster/      # AKS 基礎（對比 EKS）
+│   ├── A-04-aks-workload-identity/ # AKS Workload Identity（對比 IRSA）
+│   ├── A-05-azure-sql-serverless/  # Azure SQL Serverless（對比 RDS）
+│   └── A-06-azure-devops-pipeline/ # Azure DevOps CI/CD（對比 CodePipeline）
+├── oci-labs/              # OCI 學習 labs（Always Free + PAYG credit，對比 AWS / Azure）
+│   ├── AGENTS.md              # OCI Labs 專屬 AI 規範（A1 共用額度、credit 到期日等護欄）
+│   └── O-04-oke-cluster/      # OKE（對比 EKS）；節點可選 A1（Always Free）或 E4（收費）
+└── envs/                  # 長駐獨立環境（有自己的 tfstate，非 lab 練習用）
+    ├── aws-windows/           # Windows Server 2025 開發 / 跳板機（純 Windows）
+    ├── aws-linux/             # Amazon Linux 2023 開發 / 跳板機（純 Linux）
+    ├── aws-aurora-windows-bastion/ # Aurora + Windows Bastion 整合環境
+    ├── aws-oracle-ec2/        # Oracle XE on Docker（省費替代 RDS Oracle）
+    ├── aws-oracle-rds/        # Oracle on RDS（正式授權版）
+    ├── aws-postgresql-rds/    # PostgreSQL on RDS
+    ├── aws-eks/               # EKS 長駐叢集
+    ├── aws-k3s/               # K3s on AWS EC2（輕量 Kubernetes，VPC 用 aws-vpc module）
+    ├── azure-k3s/             # K3s 跨雲實驗（AWS + Azure via Tailscale）
+    ├── azure-linux/           # Azure Ubuntu 24.04 LTS 開發 / 跳板機（azure-vnet + azure-linux module）
+    ├── azure-windows/         # Azure Windows Server 2025 開發 / 跳板機（azure-vnet + azure-windows module）
+    ├── azure-avd/             # Azure Virtual Desktop (AVD) 長駐桌面環境
+    ├── oci-governance/        # OCI tenancy 層級：compartment / Identity Domain group / policy / network source / budget（import 而來）
+    ├── oci-vcn/               # OCI VCN + subnet + IGW + route table + security list + NSG（import 而來）
+    └── oci-linux/             # OCI Always Free A1.Flex 實例（import 而來，prevent_destroy）
 ```
 
-## 學習路線（共 15 週）
+> **OCI envs 依賴順序**：`oci-governance`（輸出 compartment_id）→ `oci-vcn`（輸出 subnet_id / nsg_id）→ `oci-linux`。
+> 各 env 獨立 tfstate，以 variable 傳遞 OCID（不用 remote_state）。
+> A1 在 ap-singapore-1 常缺貨，**`oci-linux` 的實例絕不可 destroy / replace**；plan 出現 `must be replaced` 一律不要 apply。
 
-完整路線圖請參考 `docs/roadmap.md`，共分為 6 個階段：
+## 學習路線（共 15+ 週）
+
+完整路線圖請參考 `docs/roadmap.md`（核心）與 `docs/roadmap-v2.md`（進階），共分為多個階段：
 
 | 階段 | 主題 | 週數 | 難度 | 預算 |
 |------|------|------|------|------|
@@ -59,6 +123,7 @@ terraform/
 | 4 | 容器化（ECR, ECS, App Runner）| 第 8-11 週 | ★★★☆☆ | ~$2 |
 | 5 | Kubernetes（EKS）| 第 12-13 週 | ★★★★☆ | ~$1.50 |
 | 6 | DevOps & 監控（CloudWatch, IAM）| 第 14-15 週 | ★★★☆☆ | < $2 |
+| Phase 1-A | 訊息與事件（SQS, SNS, EventBridge）| 實作中 | ★★☆☆☆ | < $1 |
 
 ## AI 協作規範
 
@@ -200,6 +265,12 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-11-09: 新增 oci-labs/ 與 O-04-oke-cluster；修復 CLAUDE.md / GEMINI.md 硬連結（原本脫鉤，內容停在 2026-05-21）
+- 2026-11-06: 新增 envs/oci-governance、envs/oci-vcn、envs/oci-linux（以 import block + `-generate-config-out` 將手動建立的 OCI 資源收進 Terraform）
+- 2026-06-29: 新增 envs/azure-linux、envs/azure-windows（Azure 長駐環境，呼叫 azure-vnet + azure-linux/azure-windows module）
+- 2026-06-29: 新增 modules/azure-vnet、modules/azure-linux、modules/azure-windows（Azure 可重用模組，對標 aws-vpc / aws-linux / aws-windows）
+- 2026-06-27: 新增 azure-labs/ 目錄（A-01 ~ A-06 Azure 學習路線，Student Credit $100）
+- 2026-06-27: 新增 modules/aws-linux、envs/aws-windows、envs/aws-linux；aws-k3s VPC 改用 aws-vpc module
 - 2026-05-21: 強化程式碼美化 (fmt)、Provider 鎖定 (lock file) 與動態驗證標準
 - 2026-05-21: 更新目錄結構（labs/ 架構）、學習路線（15 週）、新增容器化和 EKS 內容
 - 2026-02-03: 初始版本建立
