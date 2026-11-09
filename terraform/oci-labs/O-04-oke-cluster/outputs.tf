@@ -25,12 +25,13 @@ output "api_endpoint" {
 
 output "kubeconfig_command" {
   description = "產生 kubeconfig 的指令"
-  value       = <<EOT
-      oci ce cluster create-kubeconfig
-     --cluster-id ${oci_containerengine_cluster.this.id}
-     --file $HOME/.kube/oke-lab-config
-     --region ${var.region}
-     --token-version 2.0.0
-     --kube-endpoint PUBLIC_ENDPOINT
-     EOT
+  # 單行輸出，才能 `terraform output -raw kubeconfig_command | bash`
+  value = join(" ", [
+    "oci ce cluster create-kubeconfig",
+    "--cluster-id ${oci_containerengine_cluster.this.id}",
+    "--file $HOME/.kube/oke-lab-config",
+    "--region ${var.region}",
+    "--token-version 2.0.0",
+    "--kube-endpoint PUBLIC_ENDPOINT",
+  ])
 }
