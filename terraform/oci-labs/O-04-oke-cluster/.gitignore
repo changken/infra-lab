@@ -1,0 +1,10 @@
+# Terraform state & secrets
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+tfplan
+
+# kubeconfig 含叢集連線資訊
+kubeconfig
+*.kubeconfig

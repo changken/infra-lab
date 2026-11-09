@@ -1,0 +1,9 @@
+tenancy_id     = "ocid1.tenancy.oc1..xxxx"
+compartment_id = "ocid1.compartment.oc1..xxxx" # envs/oci-governance output
+allowed_cidr   = "203.0.113.10/32"             # 你的對外 IP
+ssh_public_key = "ssh-ed25519 AAAA... you@example.com"
+
+# 可選：
+# cluster_type       = "BASIC_CLUSTER"
+# kubernetes_version = "v1.36.4"
+# node_count         = 2
