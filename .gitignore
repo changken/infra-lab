@@ -1,0 +1,2 @@
+# 本機專用的 Claude Code 設定（含本機路徑與個人權限允許清單），不進版控
+.claude/settings.local.json
