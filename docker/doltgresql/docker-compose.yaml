@@ -1,0 +1,22 @@
+services:
+  db:
+    image: dolthub/doltgresql:latest  
+    container_name: doltgresql
+    #ports:
+    #  - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:${PGDATA:-/var/lib/doltgresql/}
+      - ./init_scripts:/docker-entrypoint-initdb.d/
+    environment:
+      - DOLTGRES_USER= ${DB_USERNAME:-postgres-recreated}
+      - DOLTGRES_PASSWORD= ${DB_PASSWORD:-postgres-recreated}
+      - DOLTGRES_DATA=${PGDATA:-/var/lib/doltgresql/}
+    networks:
+      - pgsql-net
+
+volumes:
+  pgdata:
+
+networks:
+  pgsql-net:
+    driver: bridge
