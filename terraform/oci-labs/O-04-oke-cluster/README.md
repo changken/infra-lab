@@ -119,12 +119,12 @@ oci ce cluster list -c <compartment_id> --lifecycle-state ACTIVE
 
 | | 總額 | `envs/oci-linux` 已用 | 本 lab 最多可用 |
 |---|---|---|---|
-| OCPU | 4 | 1 | **3** |
-| 記憶體 | 24 GB | 6 GB | **18 GB** |
+| OCPU | 4 | 2 | **2** |
+| 記憶體 | 24 GB | 12 GB | **12 GB** |
 | Block volume | 200 GB | 47 GB | **153 GB** |
 
 > ⚠️ 你的帳號是 PAYG，**沒有硬性上限**（`oci limits` 顯示可用 249 OCPU）。超出額度的 A1 會直接從信用卡／credit 扣款（約 US$0.01/OCPU/hr）。
-> `variables.tf` 的 validation 擋住 `node_count × node_ocpus > 3`（A1 專用），用 A1 時不要為了繞過去而移除它。
+> `variables.tf` 的 validation 擋住 `node_count × node_ocpus > 2`（A1 專用；`oci-linux` 已擴大為 2 OCPU，預設 2 節點 × 1 OCPU 剛好用滿，沒有餘裕），用 A1 時不要為了繞過去而移除它。
 
 ### 改用 E4（x86）時的費用
 

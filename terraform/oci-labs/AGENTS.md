@@ -23,8 +23,8 @@ oci-labs/
 ## 護欄（務必遵守）
 
 1. **絕不 destroy／replace `envs/oci-linux` 的 A1 實例**。Singapore 的 A1 常缺貨，刪了可能開不回來。
-2. **A1 Always Free 額度是全帳號共用**：總額 4 OCPU / 24 GB，`oci-linux` 已用 1 OCPU / 6 GB。
-   所有 lab 的 A1 合計最多 **3 OCPU / 18 GB**；Block volume 合計 200 GB（已用 47 GB）。
+2. **A1 Always Free 額度是全帳號共用**：總額 4 OCPU / 24 GB，`oci-linux` 已用 2 OCPU / 12 GB（2026-11 擴大過）。
+   所有 lab 的 A1 合計最多 **2 OCPU / 12 GB**；開 A1 資源前先用 `oci limits resource-availability get` 確認實際用量；Block volume 合計 200 GB（已用 47 GB）。
    帳號的 Service Limit 顯示 249 OCPU 可用 → **沒有硬性上限，超過就計費**。新增 A1 資源必須加 variable validation。
 3. **付費資源註明到期日**：README 的成本章節要標示是否在 Always Free 內，以及「11/22 前必須 destroy」。
 4. **K8s 建立的資源 Terraform 管不到**：`Service type=LoadBalancer` 會建 OCI LB。README 的「結束」章節必須先寫 `kubectl delete svc`，再 `terraform destroy`。

@@ -75,6 +75,19 @@ resource "oci_core_default_security_list" "default" {
     }
   }
 
+  # RDP（3389）：在 Console 手動新增，程式碼對齊現況。
+  # 沿用 ssh_allowed_cidr 限制來源；不需要時請移除此區塊再 apply。
+  ingress_security_rules {
+    protocol    = "6" # TCP
+    source      = var.ssh_allowed_cidr
+    source_type = "CIDR_BLOCK"
+    stateless   = false
+    tcp_options {
+      min = 3389
+      max = 3389
+    }
+  }
+
   ingress_security_rules {
     protocol    = "1" # ICMP: fragmentation needed
     source      = "0.0.0.0/0"

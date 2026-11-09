@@ -18,9 +18,12 @@ resource "oci_core_instance" "changken_ocivm" {
     ssh_authorized_keys = "${trimspace(var.ssh_public_key)}\n"
   }
 
+  # 2026-11 在 Console 由 1 OCPU / 6 GB 擴大為 2 OCPU / 12 GB，程式碼對齊現況。
+  # A1 Always Free 總額 4 OCPU / 24 GB，這台佔一半；其他 A1 資源（如 OKE 節點）
+  # 合計最多只剩 2 OCPU / 12 GB。
   shape_config {
-    ocpus         = 1
-    memory_in_gbs = 6
+    ocpus         = 2
+    memory_in_gbs = 12
   }
 
   create_vnic_details {

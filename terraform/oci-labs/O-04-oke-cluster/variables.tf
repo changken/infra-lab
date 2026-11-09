@@ -59,12 +59,12 @@ variable "node_count" {
   default     = 2
 
   # 💰 Always Free A1 總額 4 OCPU；envs/oci-linux 的實例已佔 1 OCPU，
-  #    本 lab 最多只能用 3 OCPU。超過會直接計費（PAYG 帳號沒有硬性上限）。
+  #    （2026-11 已擴大為 2 OCPU）本 lab 最多只能用 2 OCPU。超過會直接計費（PAYG 帳號沒有硬性上限）。
   # ⚠️ 此護欄只適用 A1。目前改用 E4（付費 shape）而暫時停用；改回 A1 時請取消註解。
   #    使用 E4 時沒有任何自動護欄，節點數與規格請自行控管。
   /*validation {
-    condition     = var.node_count * var.node_ocpus <= 3
-    error_message = "node_count * node_ocpus 不可超過 3（A1 Always Free 4 OCPU 已被 oci-linux 佔用 1）。"
+    condition     = var.node_count * var.node_ocpus <= 2
+    error_message = "node_count * node_ocpus 不可超過 2（A1 Always Free 4 OCPU 已被 oci-linux 佔用 2）。"
   }*/
 }
 
@@ -79,10 +79,10 @@ variable "node_memory_gbs" {
   type        = number
   default     = 6
 
-  # A1 Always Free 24 GB；oci-linux 已用 6 GB，本 lab 最多 18 GB
+  # A1 Always Free 24 GB；oci-linux 已用 12 GB，本 lab 最多 12 GB
   /*validation {
-    condition     = var.node_count * var.node_memory_gbs <= 18
-    error_message = "node_count * node_memory_gbs 不可超過 18（A1 Always Free 24 GB 已被 oci-linux 佔用 6）。"
+    condition     = var.node_count * var.node_memory_gbs <= 12
+    error_message = "node_count * node_memory_gbs 不可超過 12（A1 Always Free 24 GB 已被 oci-linux 佔用 12）。"
   }*/
 }
 
