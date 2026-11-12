@@ -1,0 +1,10 @@
+tenancy_id        = "ocid1.tenancy.oc1..xxxx"
+compartment_id    = "ocid1.compartment.oc1..xxxx" # envs/oci-governance output
+allowed_cidr      = "203.0.113.10/32"             # 你的對外 IP
+ssh_public_key    = "ssh-ed25519 AAAA... you@example.com"
+db_admin_password = "ChangeMe_12345#"             # 9–30 字元，需大小寫+數字+特殊字元（限 _、#、- 且至少 2 個）
+
+# 可選：
+# db_version       = "19.0.0.0"
+# database_edition = "STANDARD_EDITION"
+# compute_count    = 4

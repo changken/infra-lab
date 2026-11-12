@@ -15,6 +15,7 @@ OCI 學習 labs，對標 AWS（`../labs/`）與 Azure（`../azure-labs/`）。
 ```
 oci-labs/
 ├── AGENTS.md
+├── O-02-base-database/   # Base Database（對比 RDS Oracle）
 └── O-04-oke-cluster/     # OKE（對比 EKS）
 ```
 
@@ -55,4 +56,5 @@ oci lb load-balancer list -c <compartment>              # 是否有殘留 LB
 
 ## 更新記錄
 
+- 2026-11-09: 新增 O-02-base-database（無 Always Free，全部耗 credit，11/22 前 destroy）
 - 2026-11-06: 建立 oci-labs 與 O-04-oke-cluster
