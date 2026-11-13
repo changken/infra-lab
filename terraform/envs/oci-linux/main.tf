@@ -7,11 +7,11 @@
 #    - source_details 改 image 會觸發 replace，故 ignore_changes
 #    - 任何 plan 出現 "must be replaced" 都不要 apply
 #--------------------------------------------------------------
-resource "oci_core_instance" "changken_ocivm" {
+resource "oci_core_instance" "a1_primary" {
   compartment_id      = var.compartment_id
   availability_domain = "pimc:AP-SINGAPORE-1-AD-1"
   fault_domain        = "FAULT-DOMAIN-2"
-  display_name        = "changken-ocivm"
+  display_name        = var.instance_names.primary
   shape               = "VM.Standard.A1.Flex"
 
   metadata = {
@@ -30,9 +30,9 @@ resource "oci_core_instance" "changken_ocivm" {
     subnet_id        = var.subnet_id
     nsg_ids          = [var.nsg_id]
     assign_public_ip = "true"
-    display_name     = "a1-sg"
-    hostname_label   = "a1-sg"
-    private_ip       = "10.87.0.131"
+    display_name     = var.instance_names.primary # Console 由 a1-sg 改名，程式碼對齊現況
+    hostname_label   = var.instance_names.primary
+    private_ip       = var.ocivm_private_ip
   }
 
   source_details {

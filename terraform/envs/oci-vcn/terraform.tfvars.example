@@ -1,2 +1,14 @@
 compartment_id   = "ocid1.compartment.oc1..xxxx" # oci-governance output
 ssh_allowed_cidr = "203.0.113.10/32"             # 你的對外 IP
+subnet_ipv6_cidr_block = "2001:db8:1234:5600::/64" # VCN IPv6 /56 切出的 /64（Console 查）
+
+vcn_cidr    = "10.0.0.0/16"
+subnet_cidr = "10.0.0.0/24"
+
+vcn_name         = "my-vcn"
+vcn_dns_label    = "myvcn"
+igw_name         = "my-igw"
+route_table_name = "my-routetable"
+subnet_name      = "public-subnet"
+subnet_dns_label = "publicsubnet"
+nsg_name         = "my-nsg"

@@ -2,3 +2,22 @@ compartment_id = "ocid1.compartment.oc1..xxxx"                  # oci-governance
 subnet_id      = "ocid1.subnet.oc1.ap-singapore-1.xxxx"         # oci-vcn output
 nsg_id         = "ocid1.networksecuritygroup.oc1.ap-singapore-1.xxxx" # oci-vcn output
 ssh_public_key = "ssh-ed25519 AAAA... you@example.com"
+
+ocivm_private_ip  = "10.0.0.10"
+ocivm2_private_ip = "10.0.0.11"
+boot_volume_ids = {
+  ocivm_k3s    = "ocid1.bootvolume.oc1..xxxx"
+  ocivm2_k3s   = "ocid1.bootvolume.oc1..xxxx"
+  ocivm_old    = "ocid1.bootvolume.oc1..xxxx"
+  ocivm2_old   = "ocid1.bootvolume.oc1..xxxx"
+  clone_source = "ocid1.bootvolume.oc1..xxxx"
+}
+
+instance_names = {
+  primary   = "a1-one"
+  secondary = "a1-two"
+}
+backup_names = {
+  first  = "manual backup 1"
+  second = "manual backup 2"
+}
