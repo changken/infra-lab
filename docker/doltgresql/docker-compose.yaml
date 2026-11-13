@@ -2,8 +2,9 @@ services:
   db:
     image: dolthub/doltgresql:latest  
     container_name: doltgresql
-    #ports:
+    ports:
     #  - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:${PGDATA:-/var/lib/doltgresql/}
       - ./init_scripts:/docker-entrypoint-initdb.d/

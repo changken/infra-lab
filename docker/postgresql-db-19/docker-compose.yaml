@@ -12,7 +12,7 @@ services:
     ports:
       - 127.0.0.1:5432:5432
     volumes:
-      - ~/pgsql-data:/var/lib/postgresql
+      - pgsql-data:/var/lib/postgresql
       - ./initdb.d:/docker-entrypoint-initdb.d:ro
     #  - type: tmpfs
     #    target: /dev/shm
@@ -60,6 +60,8 @@ services:
     networks:
       - pgsql-net
 
+volumes:
+  pgsql-data:
 
 networks:
   pgsql-net:
