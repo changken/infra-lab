@@ -1,4 +1,4 @@
-# O-02：Base Database（Oracle DB System）
+# O-01：Base Database（Oracle DB System）
 
 > 在 OCI 建立原生 Oracle Database VM（Base Database Service），對標 AWS 的 [`envs/aws-oracle-rds`](../../envs/aws-oracle-rds/)。
 > 搭配前公司 11g → 19c 升版背景，熟悉 Oracle 在「自家雲」的託管型態。
@@ -19,31 +19,38 @@
 ## 架構
 
 ```
-                    你的電腦（allowed_cidr）
-                      │ ssh :22     │ SQL*Net :1521
-                      ▼             ▼
+   你的電腦（allowed_cidr）
+     │ SSH tunnel：localhost:2222 → :22、localhost:1521 → :1521
+     ▼
+ OCI Bastion service（免費；allow list = 你的 IP）
+     │ port-forwarding session ×2
+     ▼
 ┌──────────────── VCN 10.30.0.0/16 ─────────────────────┐
-│  db subnet 10.30.10.0/24（public）                     │
+│  db subnet 10.30.10.0/24（private，無公網 IP）         │
 │  ┌──────────────────────────────────────────────┐     │
 │  │ DB System（VM.BaseDB.x86, 4 ECPU）            │     │
 │  │  ├─ CDB: ORCL                                │     │
 │  │  │    └─ PDB: PDB1  ← 應用連這裡             │     │
-│  │  └─ ASM / 256 GB data storage                │     │
+│  │  └─ LVM / 256 GB data storage                │     │
 │  └──────────────────────────────────────────────┘     │
-│        Security List：22、1521 只開 allowed_cidr       │
+│   Security List：不對外開 port，僅 VCN 內全通          │
 └───────────────────────┬───────────────────────────────┘
-                   Internet Gateway
+              Service Gateway（免費，僅連 Oracle 服務）
 ```
+
+> 沒有 Internet Gateway、沒有 NAT Gateway；唯一入口是 Bastion。
 
 ## 你要做的事
 
-網路層（VCN / IGW / Route Table / Security List / Subnet）**已提供**：
+網路層（VCN / Service Gateway / Private Route Table / Security List / Private Subnet）**已提供**：
 
 | TODO | 檔案 | 內容 | 重點 |
 |------|------|------|------|
 | 1 | `main.tf` | 查 Availability Domain | 用 **tenancy** OCID，不是 compartment |
 | 2 | `main.tf` | `oci_database_db_system` | shape、ECPU、license_model、`db_home.database` 巢狀區塊 |
-| 3 | `outputs.tf` | ssh / sqlplus / jdbc 連線資訊 | 公網 IP 與 PDB service name 要自己找來源 |
+| 3 | `outputs.tf` | DB node private IP 與 PDB service name | private IP 與 service name 要自己找來源 |
+| 4 | `main.tf` | Bastion + 兩個 port-forwarding session（22、1521） | `allowed_cidr` 放你的 IP；name 只能英數；不用 MANAGED_SSH |
+| 5 | `outputs.tf` | Bastion tunnel 指令 | 從 session 的 `ssh_metadata` 取指令，替換佔位字串 |
 
 ## 此帳號的實際限制（2026-11-09 以 `oci` CLI 查得）
 
@@ -75,10 +82,14 @@ terraform apply      # ⏳ 約 30–60 分鐘
 # 1. 狀態應為 AVAILABLE
 oci db system list -c <compartment_id> --query 'data[].{n:"display-name",s:"lifecycle-state"}'
 
-# 2. SSH 進 DB host（使用者 opc）
-terraform output -raw ssh_command | bash
+# 2. 開 tunnel（各開一個終端機，會一直佔著；SSH 2222、SQL*Net 1521）
+terraform output -raw ssh_tunnel_command
+terraform output -raw sql_tunnel_command
 
-# 3. 在 host 上切 oracle 看 listener 與 DB
+# 3. 另開終端機，SSH 進 DB host（使用者 opc）
+ssh -i <private_key> -p 2222 opc@localhost
+
+# 在 host 上切 oracle 看 listener 與 DB
 sudo su - oracle
 lsnrctl status
 sqlplus / as sysdba <<'SQL'
@@ -87,9 +98,11 @@ show pdbs
 select banner_full from v$version;
 SQL
 
-# 4. 從你的電腦連 PDB
-sqlplus system/<密碼>@//<public_ip>:1521/<pdb_service_name>
+# 4. 從你的電腦連 PDB（走 tunnel）
+sqlplus system/<密碼>@//localhost:1521/<pdb_service_name>
 ```
+
+> Bastion session 有存活時間（`session_ttl_in_seconds`），到期 tunnel 會斷，需重建 session（`terraform apply -replace=...`）。
 
 ### 建議練習（時間有限，挑著做）
 
@@ -118,7 +131,8 @@ oci network vcn list -c <compartment_id> --query 'data[].{n:"display-name"}'
 | 授權：Enterprise **High Performance**（B112727） | 4 ECPU，License Included | US$0.2218 /ECPU/hr → **≈ US$0.89/hr** |
 | Database storage（B111584） | 試算以 **717 GB** 計（見下方說明） | US$0.12 /GB/月 → **≈ US$86/月** |
 | 自動備份 | 預設關閉 | 開啟會多一筆 Object Storage |
-| VCN / IGW / Security List | — | 免費 |
+| Bastion service | session 數量有上限，無用量計費 | 免費 |
+| VCN / Service Gateway / Security List | — | 免費 |
 
 ### 實際試算：Enterprise High Performance、4 ECPU、跑 11 天（264 小時）
 
@@ -160,7 +174,11 @@ oci network vcn list -c <compartment_id> --query 'data[].{n:"display-name"}'
 | `400-InvalidParameter`（LVM 儲存方案） | `VM.BaseDB.x86` 未指定儲存管理方式（預設 ASM 遭拒） | 加上 `db_system_options { storage_management = "LVM" }`，此 Shape 僅支援 LVM。 |
 | `hostname` 錯誤 | 主機名稱長度 > 12 字元 | ≤ 12 字元，限小寫英數，不可連字號開頭（例如直接用 `var.name_prefix`，避免 `${var.name_prefix}-db` 破表）。 |
 | `Reference to undeclared resource` / 查無公網 IP | DB System 資源本身只提供 `private_ip` | 需先用 `data "oci_database_db_nodes"` 查節點，再用 `data "oci_core_vnic"` 查出 `public_ip_address`。 |
-| 能 SSH 但連不上 1521 | Security List 只開 `allowed_cidr`；你的 IP 變了？ | 確認對外 IP，並確認連線 service name 為 `<pdb>.<db_domain>`（由 `oci_database_db_system.this.domain` 取得）。 |
+| tunnel 連不上／逾時 | 你的 IP 變了，Bastion allow list 沒更新 | 確認對外 IP，更新 `allowed_cidr`（依 AGENTS.md 同步其他位置）後 apply |
+| tunnel 連上又斷 | Bastion session 到期 | 重建 session；必要時調 `session_ttl_in_seconds`（不可超過 bastion 的 `max_session_ttl_in_seconds`） |
+| `Bastion name` 報錯 | 名稱含連字號等不允許字元 | `name` 只用英數（`replace(var.name_prefix, "-", "")`） |
+| SSH tunnel 通但 sqlplus 連不上 | service name 錯，或 1521 的 session 沒開 | 確認為 `<pdb>.<db_domain>`（`oci_database_db_system.this.domain`），且 sql tunnel 正在跑 |
+| 想從外網直接連 DB | DB 在 private subnet，沒有公網 IP | 走 Bastion tunnel，不要為了方便改回 public subnet |
 | `apply` 後 `plan` 一直有差異 | `admin_password`／`db_home` 巢狀欄位 provider 不回傳 | 使用 `lifecycle { ignore_changes = [db_home[0].database[0].admin_password] }`。 |
 | `destroy` 卡在刪 subnet／VCN | DB System 尚在 TERMINATING | OCI 需等待 DB System 完全終止釋放 VNIC，稍候重跑即可。 |
 | 想開 Data Guard | 需 Enterprise Edition 且 Singapore 單 AD（同 AD 備援） | 不在本 lab 範圍。 |

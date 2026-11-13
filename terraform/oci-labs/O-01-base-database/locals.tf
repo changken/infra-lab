@@ -3,7 +3,7 @@ locals {
     Project     = "infra-lab"
     Environment = "lab"
     ManagedBy   = "terraform"
-    Lab         = "O-02-base-database"
+    Lab         = "O-01-base-database"
   }
 
   # 從 VCN CIDR 切出 DB subnet

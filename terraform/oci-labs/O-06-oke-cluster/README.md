@@ -1,4 +1,4 @@
-# O-04：OKE Cluster（Oracle Kubernetes Engine）
+# O-06：OKE Cluster（Oracle Kubernetes Engine）
 
 > 在 OCI 建立 OKE 叢集並跑工作負載，對標 AWS 的 [Lab 15 EKS](../../labs/15-eks-cluster/)。節點可選 **A1（ARM，Always Free，常缺貨）** 或 **E4（x86，收費但容量充裕）**。
 >

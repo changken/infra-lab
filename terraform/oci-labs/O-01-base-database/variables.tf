@@ -15,7 +15,7 @@ variable "compartment_id" {
 }
 
 variable "allowed_cidr" {
-  description = "你的對外 IP（/32）：用於 SSH(22)、SQL*Net(1521)"
+  description = "你的對外 IP（/32）：用於 Bastion 的 client_cidr_block_allow_list（DB 在 private subnet，不直接對外開 port）"
   type        = string
 
   validation {
@@ -24,8 +24,13 @@ variable "allowed_cidr" {
   }
 }
 
+variable "private_key_path" {
+  description = "DB node 與 Bastion session 的私鑰路徑（對應 ssh_public_key）"
+  type        = string
+}
+
 variable "ssh_public_key" {
-  description = "DB node SSH 公鑰（使用者為 opc）"
+  description = "DB node SSH 公鑰（使用者為 opc）；同一把也用於 Bastion session（TODO 4）"
   type        = string
 }
 

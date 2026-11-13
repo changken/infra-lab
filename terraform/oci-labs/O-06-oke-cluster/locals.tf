@@ -3,7 +3,7 @@ locals {
     Project     = "infra-lab"
     Environment = "lab"
     ManagedBy   = "terraform"
-    Lab         = "O-04-oke-cluster"
+    Lab         = "O-06-oke-cluster"
   }
 
   # 從 VCN CIDR 切出三個 subnet

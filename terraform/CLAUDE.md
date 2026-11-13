@@ -88,7 +88,8 @@ terraform/
 │   └── A-06-azure-devops-pipeline/ # Azure DevOps CI/CD（對比 CodePipeline）
 ├── oci-labs/              # OCI 學習 labs（Always Free + PAYG credit，對比 AWS / Azure）
 │   ├── AGENTS.md              # OCI Labs 專屬 AI 規範（A1 共用額度、credit 到期日等護欄）
-│   └── O-04-oke-cluster/      # OKE（對比 EKS）；節點可選 A1（Always Free）或 E4（收費）
+│   ├── O-01-base-database/    # Base Database（對比 RDS Oracle）
+│   └── O-06-oke-cluster/      # OKE（對比 EKS）；節點可選 A1（Always Free）或 E4（收費）
 └── envs/                  # 長駐獨立環境（有自己的 tfstate，非 lab 練習用）
     ├── aws-windows/           # Windows Server 2025 開發 / 跳板機（純 Windows）
     ├── aws-linux/             # Amazon Linux 2023 開發 / 跳板機（純 Linux）
@@ -265,6 +266,7 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-11-12: OCI lab 重新編號（O-02→O-01 base-database、O-04→O-06 oke-cluster），規劃 O-02~O-09，詳見 oci-labs/AGENTS.md
 - 2026-11-09: 新增 oci-labs/ 與 O-04-oke-cluster；修復 CLAUDE.md / GEMINI.md 硬連結（原本脫鉤，內容停在 2026-05-21）
 - 2026-11-06: 新增 envs/oci-governance、envs/oci-vcn、envs/oci-linux（以 import block + `-generate-config-out` 將手動建立的 OCI 資源收進 Terraform）
 - 2026-06-29: 新增 envs/azure-linux、envs/azure-windows（Azure 長駐環境，呼叫 azure-vnet + azure-linux/azure-windows module）

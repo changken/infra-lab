@@ -15,9 +15,28 @@ OCI 學習 labs，對標 AWS（`../labs/`）與 Azure（`../azure-labs/`）。
 ```
 oci-labs/
 ├── AGENTS.md
-├── O-02-base-database/   # Base Database（對比 RDS Oracle）
-└── O-04-oke-cluster/     # OKE（對比 EKS）
+├── O-01-base-database/   # Base Database（對比 RDS Oracle）
+├── O-02-autonomous-database/ # Autonomous Database（對比 Aurora）
+└── O-06-oke-cluster/     # OKE（對比 EKS）
 ```
+
+## 學習路線（2026-11-12 規劃，優先消耗 credit）
+
+| 編號 | Lab | 對標 AWS | 預計 | 狀態 |
+|---|---|---|---|---|
+| O-01 | Base Database | RDS Oracle | — | ✅ 已建 |
+| O-02 | Autonomous Database（付費 ECPU、Data Guard、private endpoint） | Aurora | 11/12–13 | 🚧 骨架已建（TODO 待填） |
+| O-03 | ADB + AI Vector Search（疊在 O-02 上） | Aurora + pgvector | 11/13–14 | 規劃 |
+| O-04 | MySQL HeatWave（HA + HeatWave cluster） | RDS MySQL | 11/14–15 | 規劃 |
+| O-05 | GoldenGate + Base DB | DMS | 11/15–16 | 規劃 |
+| O-06 | OKE | EKS | — | ✅ 已建 |
+| O-07 | LB + WAF + Bastion | ALB + WAF + SSM | 11/16–17 | 規劃 |
+| O-08 | GPU 實例（短時間） | EC2 GPU | 11/17–18 | 規劃 |
+| O-09 | Exadata Exascale | — | 11/18–21 | 待確認 Singapore 可用與最低配置 |
+
+- 11/21 全部 `terraform destroy`，再用 `oci` CLI 檢查殘留資源（cluster / LB / DB system）。
+- Exadata 傳統 Dedicated Infrastructure（Quarter Rack 約 SGD 20–40/hr）**不玩**，只玩 Exascale（按 ECPU 計費）。
+- 單價與 Singapore 供應需開 lab 前用 Cost Estimator 確認。
 
 長駐、已存在的資源在 `../envs/oci-*`（governance / vcn / linux），**lab 不要修改它們**。
 
@@ -56,5 +75,8 @@ oci lb load-balancer list -c <compartment>              # 是否有殘留 LB
 
 ## 更新記錄
 
-- 2026-11-09: 新增 O-02-base-database（無 Always Free，全部耗 credit，11/22 前 destroy）
-- 2026-11-06: 建立 oci-labs 與 O-04-oke-cluster
+- 2026-11-12: O-01 改為 private subnet + OCI Bastion（新增 TODO 4/5，移除 IGW / 公網 IP）
+- 2026-11-12: 重新編號（O-02→O-01、O-04→O-06）並加入學習路線 O-02~O-09
+- 2026-11-12: 新增 O-02-autonomous-database 骨架（TODO 填空式，單價待 Cost Estimator 確認）
+- 2026-11-09: 新增 O-01-base-database（原 O-02）（無 Always Free，全部耗 credit，11/22 前 destroy）
+- 2026-11-06: 建立 oci-labs 與 O-06-oke-cluster（原 O-04）

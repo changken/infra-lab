@@ -1,8 +1,9 @@
 #==============================================================
 # Part A：網路層（已提供，不需要修改）
 #
-# 為了省錢，不建 NAT Gateway / Private subnet；DB 放 public subnet，
-# 只靠 Security List 限制 allowed_cidr。正式環境請改 private subnet + bastion。
+# DB 放 private subnet（沒有公網 IP、沒有 Internet Gateway、沒有 NAT Gateway）。
+# 對外只有 Service Gateway（免費）連 Oracle 服務；
+# 你從電腦連進來一律走 OCI Bastion（見 Part C）。
 #==============================================================
 
 resource "oci_core_vcn" "db" {
@@ -13,24 +14,36 @@ resource "oci_core_vcn" "db" {
   freeform_tags  = local.common_tags
 }
 
-resource "oci_core_internet_gateway" "db" {
-  compartment_id = var.compartment_id
-  vcn_id         = oci_core_vcn.db.id
-  display_name   = "${var.name_prefix}-igw"
-  enabled        = true
-  freeform_tags  = local.common_tags
+# Oracle Services Network（Service Gateway 的目的地）
+data "oci_core_services" "all" {
+  filter {
+    name   = "name"
+    values = ["All .* Services In Oracle Services Network"]
+    regex  = true
+  }
 }
 
-resource "oci_core_route_table" "public" {
+resource "oci_core_service_gateway" "db" {
   compartment_id = var.compartment_id
   vcn_id         = oci_core_vcn.db.id
-  display_name   = "${var.name_prefix}-public-rt"
+  display_name   = "${var.name_prefix}-sgw"
+  freeform_tags  = local.common_tags
+
+  services {
+    service_id = data.oci_core_services.all.services[0].id
+  }
+}
+
+resource "oci_core_route_table" "private" {
+  compartment_id = var.compartment_id
+  vcn_id         = oci_core_vcn.db.id
+  display_name   = "${var.name_prefix}-private-rt"
   freeform_tags  = local.common_tags
 
   route_rules {
-    destination       = "0.0.0.0/0"
-    destination_type  = "CIDR_BLOCK"
-    network_entity_id = oci_core_internet_gateway.db.id
+    destination       = data.oci_core_services.all.services[0].cidr_block
+    destination_type  = "SERVICE_CIDR_BLOCK"
+    network_entity_id = oci_core_service_gateway.db.id
   }
 }
 
@@ -45,19 +58,8 @@ resource "oci_core_security_list" "db" {
     protocol    = "all"
   }
 
-  # SSH 與 SQL*Net，只開給你的 IP
-  dynamic "ingress_security_rules" {
-    for_each = [22, 1521]
-    content {
-      protocol = "6"
-      source   = var.allowed_cidr
-      tcp_options {
-        min = ingress_security_rules.value
-        max = ingress_security_rules.value
-      }
-    }
-  }
-  # VCN 內全通（之後加 app server 連 DB 用）
+  # 不對外開 22 / 1521；Bastion 從 VCN 內連到 DB node，靠下面「VCN 內全通」即可
+  # VCN 內全通（Bastion、之後的 app server 連 DB 用）
   ingress_security_rules {
     protocol = "all"
     source   = var.vcn_cidr
@@ -78,9 +80,9 @@ resource "oci_core_subnet" "db" {
   display_name               = "${var.name_prefix}-db"
   cidr_block                 = local.db_subnet_cidr
   dns_label                  = "dbsub"
-  route_table_id             = oci_core_route_table.public.id
+  route_table_id             = oci_core_route_table.private.id
   security_list_ids          = [oci_core_security_list.db.id]
-  prohibit_public_ip_on_vnic = false
+  prohibit_public_ip_on_vnic = true
   freeform_tags              = local.common_tags
 }
 
@@ -177,4 +179,75 @@ resource "oci_database_db_system" "this" {
   lifecycle {
     ignore_changes = [db_home[0].database[0].admin_password]
   }
+}
+
+#==============================================================
+# Part C：Bastion（你要填的部分）
+#==============================================================
+
+#--------------------------------------------------------------
+# TODO 4: Bastion + 兩個 port-forwarding session
+#--------------------------------------------------------------
+# DB node 在 private subnet、沒有公網 IP，你的電腦直接連不進去。
+# 用 OCI Bastion service（免費）開兩條 SSH tunnel：
+#   你的電腦 localhost:<SSH port> ──> Bastion ──> DB node private IP:22
+#   你的電腦 localhost:1521       ──> Bastion ──> DB node private IP:1521
+#
+# 文件:
+#   https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/bastion_bastion
+#   https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/bastion_session
+#   可參考 ../O-02-autonomous-database/main.tf 的 TODO 7（同樣的 Bastion 做法）
+#
+# (a) oci_bastion_bastion 需要設定：
+#   bastion_type                 = ???    # 這個 lab 用 STANDARD
+#   compartment_id               = var.compartment_id
+#   target_subnet_id             = ???    # 跟 DB 同一個 subnet
+#   name                         = ???    # ⚠️ 只允許英數，不能有連字號（var.name_prefix 含連字號，要處理）
+#   client_cidr_block_allow_list = [???]  # 只放你的 IP（來源 IP，不是 DB 的 IP）
+#   max_session_ttl_in_seconds   = ???    # session 最長存活時間，lab 不用太長
+#
+# (b) oci_bastion_session 需要設定（要兩個：SSH 一個、SQL*Net 一個，可用 for_each）：
+#   bastion_id           = ???
+#   key_details          { public_key_content = var.ssh_public_key }
+#   target_resource_details {
+#     session_type                       = ???   # port forwarding 的類型（不要用 MANAGED_SSH，DB node 不一定有 Bastion plugin）
+#     target_resource_private_ip_address = ???   # DB node 的 private IP（locals.tf 的 local.private_ip）
+#     target_resource_port               = ???   # 22 或 1521
+#   }
+#   session_ttl_in_seconds = ???
+#
+# ⚠️ 注意：
+#   - session 到期後 tunnel 就斷了，要重建 session
+#   - 你的 IP 變了要更新 allowed_cidr 並 apply（Bastion allow list 原地更新）
+#   - Bastion 本身免費，destroy 時會一起刪掉
+
+resource "oci_bastion_bastion" "this" {
+  bastion_type                 = "STANDARD"
+  compartment_id               = var.compartment_id
+  target_subnet_id             = oci_core_subnet.db.id
+  name                         = replace(var.name_prefix, "-", "")
+  client_cidr_block_allow_list = [var.allowed_cidr]
+  max_session_ttl_in_seconds   = 3600
+  freeform_tags                = local.common_tags
+}
+
+resource "oci_bastion_session" "this" {
+  for_each = {
+    ssh    = { port = 22 }
+    sqlnet = { port = 1521 }
+  }
+
+  bastion_id = oci_bastion_bastion.this.id
+
+  key_details {
+    public_key_content = var.ssh_public_key
+  }
+
+  target_resource_details {
+    session_type                       = "PORT_FORWARDING"
+    target_resource_private_ip_address = local.private_ip
+    target_resource_port               = each.value.port
+  }
+
+  session_ttl_in_seconds = 3600
 }
