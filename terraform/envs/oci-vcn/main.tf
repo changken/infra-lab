@@ -49,6 +49,13 @@ resource "oci_core_route_table" "public" {
     network_entity_id = oci_core_internet_gateway.main.id
   }
 
+  # IPv6 預設路由（subnet 已啟用 IPv6，需有 ::/0 才能出入網）
+  route_rules {
+    destination       = "::/0"
+    destination_type  = "CIDR_BLOCK"
+    network_entity_id = oci_core_internet_gateway.main.id
+  }
+
   lifecycle {
     ignore_changes = [defined_tags]
   }
@@ -62,6 +69,13 @@ resource "oci_core_default_security_list" "default" {
 
   egress_security_rules {
     destination      = "0.0.0.0/0"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "all"
+    stateless        = false
+  }
+
+  egress_security_rules {
+    destination      = "::/0"
     destination_type = "CIDR_BLOCK"
     protocol         = "all"
     stateless        = false
@@ -125,6 +139,54 @@ resource "oci_core_default_security_list" "default" {
     tcp_options {
       min = 10250
       max = 10250
+    }
+  }
+
+  # k3s 的 IPv6 版本：來源限制為 subnet 的 IPv6 /64（SSH / RDP 不開 IPv6）
+  ingress_security_rules {
+    description = "agent 連 server 的 API（IPv6）"
+    protocol    = "6" # TCP
+    source      = var.subnet_ipv6_cidr_block
+    source_type = "CIDR_BLOCK"
+    stateless   = false
+    tcp_options {
+      min = 6443
+      max = 6443
+    }
+  }
+
+  ingress_security_rules {
+    description = "flannel VXLAN（IPv6）"
+    protocol    = "17" # UDP
+    source      = var.subnet_ipv6_cidr_block
+    source_type = "CIDR_BLOCK"
+    stateless   = false
+    udp_options {
+      min = 8472
+      max = 8472
+    }
+  }
+
+  ingress_security_rules {
+    description = "kubelet（IPv6）"
+    protocol    = "6" # TCP
+    source      = var.subnet_ipv6_cidr_block
+    source_type = "CIDR_BLOCK"
+    stateless   = false
+    tcp_options {
+      min = 10250
+      max = 10250
+    }
+  }
+
+  ingress_security_rules {
+    description = "ICMPv6 Packet Too Big（IPv6 PMTU 必要）"
+    protocol    = "58" # ICMPv6
+    source      = "::/0"
+    source_type = "CIDR_BLOCK"
+    stateless   = false
+    icmp_options {
+      type = 2
     }
   }
 
@@ -265,6 +327,72 @@ resource "oci_core_network_security_group_security_rule" "k3s_flannel_vxlan" {
       min = 8472
       max = 8472
     }
+  }
+}
+
+# k3s 的 IPv6 版本（新規則，由 Terraform 建立）
+resource "oci_core_network_security_group_security_rule" "k3s_api_v6" {
+  network_security_group_id = oci_core_network_security_group.main.id
+  direction                 = "INGRESS"
+  protocol                  = "6"
+  source                    = var.subnet_ipv6_cidr_block
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+  description               = "agent 連 server 的 API（IPv6）"
+
+  tcp_options {
+    destination_port_range {
+      min = 6443
+      max = 6443
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "k3s_kubelet_v6" {
+  network_security_group_id = oci_core_network_security_group.main.id
+  direction                 = "INGRESS"
+  protocol                  = "6"
+  source                    = var.subnet_ipv6_cidr_block
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+  description               = "kubelet（IPv6）"
+
+  tcp_options {
+    destination_port_range {
+      min = 10250
+      max = 10250
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "k3s_flannel_vxlan_v6" {
+  network_security_group_id = oci_core_network_security_group.main.id
+  direction                 = "INGRESS"
+  protocol                  = "17"
+  source                    = var.subnet_ipv6_cidr_block
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+  description               = "flannel VXLAN（IPv6）"
+
+  udp_options {
+    destination_port_range {
+      min = 8472
+      max = 8472
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "icmpv6_ptb" {
+  network_security_group_id = oci_core_network_security_group.main.id
+  direction                 = "INGRESS"
+  protocol                  = "58"
+  source                    = "::/0"
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+  description               = "ICMPv6 Packet Too Big（IPv6 PMTU 必要）"
+
+  icmp_options {
+    type = 2
   }
 }
 

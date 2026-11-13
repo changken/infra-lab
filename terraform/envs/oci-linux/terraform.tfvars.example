@@ -8,8 +8,6 @@ ocivm2_private_ip = "10.0.0.11"
 boot_volume_ids = {
   ocivm_k3s    = "ocid1.bootvolume.oc1..xxxx"
   ocivm2_k3s   = "ocid1.bootvolume.oc1..xxxx"
-  ocivm_old    = "ocid1.bootvolume.oc1..xxxx"
-  ocivm2_old   = "ocid1.bootvolume.oc1..xxxx"
   clone_source = "ocid1.bootvolume.oc1..xxxx"
 }
 

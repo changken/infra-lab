@@ -35,12 +35,10 @@ variable "ocivm2_private_ip" {
 }
 
 variable "boot_volume_ids" {
-  description = "boot volume OCID：使用中與閒置的碟，以及 clone 的來源碟（已 TERMINATED，僅供 source_details 必填欄位使用）"
+  description = "boot volume OCID：使用中的碟，以及 clone 的來源碟（已 TERMINATED，僅供 source_details 必填欄位使用）"
   type = object({
     ocivm_k3s    = string
     ocivm2_k3s   = string
-    ocivm_old    = string
-    ocivm2_old   = string
     clone_source = string
   })
 }

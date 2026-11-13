@@ -48,7 +48,7 @@ resource "oci_core_instance" "a1_secondary" {
 }
 
 #--------------------------------------------------------------
-# Boot volumes（免費額度 block + boot 合計 200 GB；4 × 47 = 188 GB，勿再 clone）
+# Boot volumes（免費額度 block + boot 合計 200 GB；2 × 47 = 94 GB）
 # 已 TERMINATED 的舊碟不納管。
 #--------------------------------------------------------------
 locals {
@@ -85,45 +85,6 @@ resource "oci_core_boot_volume" "ocivm2_k3s" {
   source_details {
     type = "bootVolume"
     id   = var.boot_volume_ids.clone_source
-  }
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes  = [defined_tags, source_details]
-  }
-}
-
-# 閒置：舊開機碟，保留作回退（確認新碟穩定後可手動刪除）
-resource "oci_core_boot_volume" "ocivm_old" {
-  compartment_id      = var.compartment_id
-  availability_domain = local.boot_volume_ad
-  display_name        = "${var.instance_names.primary} (Boot Volume)"
-  size_in_gbs         = "47"
-  vpus_per_gb         = "10"
-
-  source_details {
-    # 原由 image 建立，資源不支援 image 型別；source_details 已 ignore_changes，此為佔位
-    type = "bootVolume"
-    id   = var.boot_volume_ids.ocivm_old
-  }
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes  = [defined_tags, source_details]
-  }
-}
-
-resource "oci_core_boot_volume" "ocivm2_old" {
-  compartment_id      = var.compartment_id
-  availability_domain = local.boot_volume_ad
-  display_name        = "${var.instance_names.secondary} (Boot Volume)"
-  size_in_gbs         = "47"
-  vpus_per_gb         = "10"
-
-  source_details {
-    # 原由 image 建立，資源不支援 image 型別；source_details 已 ignore_changes，此為佔位
-    type = "bootVolume"
-    id   = var.boot_volume_ids.ocivm2_old
   }
 
   lifecycle {
