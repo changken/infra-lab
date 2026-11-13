@@ -104,13 +104,16 @@ terraform/
     ├── azure-windows/         # Azure Windows Server 2025 開發 / 跳板機（azure-vnet + azure-windows module）
     ├── azure-avd/             # Azure Virtual Desktop (AVD) 長駐桌面環境
     ├── oci-governance/        # OCI tenancy 層級：compartment / Identity Domain group / policy / network source / budget（import 而來）
-    ├── oci-vcn/               # OCI VCN + subnet + IGW + route table + security list + NSG（import 而來）
-    └── oci-linux/             # OCI Always Free A1.Flex 實例（import 而來，prevent_destroy）
+    ├── oci-vcn/               # OCI VCN + subnet（IPv4 / IPv6）+ IGW + route table + security list + NSG（含 k3s 與 IPv6 規則；名稱 / CIDR / IPv6 前綴由 tfvars 提供）
+    └── oci-linux/             # OCI Always Free A1.Flex ×2 + boot volume ×2 + 手動 boot volume backup ×2（皆 prevent_destroy；名稱 / IP / OCID 由 tfvars 提供）
 ```
 
 > **OCI envs 依賴順序**：`oci-governance`（輸出 compartment_id）→ `oci-vcn`（輸出 subnet_id / nsg_id）→ `oci-linux`。
 > 各 env 獨立 tfstate，以 variable 傳遞 OCID（不用 remote_state）。
 > A1 在 ap-singapore-1 常缺貨，**`oci-linux` 的實例絕不可 destroy / replace**；plan 出現 `must be replaced` 一律不要 apply。
+> `oci-vcn` / `oci-linux` 的名稱、內網 IP、CIDR、IPv6 前綴、boot volume OCID 一律放 `terraform.tfvars`（已 gitignore），`.tf` 不寫死；`imports.tf` 為一次性檔案，import 完即刪。
+> Always Free 額度：A1 合計 4 OCPU / 24 GB（兩台各 2 / 12 已用滿）；block + boot volume 合計 200 GB（目前 2 × 47 GB）；boot volume backup 5 份。
+> SSH / RDP 只開 IPv4（家用 ISP 無 IPv6）；IPv6 僅開 k3s 節點互通埠、ICMPv6 Packet Too Big 與 `::/0` 出入網。
 
 ## 學習路線（共 15+ 週）
 
@@ -266,6 +269,7 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-11-13: oci-vcn / oci-linux 對齊 Console 現況：補 k3s Security List / NSG 規則與 IPv6 路由 / 規則；納管第二台 A1、boot volume 與手動備份；名稱、IP、CIDR 改由 tfvars 提供；移除兩顆閒置舊 boot volume
 - 2026-11-12: OCI lab 重新編號（O-02→O-01 base-database、O-04→O-06 oke-cluster），規劃 O-02~O-09，詳見 oci-labs/AGENTS.md
 - 2026-11-09: 新增 oci-labs/ 與 O-04-oke-cluster；修復 CLAUDE.md / GEMINI.md 硬連結（原本脫鉤，內容停在 2026-05-21）
 - 2026-11-06: 新增 envs/oci-governance、envs/oci-vcn、envs/oci-linux（以 import block + `-generate-config-out` 將手動建立的 OCI 資源收進 Terraform）
