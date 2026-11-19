@@ -14,6 +14,6 @@ output "private_ip" {
 }
 
 output "ssh_command" {
-  description = "SSH 連線指令（預設 Ubuntu 為 ubuntu、Oracle Linux 為 opc，依 image 調整）"
-  value       = "ssh <user>@${oci_core_instance.llm.public_ip}"
+  description = "SSH 連線指令"
+  value       = "ssh ${var.ssh_user}@${oci_core_instance.llm.public_ip}"
 }

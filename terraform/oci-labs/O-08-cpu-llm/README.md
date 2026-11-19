@@ -46,7 +46,7 @@ terraform plan
 ## 驗證
 
 ```bash
-ssh <user>@$(terraform output -raw public_ip)      # Ubuntu 為 ubuntu、Oracle Linux 為 opc
+terraform output -raw ssh_command                  # image 為 Ubuntu 26.04，帳號 ubuntu
 oci compute instance get --instance-id $(terraform output -raw instance_id) \
   --query 'data."lifecycle-state"'
 ```

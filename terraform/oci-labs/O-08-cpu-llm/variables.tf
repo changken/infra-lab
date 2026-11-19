@@ -88,3 +88,9 @@ variable "boot_volume_vpus_per_gb" {
   type        = number
   default     = 30
 }
+
+variable "ssh_user" {
+  description = "SSH 登入帳號（image 為 Canonical Ubuntu 26.04，預設帳號 ubuntu）"
+  type        = string
+  default     = "ubuntu"
+}
