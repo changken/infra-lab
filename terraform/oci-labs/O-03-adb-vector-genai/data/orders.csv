@@ -1,0 +1,21 @@
+order_id,customer_name,product,category,quantity,unit_price,status,order_date
+1001,Alice Chen,Mechanical Keyboard,Peripherals,1,120.00,DELIVERED,2026-10-02
+1002,Bob Lin,USB-C Hub,Peripherals,2,45.50,DELIVERED,2026-10-03
+1003,Alice Chen,27-inch Monitor,Displays,1,310.00,DELIVERED,2026-10-05
+1004,Carol Wu,Laptop Stand,Accessories,1,39.90,CANCELLED,2026-10-07
+1005,David Huang,Wireless Mouse,Peripherals,3,25.00,DELIVERED,2026-10-09
+1006,Eve Tsai,27-inch Monitor,Displays,2,310.00,SHIPPED,2026-10-12
+1007,Bob Lin,Webcam,Peripherals,1,79.00,DELIVERED,2026-10-14
+1008,Frank Lee,Laptop Stand,Accessories,2,39.90,DELIVERED,2026-10-15
+1009,Carol Wu,Mechanical Keyboard,Peripherals,1,120.00,REFUNDED,2026-10-18
+1010,Grace Yang,Noise-cancelling Headphones,Audio,1,249.00,DELIVERED,2026-10-20
+1011,David Huang,USB-C Hub,Peripherals,1,45.50,SHIPPED,2026-10-22
+1012,Alice Chen,Webcam,Peripherals,1,79.00,DELIVERED,2026-10-25
+1013,Henry Kuo,34-inch Ultrawide Monitor,Displays,1,520.00,DELIVERED,2026-10-27
+1014,Eve Tsai,Wireless Mouse,Peripherals,2,25.00,CANCELLED,2026-10-29
+1015,Grace Yang,Desk Speaker,Audio,2,65.00,DELIVERED,2026-11-01
+1016,Frank Lee,Mechanical Keyboard,Peripherals,2,120.00,SHIPPED,2026-11-03
+1017,Henry Kuo,Laptop Stand,Accessories,1,39.90,DELIVERED,2026-11-05
+1018,Bob Lin,Noise-cancelling Headphones,Audio,1,249.00,PENDING,2026-11-08
+1019,Carol Wu,USB-C Hub,Peripherals,4,45.50,PENDING,2026-11-10
+1020,David Huang,34-inch Ultrawide Monitor,Displays,1,520.00,PENDING,2026-11-12

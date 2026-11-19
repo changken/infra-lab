@@ -1,0 +1,13 @@
+# Terraform state & secrets
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+tfplan
+
+# ONNX 模型（檔案大，且非本專案產物）
+models/*.onnx
+models/*.zip
+
+# 填了 PAR 網址、API key 的 SQL 複本
+sql/*.local.sql

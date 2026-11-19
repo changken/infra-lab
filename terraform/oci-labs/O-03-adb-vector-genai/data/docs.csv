@@ -1,0 +1,13 @@
+id,title,content
+1,Refund policy,"Customers can request a full refund within 30 days of purchase. Refunds are returned to the original payment method within 5 business days."
+2,Shipping times,"Standard shipping takes 3 to 5 business days. Express shipping delivers the next business day for orders placed before 2 pm."
+3,Password reset,"To reset a password, open the sign-in page, choose Forgot password, and follow the link sent to the registered email address. The link expires after 15 minutes."
+4,Order cancellation,"An order can be cancelled free of charge until it has been handed to the carrier. After that, the customer must refuse delivery or start a return."
+5,Warranty coverage,"Hardware is covered by a two-year limited warranty against manufacturing defects. Accidental damage and normal wear are not covered."
+6,Loyalty points,"Members earn one point for every dollar spent. Points can be redeemed at checkout, and they expire 12 months after the last purchase."
+7,API rate limits,"The public API allows 600 requests per minute per API key. Requests above the limit receive HTTP 429 with a Retry-After header."
+8,Data retention,"Order records are kept for seven years to meet tax requirements. Customers can ask for personal data to be erased, except data required by law."
+9,Two-factor authentication,"Two-factor authentication can be enabled in account settings using an authenticator app. Backup codes are shown once and should be stored safely."
+10,Payment methods,"We accept major credit cards, bank transfer, and digital wallets. Bank transfers must be received within 3 days or the order is cancelled automatically."
+11,Incident response,"Security incidents are triaged within one hour. Affected customers are notified within 72 hours when personal data is involved."
+12,Service availability,"The platform targets 99.9 percent monthly availability. Planned maintenance is announced at least 48 hours in advance."
