@@ -1,0 +1,10 @@
+compartment_id = "ocid1.compartment.oc1..xxxx" # envs/oci-governance output
+subnet_id      = "ocid1.subnet.oc1.ap-singapore-1.xxxx" # envs/oci-vcn output
+ssh_public_key = "ssh-ed25519 AAAA... you@example.com"
+image_id       = "ocid1.image.oc1.ap-singapore-1.xxxx"
+
+# 可選（預設為 import 現況）：
+# ocpus                   = 8
+# memory_in_gbs           = 64
+# boot_volume_size_in_gbs = 100
+# boot_volume_vpus_per_gb = 10
