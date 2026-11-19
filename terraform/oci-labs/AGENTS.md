@@ -17,35 +17,41 @@ oci-labs/
 ├── AGENTS.md
 ├── O-01-base-database/   # Base Database（對比 RDS Oracle）
 ├── O-02-autonomous-database/ # Autonomous Database（對比 Aurora）
-└── O-06-oke-cluster/     # OKE（對比 EKS）
+├── O-03-adb-vector-genai/ # ADB AI Vector Search + Generative AI（對比 Aurora + pgvector + Bedrock）
+├── O-06-oke-cluster/     # OKE（對比 EKS）
+└── O-08-cpu-llm/         # CPU 自架 LLM（E5 Flex，import 自 Console 手動建立的實例）
 ```
 
-## 學習路線（2026-11-12 規劃，優先消耗 credit）
+## 學習路線（2026-11-16 重新規劃）
 
-| 編號 | Lab | 對標 AWS | 預計 | 狀態 |
-|---|---|---|---|---|
-| O-01 | Base Database | RDS Oracle | — | ✅ 已建 |
-| O-02 | Autonomous Database（付費 ECPU、Data Guard、private endpoint） | Aurora | 11/12–13 | 🚧 骨架已建（TODO 待填） |
-| O-03 | ADB + AI Vector Search（疊在 O-02 上） | Aurora + pgvector | 11/13–14 | 規劃 |
-| O-04 | MySQL HeatWave（HA + HeatWave cluster） | RDS MySQL | 11/14–15 | 規劃 |
-| O-05 | GoldenGate + Base DB | DMS | 11/15–16 | 規劃 |
-| O-06 | OKE | EKS | — | ✅ 已建 |
-| O-07 | LB + WAF + Bastion | ALB + WAF + SSM | 11/16–17 | 規劃 |
-| O-08 | GPU 實例（短時間） | EC2 GPU | 11/17–18 | 規劃 |
-| O-09 | Exadata Exascale | — | 11/18–21 | 待確認 Singapore 可用與最低配置 |
+方向：backend + AI agent 整合會用到、且平常捨不得開的服務為主（AI、資安、效能三條線），不走純 DBA 題材。
 
-- 11/21 全部 `terraform destroy`，再用 `oci` CLI 檢查殘留資源（cluster / LB / DB system）。
-- Exadata 傳統 Dedicated Infrastructure（Quarter Rack 約 SGD 20–40/hr）**不玩**，只玩 Exascale（按 ECPU 計費）。
-- 單價與 Singapore 供應需開 lab 前用 Cost Estimator 確認。
+| 順序 | 編號 | Lab | 對標 AWS | 捨不得開的部分 | 額度（11/16 查） | 狀態 |
+|---|---|---|---|---|---|---|
+| — | O-01 | Base Database | RDS Oracle | Base DB + 授權 | `vm-basedb-x86-ecpu-count` 8 | ✅ 完成（已 destroy） |
+| — | O-02 | Autonomous Database（付費 ECPU、Data Guard、private endpoint） | Aurora | 付費 ADB | `atp-ecpu-count` 32 | ✅ 完成（已 destroy） |
+| 1 | O-03 | ADB Vector Search + Generative AI（自帶 ADB，23ai 以上；embedding／chat、Select AI） | Aurora + pgvector + Bedrock | 付費 ADB、GenAI 推論 | ✅（Singapore GenAI 只有 Gemini chat，無 embedding 模型 → embedding 用資料庫內 ONNX） | 🚧 骨架已建（TODO 待填） |
+| 2 | O-04 | MySQL HeatWave（HA + HeatWave cluster + 內建向量／LLM） | RDS MySQL | HeatWave 節點 | ✅ `mysql-N-count` 100、`mysql-heatwave-*` 100（用 ECPU 制 `MySQL.N` shape） | 規劃（必做） |
+| 4 | O-05 | PostgreSQL（HA + reader endpoint） | RDS／Aurora PostgreSQL | 多節點 DB system | ✅ `dbsystem-e5-count` 20（`dbsystem-count` 為 0，是否會擋待 apply 確認） | 規劃 |
+| — | O-06 | OKE | EKS | — | — | ✅ 完成（已 destroy） |
+| 3 | O-07 | LB + WAF + Network Firewall + Bastion（`MANAGED_SSH`） | ALB + WAF + Network Firewall + SSM | Network Firewall | ✅ LB、WAF、Bastion；Network Firewall 未查 | 規劃（必做） |
+| 5 | O-08 | CPU 自架 LLM（1 台 `VM.Standard.E5.Flex` 8 OCPU / 64 GB，llama.cpp 或 Ollama + 7B–8B Q4 量化模型；與 O-03 託管 GenAI 比延遲與每百萬 token 成本） | EC2（CPU 推論） | 大規格 compute | ✅ `standard-e5-core-count` 83、`standard-e5-memory-count` 1250（GPU 版因 `gpu-a10-count` 調額被拒而放棄） | 🚧 實例已在 Console 開好並 import（實際 23 OCPU / 276 GB / boot 1024 GB，比規劃大），LLM 尚未部署 |
+| 6 | O-09 | Kafka 事件骨幹（integration event／outbox） | MSK | 託管 Kafka 叢集 | 未查 | 規劃（選做） |
+
+- **已移除**：GoldenGate + Base DB（原 O-05，Oracle 對 Oracle 複寫離主軸太遠）、Exadata Exascale（原 O-09，純 DBA 題材，且 `exadbxs-*` 額度為 0）。
+- 效能線不另開 lab：O-04、O-05 的驗證章節加負載測試，記錄 p95 延遲與 failover 中斷時間。
+- 11/21 全部 `terraform destroy`，再用 `oci` CLI 檢查殘留資源（cluster / LB / DB system / GPU instance）。
+- 新 lab 都沒有 Always Free 可用，全部耗 credit；單價與 Singapore 供應需開 lab 前用 Cost Estimator 確認。
+- Always Free 內的服務（Functions、API Gateway、NoSQL、Vault、Queue、Streaming、DevOps 等）不急，credit 到期後再補。
 
 長駐、已存在的資源在 `../envs/oci-*`（governance / vcn / linux），**lab 不要修改它們**。
 
 ## 護欄（務必遵守）
 
 1. **絕不 destroy／replace `envs/oci-linux` 的 A1 實例**。Singapore 的 A1 常缺貨，刪了可能開不回來。
-2. **A1 Always Free 額度是全帳號共用**：總額 4 OCPU / 24 GB，`oci-linux` 已用 2 OCPU / 12 GB（2026-11 擴大過）。
-   所有 lab 的 A1 合計最多 **2 OCPU / 12 GB**；開 A1 資源前先用 `oci limits resource-availability get` 確認實際用量；Block volume 合計 200 GB（已用 47 GB）。
-   帳號的 Service Limit 顯示 249 OCPU 可用 → **沒有硬性上限，超過就計費**。新增 A1 資源必須加 variable validation。
+2. **A1 Always Free 額度是全帳號共用，且已用滿**：總額 4 OCPU / 24 GB，`oci-linux` 的兩台 A1（各 2 OCPU / 12 GB）已全部佔用（2026-11-16 以 CLI 確認）。
+   **lab 可用的 A1 額度為 0**：新 lab 的 compute 一律用付費 shape（如 `VM.Standard.E4.Flex`）並加數量 validation；Block volume 合計 200 GB（已用 2 × 47 GB）。
+   帳號的 Service Limit 顯示 A1 還有 250 OCPU 可開 → **沒有硬性上限，開了就計費**。
 3. **付費資源註明到期日**：README 的成本章節要標示是否在 Always Free 內，以及「11/22 前必須 destroy」。
 4. **K8s 建立的資源 Terraform 管不到**：`Service type=LoadBalancer` 會建 OCI LB。README 的「結束」章節必須先寫 `kubectl delete svc`，再 `terraform destroy`。
 5. **IAM／Budget 屬 tenancy 層級**，由 `../envs/oci-governance` 管理；lab 內不要建 policy／group。
@@ -75,6 +81,10 @@ oci lb load-balancer list -c <compartment>              # 是否有殘留 LB
 
 ## 更新記錄
 
+- 2026-11-19: 新增 O-08-cpu-llm：Console 手動建立的 E5 Flex 實例以 `terraform import` 納管（名稱 / IP / 規格放 variables，無 replace）；實際規格 23 OCPU / 276 GB / boot 1024 GB ultra high，遠大於規劃
+- 2026-11-16: `gpu-a10-count` 調額申請被 Oracle 拒絕，O-08 由 GPU 版改為 E5 CPU 版（`VM.Standard.E5.Flex`，額度以 CLI 確認）
+- 2026-11-16: 新增 O-03-adb-vector-genai 骨架（public endpoint + ACL + TLS、Object Storage + PAR、`sql/` 填空腳本；單價待 Cost Estimator 確認，Select AI + Gemini 未實測）
+- 2026-11-16: 重新規劃學習路線（偏 backend + AI agent、平常捨不得開的服務）：移除 GoldenGate 與 Exascale；O-03 加 Generative AI、O-07 加 Network Firewall；新增 O-05 PostgreSQL、O-09 Kafka；O-08 改為 GPU 自架 LLM（已送 `gpu-a10-count` 調額）；A1 護欄更正為 lab 可用 0
 - 2026-11-12: O-01 改為 private subnet + OCI Bastion（新增 TODO 4/5，移除 IGW / 公網 IP）
 - 2026-11-12: 重新編號（O-02→O-01、O-04→O-06）並加入學習路線 O-02~O-09
 - 2026-11-12: 新增 O-02-autonomous-database 骨架（TODO 填空式，單價待 Cost Estimator 確認）

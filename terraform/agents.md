@@ -89,7 +89,10 @@ terraform/
 ├── oci-labs/              # OCI 學習 labs（Always Free + PAYG credit，對比 AWS / Azure）
 │   ├── AGENTS.md              # OCI Labs 專屬 AI 規範（A1 共用額度、credit 到期日等護欄）
 │   ├── O-01-base-database/    # Base Database（對比 RDS Oracle）
-│   └── O-06-oke-cluster/      # OKE（對比 EKS）；節點可選 A1（Always Free）或 E4（收費）
+│   ├── O-02-autonomous-database/ # Autonomous Database（對比 Aurora）
+│   ├── O-03-adb-vector-genai/ # ADB AI Vector Search + Generative AI（對比 Aurora + pgvector + Bedrock）
+│   ├── O-06-oke-cluster/      # OKE（對比 EKS）；節點可選 A1（Always Free，額度已被 oci-linux 用滿）或 E4（收費）
+│   └── O-08-cpu-llm/          # CPU 自架 LLM（E5 Flex，import 自 Console 手動建立的實例；付費，11/21 前 destroy）
 └── envs/                  # 長駐獨立環境（有自己的 tfstate，非 lab 練習用）
     ├── aws-windows/           # Windows Server 2025 開發 / 跳板機（純 Windows）
     ├── aws-linux/             # Amazon Linux 2023 開發 / 跳板機（純 Linux）
@@ -269,6 +272,8 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-11-19: 新增 oci-labs/O-08-cpu-llm（import Console 建立的 E5 Flex 實例），詳見 oci-labs/AGENTS.md
+- 2026-11-16: OCI lab 路線重新規劃（偏 backend + AI agent）；新增 O-03-adb-vector-genai 骨架，目錄樹補上 O-02，詳見 oci-labs/AGENTS.md
 - 2026-11-13: oci-vcn / oci-linux 對齊 Console 現況：補 k3s Security List / NSG 規則與 IPv6 路由 / 規則；納管第二台 A1、boot volume 與手動備份；名稱、IP、CIDR 改由 tfvars 提供；移除兩顆閒置舊 boot volume
 - 2026-11-12: OCI lab 重新編號（O-02→O-01 base-database、O-04→O-06 oke-cluster），規劃 O-02~O-09，詳見 oci-labs/AGENTS.md
 - 2026-11-09: 新增 oci-labs/ 與 O-04-oke-cluster；修復 CLAUDE.md / GEMINI.md 硬連結（原本脫鉤，內容停在 2026-05-21）
