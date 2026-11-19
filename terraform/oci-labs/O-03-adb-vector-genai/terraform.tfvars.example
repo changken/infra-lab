@@ -2,7 +2,10 @@ compartment_id = "ocid1.compartment.oc1..xxxx" # envs/oci-governance output
 allowed_cidr   = "203.0.113.10/32"             # 你的對外 IP
 admin_password = "ChangeMe_12345Aa"            # 12–30 字元，需大小寫+數字
 
+idcs_endpoint  = "https://idcs-xxxx.identity.oraclecloud.com:443" # Identity Domain URL（見 envs/oci-governance/main.tf）
+
 # 可選：
+# domain_name      = "Default"
 # db_version       = "23ai"                 # 或 26ai
 # compute_count    = 2
 # data_storage_gbs = 20

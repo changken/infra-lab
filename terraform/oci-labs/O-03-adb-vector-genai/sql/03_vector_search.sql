@@ -47,7 +47,7 @@ COMMIT;
 SELECT 
 id
 , title
-, VECTOR_DISTANCE(embedding, VECTOR_EMBEDDING(DOC_MODEL USING 'How long do I have to return a product?' AS data), 'COSINE') AS distance
+, VECTOR_DISTANCE(embedding, VECTOR_EMBEDDING(DOC_MODEL USING 'How long do I have to return a product?' AS data), COSINE) AS distance
 FROM   docs
 ORDER  BY distance
 FETCH  FIRST 3 ROWS ONLY;
@@ -80,7 +80,7 @@ EXPLAIN PLAN FOR
 SELECT 
 id
 , title
-, VECTOR_DISTANCE(embedding, VECTOR_EMBEDDING(DOC_MODEL USING 'How long do I have to return a product?' AS data), 'COSINE') AS distance
+, VECTOR_DISTANCE(embedding, VECTOR_EMBEDDING(DOC_MODEL USING 'How long do I have to return a product?' AS data), COSINE) AS distance
 FROM   docs
 ORDER  BY distance
 FETCH APPROX FIRST 3 ROWS ONLY;

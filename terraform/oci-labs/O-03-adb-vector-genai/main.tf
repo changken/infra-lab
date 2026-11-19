@@ -135,10 +135,38 @@ resource "oci_objectstorage_object" "files" {
 
 resource "oci_objectstorage_preauthrequest" "this" {
   # TODO 4
-  namespace             = data.oci_objectstorage_namespace.this.namespace
-  bucket                = oci_objectstorage_bucket.this.name
-  name                  = "${var.name_prefix}-par"
-  access_type           = "AnyObjectRead" # bucket 層級（不指定 object）只能用 Any* 系列；ObjectRead 需搭配 object
-  bucket_listing_action = "Deny"
-  time_expires          = var.par_expires_at
+  namespace   = data.oci_objectstorage_namespace.this.namespace
+  bucket      = oci_objectstorage_bucket.this.name
+  name        = "${var.name_prefix}-par"
+  access_type = "AnyObjectRead" # bucket 層級（不指定 object）只能用 Any* 系列；ObjectRead 需搭配 object
+  # bucket_listing_action 不設：預設即 Deny；設了 API 不回傳，state 為空會每次 plan 都要求重建 PAR
+  time_expires = var.par_expires_at
+}
+
+#--------------------------------------------------------------
+# Resource principal：ADB 以自己的身分（短效 token）呼叫 Generative AI
+#--------------------------------------------------------------
+# 取代 SQL-7 的 API key 憑證：資料庫內不再放長效私鑰、也不綁你本人的權限。
+# ⚠️ 本專案規範 policy／group 通常放 envs/oci-governance；此處為 lab 內的例外，
+#    policy 只掛在 homelab compartment、只給 generative-ai-family，destroy 時一併移除。
+#
+# (a) Dynamic resource group：只比對「這一台 ADB」
+resource "oci_identity_domains_dynamic_resource_group" "adb" {
+  idcs_endpoint = var.idcs_endpoint
+  display_name  = "${var.name_prefix}-adb-dg"
+  description   = "O-03 的 ADB，用於 resource principal 呼叫 Generative AI"
+  schemas       = ["urn:ietf:params:scim:schemas:oracle:idcs:DynamicResourceGroup"]
+  matching_rule = "ALL {resource.type = 'autonomousdatabase', resource.id = '${oci_database_autonomous_database.this.id}'}"
+}
+
+# (b) Policy：最小權限，限定在 homelab compartment
+resource "oci_identity_policy" "adb_genai" {
+  compartment_id = var.compartment_id
+  name           = "${var.name_prefix}-adb-genai"
+  description    = "O-03：ADB 以 resource principal 使用 Generative AI"
+  freeform_tags  = local.common_tags
+
+  statements = [
+    "Allow dynamic-group '${var.domain_name}'/'${oci_identity_domains_dynamic_resource_group.adb.display_name}' to use generative-ai-family in compartment id ${var.compartment_id}",
+  ]
 }

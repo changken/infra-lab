@@ -81,3 +81,14 @@ variable "par_expires_at" {
     error_message = "par_expires_at 必須是 RFC 3339 格式，例如 2026-11-22T00:00:00Z。"
   }
 }
+
+variable "idcs_endpoint" {
+  description = "Identity Domain 的 URL（Console → Identity → Domains → Default → Domain URL，含 :443）。用於建立 dynamic resource group"
+  type        = string
+}
+
+variable "domain_name" {
+  description = "Identity Domain 名稱（policy 內以 'domain'/'group' 引用）"
+  type        = string
+  default     = "Default"
+}

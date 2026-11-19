@@ -31,17 +31,13 @@
 --     + dynamic group + 最小權限 policy；那屬於 envs/oci-governance 的範圍，本 lab 不做
 --   - lab 結束 destroy ADB，憑證就跟著消失
 
+-- 已改用 resource principal（見 main.tf 的 dynamic group + policy），不再建立 API key 憑證。
+-- 以 ADMIN 執行一次：讓資料庫以 ADB 自己的身分取得短效 token。
+-- 若先前建過 OCI_GENAI_CRED／GENAI profile，請先清掉：
+--   EXEC DBMS_CLOUD_AI.DROP_PROFILE('GENAI', force => TRUE);
+--   EXEC DBMS_CLOUD.DROP_CREDENTIAL('OCI_GENAI_CRED');
 BEGIN
-  -- TODO SQL-7
-  DBMS_CLOUD.CREATE_CREDENTIAL(
-    credential_name => 'OCI_GENAI_CRED',
-    -- 從 ~/.oci/config 的 user、tenancy、fingerprint 與 private_key_file 取得；
-    -- 私鑰去掉 PEM 標頭／尾端並移除換行，勿將真實值 commit。
-    user_ocid       => '<YOUR_USER_OCID>',
-    tenancy_ocid    => '<YOUR_TENANCY_OCID>',
-    private_key     => '<YOUR_PRIVATE_KEY>',
-    fingerprint     => '<YOUR_FINGERPRINT>'
-  );
+  DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL();
 END;
 /
 
@@ -68,7 +64,7 @@ BEGIN
     profile_name => 'GENAI',
     attributes   => json_object(
       'provider'           value 'oci',
-      'credential_name'    value 'OCI_GENAI_CRED',
+      'credential_name'    value 'OCI$RESOURCE_PRINCIPAL',
       'region'             value 'ap-singapore-1',
       'oci_compartment_id' value '<YOUR_COMPARTMENT_OCID>',
       'model'              value 'google.gemini-2.5-flash',
@@ -132,7 +128,7 @@ SELECT DBMS_CLOUD_AI.GENERATE(
     'How long do I have to return a product?' AS question
   FROM (
     SELECT content,
-           VECTOR_DISTANCE(embedding, VECTOR_EMBEDDING(DOC_MODEL USING 'How long do I have to return a product?' AS data), 'COSINE') AS distance
+           VECTOR_DISTANCE(embedding, VECTOR_EMBEDDING(DOC_MODEL USING 'How long do I have to return a product?' AS data), COSINE) AS distance
     FROM   docs
     ORDER  BY distance
     FETCH  FIRST 3 ROWS ONLY
@@ -160,7 +156,7 @@ FROM (
     'What is the CEO''s phone number?' AS question
   FROM (
     SELECT content,
-           VECTOR_DISTANCE(embedding, VECTOR_EMBEDDING(DOC_MODEL USING 'What is the CEO''s phone number?' AS data), 'COSINE') AS distance
+           VECTOR_DISTANCE(embedding, VECTOR_EMBEDDING(DOC_MODEL USING 'What is the CEO''s phone number?' AS data), COSINE) AS distance
     FROM   docs
     ORDER  BY distance
     FETCH  FIRST 3 ROWS ONLY

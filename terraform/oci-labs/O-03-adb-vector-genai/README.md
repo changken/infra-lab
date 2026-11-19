@@ -155,10 +155,16 @@ oci os bucket list -c <compartment_id> --query 'data[].name'
 | `COPY_DATA` 日期錯誤 | `orders.order_date` 沒指定格式 | `format` 內加日期格式 |
 | `LOAD_ONNX_MODEL` 失敗 | 模型不是 augmented 版本，或檔名／目錄填錯 | 用 Oracle 提供的預建模型；`DBMS_CLOUD.LIST_FILES` 確認檔案在 |
 | `ORA-51803` 之類的維度錯誤 | `VECTOR` 欄位維度和模型輸出不一致 | 以 `02_onnx_model.sql` 查到的維度為準 |
-| 近似搜尋沒走向量索引 | 資料太少，或索引與查詢的距離函式不一致 | 12 筆時走全表掃描是正常的；確認兩邊距離函式相同 |
+| 近似搜尋沒走向量索引 | 查詢沒加 `APPROX`，或索引與查詢的距離函式不一致 | 用 `FETCH APPROX FIRST n ROWS ONLY`；確認兩邊距離函式相同（實測 12 筆也會走 `VECTOR INDEX HNSW SCAN`） |
 | GenAI 回 401／404（NotAuthorizedOrNotFound） | 憑證的 OCID／fingerprint 錯，或 compartment、region、model 名稱錯 | 用 `oci generative-ai model-collection list-models -c <compartment_id>` 確認模型名稱 |
 | Select AI 不接受 Gemini 模型 | profile 屬性不對，或該組合在此區不支援（本 lab 未實測） | 對照 Select AI 範例頁；仍不通就把 generation 改到後端用 OCI SDK 呼叫，retrieval 仍留在 SQL |
 | `showsql` 產出的 SQL 用錯表 | `object_list` 沒設，模型看到太多表 | profile 的 `object_list` 只列 `ORDERS` |
+| `ORA-51964`（`VECTOR_DISTANCE` 度量無效） | 距離函式寫成字串 `'COSINE'` | 要寫關鍵字 `COSINE`，不加引號；`CREATE VECTOR INDEX` 的 `DISTANCE COSINE` 同理 |
+| 建索引報語法錯誤 | 寫成 `ORGANIZATION HNSW` | HNSW 要寫 `ORGANIZATION INMEMORY NEIGHBOR GRAPH`；IVF 是 `ORGANIZATION NEIGHBOR PARTITIONS` |
+| PAR 建立失敗，或 plan 每次都要替換 PAR | bucket 層級（不指定 `object`）用了 `ObjectRead`；或設了 `bucket_listing_action`，API 不回傳導致 state 為空 | `access_type` 用 `AnyObjectRead`；`bucket_listing_action` 不設（預設即 Deny） |
+| 物件上傳被拒（digest 不符） | `content_md5 = filemd5()` 是 hex，服務端要 base64 的二進位 MD5 | 不設 `content_md5`；檔案改了用 `terraform apply -replace='oci_objectstorage_object.files["..."]'` |
+| `CREATE_PROFILE` 失敗 | `provider` 寫成 `OCI_GENAI`；`object_list` 寫成字串陣列 | `provider` 用 `oci`，Gemini 加 `oci_apiformat = GENERIC`；`object_list` 用 `[{"owner":"ADMIN","name":"ORDERS"}]` |
+| Windows 上 SQLcl 的 `sql.exe` 沒反應（exit code `-1073741819`） | winget 安裝的原生 launcher 崩潰 | 直接用 Java 啟動：`java --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED -cp "<sqlcl>\lib\*" oracle.dbtools.raptor.scriptrunner.cmdline.SqlCli`；連線用 `/nolog` 再 `connect admin@(連線字串)` |
 
 ## 與 AWS 的對照
 
