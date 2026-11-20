@@ -2,8 +2,8 @@
 -- SQL-1~4：MySQL 的 VECTOR 型別與向量搜尋（需透過 Bastion tunnel 連線）
 -- 連線：mysql -h 127.0.0.1 -P 3306 -u dbadmin -p
 --
--- ⚠️ 模型名稱（multilingual-e5-small、384 維）依 HeatWave GenAI 文件撰寫，尚未在 Singapore 實測；
---    不同模型維度不同，請先確認可用模型與維度，再調整 VECTOR(N)。
+-- ✅ multilingual-e5-small（384 維）在 Singapore 實測可用（2026-11-20）。
+--    換模型時維度不同，要同步調整 VECTOR(N)。
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS lab;

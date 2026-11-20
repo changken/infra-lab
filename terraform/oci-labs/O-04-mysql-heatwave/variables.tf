@@ -78,9 +78,9 @@ variable "enable_heatwave" {
 }
 
 variable "heatwave_shape" {
-  description = "HeatWave 節點 shape（例如 HeatWave.256GB；實際名稱以 Console／文件為準）"
+  description = "HeatWave 節點 shape（Singapore 實測可用：HeatWave.32GB、HeatWave.512GB、HeatWave.Free；256GB 會被拒）"
   type        = string
-  default     = "HeatWave.256GB"
+  default     = "HeatWave.32GB"
 }
 
 variable "heatwave_cluster_size" {

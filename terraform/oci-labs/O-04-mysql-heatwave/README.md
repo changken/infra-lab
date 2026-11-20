@@ -87,11 +87,11 @@ oci bastion bastion list -c <compartment_id> --bastion-lifecycle-state ACTIVE
 
 | 項目 | 結果 |
 |------|------|
-| 單節點連線 | |
+| 單節點連線 | ✅ 經 Bastion tunnel 連線成功 |
 | HA failover 中斷秒數 | |
 | 聚合查詢：InnoDB 耗時 | |
-| 聚合查詢：HeatWave 耗時／倍數 | |
-| HeatWave GenAI 在 Singapore 可用？ | |
+| 聚合查詢：HeatWave 耗時／倍數 | 耗時未記錄；EXPLAIN 確認 `Table scan on orders in secondary engine RAPID`（已 offload）。單筆主鍵查詢走 InnoDB，不 offload |
+| HeatWave GenAI 在 Singapore 可用？ | ✅ `ML_EMBED_ROW`（`multilingual-e5-small`，VECTOR(384)）與 `ML_GENERATE` 皆可執行；RAG 回答有根據文件。傳入 `model_id = mistral-7b-instruct-v1`，回應的授權聲明卻是 Llama 3.2（原因未確認） |
 
 ## 結束
 
@@ -120,7 +120,7 @@ oci mysql db-system list -c <compartment_id>   # 確認沒有殘留
 | Bastion tunnel 通了但連不到 3306 | subnet 預設 security list 沒開 3306；需自訂 `oci_core_security_list`（來源 VCN CIDR）並掛到 subnet |
 | `terraform apply` 被中斷後 DB system 沒進 state | 用 `oci mysql db-system delete` 手動刪，再 `terraform destroy`；殘留 lock 檔要確認沒有 terraform 行程後再刪 |
 | `availability_domain` 錯誤 | 查 AD 要用 tenancy OCID，不是 compartment |
-| HeatWave 建立被拒 | 該 DB system shape 不支援 HeatWave，或額度不足（`mysql-heatwave-*`） |
+| HeatWave 建立被拒（`shapeName ... cannot be used`） | `heatwave_shape` 要用 Singapore 實測可用的值：`HeatWave.32GB`、`HeatWave.512GB`、`HeatWave.Free`（`HeatWave.256GB` 會被拒） |
 | 查詢沒走 HeatWave | 表還沒 `SECONDARY_LOAD`，或查詢型態不會被 offload |
 | 連不上 3306 | Bastion session 過期；NSG 只開給 VCN 內部 |
 | 單節點改 HA 出現 replace | 先看 plan，不要直接 apply |

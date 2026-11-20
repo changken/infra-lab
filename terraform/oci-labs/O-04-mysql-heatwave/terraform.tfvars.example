@@ -9,5 +9,5 @@ admin_password = "ChangeMe_12345Aa!"           # 8–32 字元，需大小寫+�
 # data_storage_gbs      = 50
 # enable_ha             = false               # TODO 2 時改 true
 # enable_heatwave       = false               # TODO 3 時改 true
-# heatwave_shape        = "HeatWave.256GB"
+# heatwave_shape        = "HeatWave.32GB"
 # heatwave_cluster_size = 1

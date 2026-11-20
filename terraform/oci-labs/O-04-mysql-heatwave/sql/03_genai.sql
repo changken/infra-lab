@@ -1,7 +1,7 @@
 -- ============================================================
 -- SQL-8~9：HeatWave GenAI（in-database LLM）手刻 RAG
--- ⚠️ Singapore 是否支援 HeatWave GenAI、可用模型為何（未驗證），開 lab 前先查文件／Console。
---    下方 model_id 為範例，請換成實際可用的模型名稱。
+-- ✅ Singapore 實測可執行（2026-11-20）。傳入 model_id = mistral-7b-instruct-v1，
+--    回應的授權聲明卻是 Llama 3.2，實際使用的模型請以 HeatWave 文件／回應為準。
 -- ============================================================
 
 USE lab;
