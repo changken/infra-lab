@@ -37,7 +37,7 @@ oci-labs/
 | 2 | O-04 | MySQL HeatWave（HA + HeatWave cluster + 內建向量／LLM） | RDS MySQL | HeatWave 節點 | ✅ `mysql-N-count` 100、`mysql-heatwave-*` 100（用 ECPU 制 `MySQL.N` shape） | ✅ TODO 1～5 與 SQL-1～3 已實測（Bastion 連線、HeatWave offload、VECTOR 搜尋、GenAI RAG 皆成功；DB system 不可掛 NSG，改用 security list；HeatWave 節點用 `HeatWave.32GB`）；HA failover 秒數與 InnoDB／HeatWave 耗時未記錄 |
 | 4 | O-05 | PostgreSQL（HA + reader endpoint） | RDS／Aurora PostgreSQL | 多節點 DB system | ✅ `dbsystem-e5-count` 20（`dbsystem-count` 為 0，但用 E5 shape 不會被擋，已 apply 驗證） | ✅ 已 destroy（單節點連線成功、HA 3 instance 建立成功；failover、reader endpoint、p95 未量測） |
 | — | O-06 | OKE | EKS | — | — | ✅ 完成（已 destroy） |
-| 3 | O-07 | LB + WAF + Network Firewall + Bastion（`MANAGED_SSH`） | ALB + WAF + Network Firewall + SSM | Network Firewall | ✅ LB、WAF、Bastion；Network Firewall 未查 | 🚧 TODO 已填、validate 通過、尚未 apply（Network Firewall 的 FQDN／SNAT／路由導向、單價與額度未驗證） |
+| 3 | O-07 | LB + WAF + Network Firewall + Bastion（`MANAGED_SSH`） | ALB + WAF + Network Firewall + SSM | Network Firewall | ✅ LB、WAF、Bastion；Network Firewall `premium-nfw-max-count` 2、`premium-nfp-max-count` 50 | ✅ 已 destroy（LB、WAF、Bastion 已 apply 驗證；Network Firewall 未 apply，FQDN／SNAT／路由導向與單價未驗證） |
 | 5 | O-08 | CPU 自架 LLM（1 台 `VM.Standard.E5.Flex` 8 OCPU / 64 GB，llama.cpp 或 Ollama + 7B–8B Q4 量化模型；與 O-03 託管 GenAI 比延遲與每百萬 token 成本） | EC2（CPU 推論） | 大規格 compute | ✅ `standard-e5-core-count` 83、`standard-e5-memory-count` 1250（GPU 版因 `gpu-a10-count` 調額被拒而放棄） | 🚧 實例已在 Console 開好並 import（實際 23 OCPU / 276 GB / boot 1024 GB，比規劃大），LLM 尚未部署 |
 | 6 | O-09 | Kafka 事件骨幹（integration event／outbox） | MSK | 託管 Kafka 叢集 | 未查 | 規劃（選做） |
 
@@ -83,6 +83,8 @@ oci lb load-balancer list -c <compartment>              # 是否有殘留 LB
 > Windows Git Bash 下 OCI CLI 會印出 `Get-Acl` 錯誤，是檢查設定檔權限失敗，**不影響結果**，可忽略。
 
 ## 更新記錄
+
+- 2026-11-20: O-07 apply 驗證（`enable_network_firewall = false`）：LB round-robin 正常、backend set health OK；WAF 開啟後 SQLi／XSS 回 403（開啟前 200）、rate limit（60 秒 50 次）連打 100 次得 49 個 200 + 51 個 403；Bastion `MANAGED_SSH` 的 plugin 約需 10 分鐘才 RUNNING，太早建 session 會 400（`Bastion plugin must be in the RUNNING state`），instance 重建後 session 也要等；Network Firewall 未 apply，額度夠但單價未查；已 destroy
 
 - 2026-11-20: O-05 改 HA（`instance_count = 3`，`is_regionally_durable = false`；Singapore 只有 1 個 AD，true 會被 400-InvalidParameter 拒絕）；單節點改 HA 是 replace，舊 DB 與資料會消失；CLI 列表指令更正為 `oci psql db-system-collection list-db-systems`，failover 為 `oci psql db-system failover`
 
