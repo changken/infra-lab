@@ -157,6 +157,11 @@ resource "oci_identity_domains_dynamic_resource_group" "adb" {
   description   = "O-03 的 ADB，用於 resource principal 呼叫 Generative AI"
   schemas       = ["urn:ietf:params:scim:schemas:oracle:idcs:DynamicResourceGroup"]
   matching_rule = "ALL {resource.type = 'autonomousdatabase', resource.id = '${oci_database_autonomous_database.this.id}'}"
+
+  # Identity Domain 會在伺服器端自動補上 OCITags schema，不忽略的話每次 plan 都有 diff
+  lifecycle {
+    ignore_changes = [schemas]
+  }
 }
 
 # (b) Policy：最小權限，限定在 homelab compartment
