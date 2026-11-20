@@ -1,0 +1,13 @@
+compartment_id = "ocid1.compartment.oc1..xxxx" # envs/oci-governance output
+tenancy_ocid   = "ocid1.tenancy.oc1..xxxx"     # 查 AD 用
+allowed_cidr   = "203.0.113.10/32"             # 你的對外 IP
+admin_password = "ChangeMe_12345Aa!"           # 8–32 字元，需大小寫+數字+特殊字元
+
+# 可選：
+# ssh_public_key         = "ssh-rsa AAAA..."   # TODO 4 Bastion session 用
+# db_version             = "16"
+# psql_shape             = "PostgreSQL.VM.Standard.E5.Flex.2.32GB"
+# instance_ocpu_count    = 2
+# instance_memory_gbs    = 32
+# instance_count         = 1                   # TODO 2 時改 3
+# enable_reader_endpoint = false               # TODO 3 時改 true

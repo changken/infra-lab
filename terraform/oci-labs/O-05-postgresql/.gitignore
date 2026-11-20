@@ -1,0 +1,9 @@
+# Terraform state & secrets
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+tfplan
+
+# 填了密碼、API key 的 SQL 複本
+sql/*.local.sql
