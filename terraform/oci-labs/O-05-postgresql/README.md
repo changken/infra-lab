@@ -87,16 +87,18 @@ oci psql db-system-collection list-db-systems -c <compartment_id>
 oci bastion bastion list -c <compartment_id> --bastion-lifecycle-state ACTIVE
 ```
 
-驗證紀錄（做完請自己填）：
+驗證紀錄（2026-11-20 apply 後，因 credit 11/22 到期已 `terraform destroy`，未量測的項目留空）：
 
 | 項目 | 結果 |
 |------|------|
 | 單節點連線 | ✅ Bastion tunnel + DataGrip（`sslmode=require`）連線成功 |
-| 單節點 pgbench p95 延遲 | |
-| HA failover 中斷秒數 | |
-| reader replication lag | |
-| 對 reader 寫入的錯誤訊息 | |
-| HA 費用 ÷ 單節點費用 | |
+| 單節點 pgbench p95 延遲 | 未量測 |
+| HA（`instance_count = 3`）建立 | ✅ 3 個 instance 皆 ACTIVE；`is_regionally_durable = true` 被拒（Singapore 只有 1 個 AD），改 `false` + 指定 AD |
+| 單節點改 HA | ⚠️ 是 replace，舊 DB 與資料會消失 |
+| HA failover 中斷秒數 | 未量測 |
+| reader replication lag | 未量測 |
+| 對 reader 寫入的錯誤訊息 | 未量測 |
+| HA 費用 ÷ 單節點費用 | 未量測（預期約 3 倍） |
 
 ## 結束
 
