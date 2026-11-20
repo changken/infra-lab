@@ -91,6 +91,8 @@ terraform/
 │   ├── O-01-base-database/    # Base Database（對比 RDS Oracle）
 │   ├── O-02-autonomous-database/ # Autonomous Database（對比 Aurora）
 │   ├── O-03-adb-vector-genai/ # ADB AI Vector Search + Generative AI（對比 Aurora + pgvector + Bedrock）
+│   ├── O-04-mysql-heatwave/   # MySQL HeatWave（對比 RDS MySQL）
+│   ├── O-07-edge-security/    # LB + WAF + Network Firewall + Bastion（對比 ALB + WAF + Network Firewall + SSM；付費，11/21 前 destroy）
 │   ├── O-06-oke-cluster/      # OKE（對比 EKS）；節點可選 A1（Always Free，額度已被 oci-linux 用滿）或 E4（收費）
 │   └── O-08-cpu-llm/          # CPU 自架 LLM（E5 Flex，import 自 Console 手動建立的實例；付費，11/21 前 destroy）
 └── envs/                  # 長駐獨立環境（有自己的 tfstate，非 lab 練習用）
@@ -272,6 +274,8 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-11-20: oci-labs/O-04-mysql-heatwave 填完 TODO 並 apply 連線成功（DB system 不可掛 NSG），詳見 oci-labs/AGENTS.md
+- 2026-11-19: 新增 oci-labs/O-04-mysql-heatwave 骨架，詳見 oci-labs/AGENTS.md
 - 2026-11-19: 新增 oci-labs/O-08-cpu-llm（import Console 建立的 E5 Flex 實例），詳見 oci-labs/AGENTS.md
 - 2026-11-16: OCI lab 路線重新規劃（偏 backend + AI agent）；新增 O-03-adb-vector-genai 骨架，目錄樹補上 O-02，詳見 oci-labs/AGENTS.md
 - 2026-11-13: oci-vcn / oci-linux 對齊 Console 現況：補 k3s Security List / NSG 規則與 IPv6 路由 / 規則；納管第二台 A1、boot volume 與手動備份；名稱、IP、CIDR 改由 tfvars 提供；移除兩顆閒置舊 boot volume

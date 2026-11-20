@@ -18,7 +18,10 @@ oci-labs/
 ├── O-01-base-database/   # Base Database（對比 RDS Oracle）
 ├── O-02-autonomous-database/ # Autonomous Database（對比 Aurora）
 ├── O-03-adb-vector-genai/ # ADB AI Vector Search + Generative AI（對比 Aurora + pgvector + Bedrock）
+├── O-04-mysql-heatwave/  # MySQL HeatWave（對比 RDS MySQL）
+├── O-05-postgresql/      # OCI Database with PostgreSQL（對比 RDS／Aurora PostgreSQL）
 ├── O-06-oke-cluster/     # OKE（對比 EKS）
+├── O-07-edge-security/   # LB + WAF + Network Firewall + Bastion（對比 ALB + WAF + Network Firewall + SSM）
 └── O-08-cpu-llm/         # CPU 自架 LLM（E5 Flex，import 自 Console 手動建立的實例）
 ```
 
@@ -31,10 +34,10 @@ oci-labs/
 | — | O-01 | Base Database | RDS Oracle | Base DB + 授權 | `vm-basedb-x86-ecpu-count` 8 | ✅ 完成（已 destroy） |
 | — | O-02 | Autonomous Database（付費 ECPU、Data Guard、private endpoint） | Aurora | 付費 ADB | `atp-ecpu-count` 32 | ✅ 完成（已 destroy） |
 | 1 | O-03 | ADB Vector Search + Generative AI（自帶 ADB，23ai 以上；embedding／chat、Select AI） | Aurora + pgvector + Bedrock | 付費 ADB、GenAI 推論 | ✅（Singapore GenAI 只有 Gemini chat，無 embedding 模型 → embedding 用資料庫內 ONNX） | 🚧 骨架已建（TODO 待填） |
-| 2 | O-04 | MySQL HeatWave（HA + HeatWave cluster + 內建向量／LLM） | RDS MySQL | HeatWave 節點 | ✅ `mysql-N-count` 100、`mysql-heatwave-*` 100（用 ECPU 制 `MySQL.N` shape） | 規劃（必做） |
-| 4 | O-05 | PostgreSQL（HA + reader endpoint） | RDS／Aurora PostgreSQL | 多節點 DB system | ✅ `dbsystem-e5-count` 20（`dbsystem-count` 為 0，是否會擋待 apply 確認） | 規劃 |
+| 2 | O-04 | MySQL HeatWave（HA + HeatWave cluster + 內建向量／LLM） | RDS MySQL | HeatWave 節點 | ✅ `mysql-N-count` 100、`mysql-heatwave-*` 100（用 ECPU 制 `MySQL.N` shape） | 🚧 TODO 1/4/5 已 apply 並經 Bastion 連線成功（DB system 不可掛 NSG，改用 security list）；TODO 2/3 與 SQL 尚未實測（HeatWave 可掛的 shape 與 GenAI 區域支援未驗證） |
+| 4 | O-05 | PostgreSQL（HA + reader endpoint） | RDS／Aurora PostgreSQL | 多節點 DB system | ✅ `dbsystem-e5-count` 20（`dbsystem-count` 為 0，是否會擋待 apply 確認） | 🚧 TODO 已填、validate 通過、尚未 apply（shape／單價／額度未驗證） |
 | — | O-06 | OKE | EKS | — | — | ✅ 完成（已 destroy） |
-| 3 | O-07 | LB + WAF + Network Firewall + Bastion（`MANAGED_SSH`） | ALB + WAF + Network Firewall + SSM | Network Firewall | ✅ LB、WAF、Bastion；Network Firewall 未查 | 規劃（必做） |
+| 3 | O-07 | LB + WAF + Network Firewall + Bastion（`MANAGED_SSH`） | ALB + WAF + Network Firewall + SSM | Network Firewall | ✅ LB、WAF、Bastion；Network Firewall 未查 | 🚧 TODO 已填、validate 通過、尚未 apply（Network Firewall 的 FQDN／SNAT／路由導向、單價與額度未驗證） |
 | 5 | O-08 | CPU 自架 LLM（1 台 `VM.Standard.E5.Flex` 8 OCPU / 64 GB，llama.cpp 或 Ollama + 7B–8B Q4 量化模型；與 O-03 託管 GenAI 比延遲與每百萬 token 成本） | EC2（CPU 推論） | 大規格 compute | ✅ `standard-e5-core-count` 83、`standard-e5-memory-count` 1250（GPU 版因 `gpu-a10-count` 調額被拒而放棄） | 🚧 實例已在 Console 開好並 import（實際 23 OCPU / 276 GB / boot 1024 GB，比規劃大），LLM 尚未部署 |
 | 6 | O-09 | Kafka 事件骨幹（integration event／outbox） | MSK | 託管 Kafka 叢集 | 未查 | 規劃（選做） |
 
@@ -81,6 +84,16 @@ oci lb load-balancer list -c <compartment>              # 是否有殘留 LB
 
 ## 更新記錄
 
+- 2026-11-19: O-07-edge-security 填完 TODO 1～5（LB、WAF OWASP SQLi/XSS + rate limit、Network Firewall FQDN allow + drop-all + SNAT、MANAGED_SSH Bastion）；validate 通過，未 plan／apply
+- 2026-11-19: 新增 O-07-edge-security 骨架（LB public subnet、backend ×2 private + Bastion plugin、TODO：LB／WAF／Network Firewall／MANAGED_SSH Bastion；`terraform validate` 通過，未 apply）
+- 2026-11-19: O-05 apply 被 `dbsystem-count`（額度 0）擋下：Singapore 的 PostgreSQL 只提供 E5／E6／Standard3 shape（`oci psql shape-summary list-shapes --all`），沒有 E4，E4 會落到通用額度；預設 shape 改為 `PostgreSQL.VM.Standard.E5.Flex.2.32GB`（用 `dbsystem-e5-count` 20），待重跑 apply 確認
+
+- 2026-11-19: O-05-postgresql 填完 TODO 1～5 與 SQL；`terraform validate` 通過（未 plan／apply；單節點用單 AD 儲存、instance_count > 1 時改 regional 儲存，備份關閉）
+
+- 2026-11-19: 新增 O-05-postgresql 骨架（private subnet + Bastion、`oci_psql_db_system`、HA / reader endpoint TODO、`sql/` failover 探測腳本；shape、單價、額度未驗證，尚未 init／validate）
+
+- 2026-11-20: O-04-mysql-heatwave 填完 TODO 1～5 並 apply：MySQL.2 單節點經 Bastion 連線成功；DB system 掛 `nsg_ids` 會 `FAILED`（`AuthorizationFailed`，拿掉後 ~9 分鐘 ACTIVE），改用 subnet security list 放行 3306／33060；HA（TODO 2）、HeatWave（TODO 3）、SQL 尚未實測
+- 2026-11-19: 新增 O-04-mysql-heatwave 骨架（private subnet + Bastion、HA、HeatWave cluster、`sql/` 填空腳本；單價、HeatWave shape、Singapore HeatWave GenAI 支援待確認）
 - 2026-11-19: 新增 O-08-cpu-llm：Console 手動建立的 E5 Flex 實例以 `terraform import` 納管（名稱 / IP / 規格放 variables，無 replace）；實際規格 23 OCPU / 276 GB / boot 1024 GB ultra high，遠大於規劃
 - 2026-11-16: `gpu-a10-count` 調額申請被 Oracle 拒絕，O-08 由 GPU 版改為 E5 CPU 版（`VM.Standard.E5.Flex`，額度以 CLI 確認）
 - 2026-11-16: 新增 O-03-adb-vector-genai 骨架（public endpoint + ACL + TLS、Object Storage + PAR、`sql/` 填空腳本；單價待 Cost Estimator 確認，Select AI + Gemini 未實測）
