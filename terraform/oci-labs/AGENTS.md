@@ -84,6 +84,8 @@ oci lb load-balancer list -c <compartment>              # 是否有殘留 LB
 
 ## 更新記錄
 
+- 2026-11-20: O-05 改 HA（`instance_count = 3`，`is_regionally_durable = false`；Singapore 只有 1 個 AD，true 會被 400-InvalidParameter 拒絕）；單節點改 HA 是 replace，舊 DB 與資料會消失；CLI 列表指令更正為 `oci psql db-system-collection list-db-systems`，failover 為 `oci psql db-system failover`
+
 - 2026-11-20: O-05 單節點 apply 成功、Bastion tunnel + DataGrip 連線驗證通過；`psql_shape` 名稱更正為 `PostgreSQL.VM.Standard.E5.Flex`（原寫的 `.2.32GB` 後綴會造成 plan 想 in-place 改 shape）；`instances` output 取代 `instance_private_ips`（provider 的 `instances` 屬性沒有 private IP）
 
 - 2026-11-19: O-07-edge-security 填完 TODO 1～5（LB、WAF OWASP SQLi/XSS + rate limit、Network Firewall FQDN allow + drop-all + SNAT、MANAGED_SSH Bastion）；validate 通過，未 plan／apply
