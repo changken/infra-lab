@@ -95,7 +95,7 @@ resource "oci_core_network_security_group_security_rule" "mysql_in" {
 #   availability_domain     = ???    # data.oci_identity_availability_domains.this 的第幾個？
 #   shape_name              = var.mysql_shape
 #   subnet_id               = ???    # Part A 的 subnet
-#   nsg_ids                 = [???]  # Part A 的 NSG
+#   （不要設 nsg_ids：掛 NSG 會 FAILED，見 README 卡關提示；網路放行靠 subnet 的 security list）
 #   admin_username          = var.admin_username
 #   admin_password          = var.admin_password
 #   data_storage_size_in_gb = var.data_storage_gbs

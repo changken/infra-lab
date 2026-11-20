@@ -10,7 +10,7 @@
 
 ## 學習目標
 
-- 會建 MySQL DB system（private subnet + NSG），理解 OCI 的 MySQL 儲存與 compute 分開計費
+- 會建 MySQL DB system（private subnet + security list），理解 OCI 的 MySQL 儲存與 compute 分開計費
 - 理解 HA（Group Replication、跨 fault domain）與 AWS RDS Multi-AZ 的差異，並實測 failover 中斷時間
 - 理解 HeatWave 的運作方式：同一個 endpoint，由 optimizer 決定查詢走 InnoDB 或 HeatWave 節點（`SECONDARY_ENGINE`／`SECONDARY_LOAD`）
 - 用 `VECTOR` 型別與 HeatWave GenAI 做 embedding、向量搜尋與手刻 RAG，和 [O-03](../O-03-adb-vector-genai/) 比較
@@ -23,7 +23,7 @@
    │ SSH tunnel（Bastion，session 最長 3 小時）
    ▼
 ┌─────────────── VCN（10.32.0.0/16）─ private subnet ───────────────┐
-│  MySQL DB system（單節點，或 HA 多 instance）  ◄── NSG: 3306/33060 │
+│  MySQL DB system（單節點，或 HA 多 instance）  ◄── security list: 3306/33060 │
 │       │ 同一個 endpoint，optimizer 自動分流                       │
 │       ▼                                                           │
 │  HeatWave cluster（1～2 節點，可單獨開關）                         │
@@ -32,7 +32,7 @@
 
 ## 你要做的事
 
-網路層（VCN / subnet / NSG）已提供。
+網路層（VCN / subnet / security list）已提供。NSG 資源有建但**不要掛到 DB system**（見卡關提示）。
 
 | TODO | 檔案 | 內容 | 重點 |
 |------|------|------|------|
@@ -67,7 +67,7 @@ terraform apply
 ## 連線
 
 ```bash
-terraform output bastion_tunnel_command   # 把 <privateKey> 換成私鑰路徑，貼上執行（會佔住終端機）
+terraform output bastion_tunnel_command   # 把 <localPort> 換成 3306、<privateKey> 換成私鑰路徑（對應 ssh_public_key 的那把），貼上執行（會佔住終端機）
 mysql -h 127.0.0.1 -P 3306 -u dbadmin -p  # 另開一個終端機
 ```
 
@@ -108,7 +108,7 @@ oci mysql db-system list -c <compartment_id>   # 確認沒有殘留
 | HA | ❌ | 費用約為單節點的多倍 |
 | HeatWave 節點 | ❌ | 按小時計費，本 lab 最貴 |
 | 儲存 | ❌ | 50 GB 起 |
-| VCN / subnet / NSG / Bastion | ✅ 免費 | |
+| VCN / subnet / security list / Bastion | ✅ 免費 | |
 
 ⏰ **11/22 前必須 destroy**。
 
@@ -122,6 +122,6 @@ oci mysql db-system list -c <compartment_id>   # 確認沒有殘留
 | `availability_domain` 錯誤 | 查 AD 要用 tenancy OCID，不是 compartment |
 | HeatWave 建立被拒（`shapeName ... cannot be used`） | `heatwave_shape` 要用 Singapore 實測可用的值：`HeatWave.32GB`、`HeatWave.512GB`、`HeatWave.Free`（`HeatWave.256GB` 會被拒） |
 | 查詢沒走 HeatWave | 表還沒 `SECONDARY_LOAD`，或查詢型態不會被 offload |
-| 連不上 3306 | Bastion session 過期；NSG 只開給 VCN 內部 |
+| 連不上 3306 | Bastion session 過期；或 subnet 的 security list 沒放行 3306（來源要是 VCN CIDR） |
 | 單節點改 HA 出現 replace | 先看 plan，不要直接 apply |
 | `ML_EMBED_ROW` 不存在 | 沒有 HeatWave cluster，或該 region 不支援 HeatWave GenAI |
