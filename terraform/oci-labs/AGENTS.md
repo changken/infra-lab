@@ -22,7 +22,8 @@ oci-labs/
 ├── O-05-postgresql/      # OCI Database with PostgreSQL（對比 RDS／Aurora PostgreSQL）
 ├── O-06-oke-cluster/     # OKE（對比 EKS）
 ├── O-07-edge-security/   # LB + WAF + Network Firewall + Bastion（對比 ALB + WAF + Network Firewall + SSM）
-└── O-08-cpu-llm/         # CPU 自架 LLM（E5 Flex，import 自 Console 手動建立的實例）
+├── O-08-cpu-llm/         # CPU 自架 LLM（E5 Flex，import 自 Console 手動建立的實例）
+└── O-09-kafka-event-backbone/ # Kafka 事件骨幹（OCI Streaming + transactional outbox，對比 MSK）
 ```
 
 ## 學習路線（2026-11-16 重新規劃）
@@ -39,7 +40,7 @@ oci-labs/
 | — | O-06 | OKE | EKS | — | — | ✅ 完成（已 destroy） |
 | 3 | O-07 | LB + WAF + Network Firewall + Bastion（`MANAGED_SSH`） | ALB + WAF + Network Firewall + SSM | Network Firewall | ✅ LB、WAF、Bastion；Network Firewall `premium-nfw-max-count` 2、`premium-nfp-max-count` 50 | ✅ 已 destroy（LB、WAF、Bastion 已 apply 驗證；Network Firewall 未 apply，FQDN／SNAT／路由導向與單價未驗證） |
 | 5 | O-08 | CPU 自架 LLM（1 台 `VM.Standard.E5.Flex` 8 OCPU / 64 GB，llama.cpp 或 Ollama + 7B–8B Q4 量化模型；與 O-03 託管 GenAI 比延遲與每百萬 token 成本） | EC2（CPU 推論） | 大規格 compute | ✅ `standard-e5-core-count` 83、`standard-e5-memory-count` 1250（GPU 版因 `gpu-a10-count` 調額被拒而放棄） | 🚧 實例已在 Console 開好並 import（實際 23 OCPU / 276 GB / boot 1024 GB，比規劃大），LLM 尚未部署 |
-| 6 | O-09 | Kafka 事件骨幹（integration event／outbox） | MSK | 託管 Kafka 叢集 | 未查 | 規劃（選做） |
+| 6 | O-09 | Kafka 事件骨幹（integration event／outbox） | MSK | 託管 Kafka 叢集 | 未查 | 🚧 TODO 已填（Terraform validate 通過；費用／額度與 apply 驗證待確認） |
 
 - **已移除**：GoldenGate + Base DB（原 O-05，Oracle 對 Oracle 複寫離主軸太遠）、Exadata Exascale（原 O-09，純 DBA 題材，且 `exadbxs-*` 額度為 0）。
 - 效能線不另開 lab：O-04、O-05 的驗證章節加負載測試，記錄 p95 延遲與 failover 中斷時間。
@@ -83,6 +84,8 @@ oci lb load-balancer list -c <compartment>              # 是否有殘留 LB
 > Windows Git Bash 下 OCI CLI 會印出 `Get-Acl` 錯誤，是檢查設定檔權限失敗，**不影響結果**，可忽略。
 
 ## 更新記錄
+
+- 2026-11-21: 新增並填完 O-09-kafka-event-backbone TODO（Stream Pool／Stream、transactional outbox relay、consumer 冪等與 offset；`terraform validate` 通過；費用／Singapore 額度待確認，尚未 apply）
 
 - 2026-11-20: O-07 apply 驗證（`enable_network_firewall = false`）：LB round-robin 正常、backend set health OK；WAF 開啟後 SQLi／XSS 回 403（開啟前 200）、rate limit（60 秒 50 次）連打 100 次得 49 個 200 + 51 個 403；Bastion `MANAGED_SSH` 的 plugin 約需 10 分鐘才 RUNNING，太早建 session 會 400（`Bastion plugin must be in the RUNNING state`），instance 重建後 session 也要等；Network Firewall 未 apply，額度夠但單價未查；已 destroy
 

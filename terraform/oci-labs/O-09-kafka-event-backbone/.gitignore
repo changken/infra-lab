@@ -1,0 +1,15 @@
+# Terraform state & secrets
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+tfplan
+
+# Local credentials and SQLite data
+.env
+src/.env
+src/.venv/
+src/__pycache__/
+src/*.db
+src/*.sqlite
+src/*.sqlite3

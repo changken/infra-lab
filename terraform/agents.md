@@ -92,9 +92,11 @@ terraform/
 │   ├── O-02-autonomous-database/ # Autonomous Database（對比 Aurora）
 │   ├── O-03-adb-vector-genai/ # ADB AI Vector Search + Generative AI（對比 Aurora + pgvector + Bedrock）
 │   ├── O-04-mysql-heatwave/   # MySQL HeatWave（對比 RDS MySQL）
+│   ├── O-05-postgresql/       # OCI Database with PostgreSQL（對比 RDS／Aurora PostgreSQL）
 │   ├── O-07-edge-security/    # LB + WAF + Network Firewall + Bastion（對比 ALB + WAF + Network Firewall + SSM；付費，11/21 前 destroy）
 │   ├── O-06-oke-cluster/      # OKE（對比 EKS）；節點可選 A1（Always Free，額度已被 oci-linux 用滿）或 E4（收費）
-│   └── O-08-cpu-llm/          # CPU 自架 LLM（E5 Flex，import 自 Console 手動建立的實例；付費，11/21 前 destroy）
+│   ├── O-08-cpu-llm/          # CPU 自架 LLM（E5 Flex，import 自 Console 手動建立的實例；付費，11/21 前 destroy）
+│   └── O-09-kafka-event-backbone/ # OCI Streaming Kafka 相容端點 + transactional outbox（費用待確認）
 └── envs/                  # 長駐獨立環境（有自己的 tfstate，非 lab 練習用）
     ├── aws-windows/           # Windows Server 2025 開發 / 跳板機（純 Windows）
     ├── aws-linux/             # Amazon Linux 2023 開發 / 跳板機（純 Linux）
@@ -274,6 +276,7 @@ resource "aws_xxx" "name" {
 
 ## 更新記錄
 
+- 2026-11-21: 新增並填完 oci-labs/O-09-kafka-event-backbone TODO（OCI Streaming Kafka 相容端點 + transactional outbox）；`terraform validate` 通過，費用／額度待確認，詳見 oci-labs/AGENTS.md
 - 2026-11-20: oci-labs/O-04-mysql-heatwave 填完 TODO 並 apply 連線成功（DB system 不可掛 NSG），詳見 oci-labs/AGENTS.md
 - 2026-11-19: 新增 oci-labs/O-04-mysql-heatwave 骨架，詳見 oci-labs/AGENTS.md
 - 2026-11-19: 新增 oci-labs/O-08-cpu-llm（import Console 建立的 E5 Flex 實例），詳見 oci-labs/AGENTS.md

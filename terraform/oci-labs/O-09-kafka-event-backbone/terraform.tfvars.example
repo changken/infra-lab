@@ -1,0 +1,6 @@
+region              = "ap-singapore-1"
+compartment_id      = "ocid1.compartment.oc1..REPLACE_ME"
+name_prefix         = "o09-kafka"
+stream_name         = "integration-events"
+partitions          = 1
+retention_in_hours  = 24
