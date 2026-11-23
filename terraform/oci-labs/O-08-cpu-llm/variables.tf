@@ -94,3 +94,37 @@ variable "ssh_user" {
   type        = string
   default     = "ubuntu"
 }
+
+variable "instance2" {
+  description = "第二台 E5 Flex（新建，非 import）。💰 付費；預設為 O-08 規劃規格。boot volume 只能放大不能縮小"
+  type = object({
+    name                    = string
+    hostname_label          = string
+    fault_domain            = optional(string) # null 讓 OCI 自選；缺貨時可指定 FAULT-DOMAIN-1/2/3
+    shape                   = string
+    ocpus                   = number
+    memory_in_gbs           = number
+    boot_volume_size_in_gbs = number
+    boot_volume_vpus_per_gb = number
+  })
+  default = {
+    name                    = "o08-llm-2"
+    hostname_label          = "o08-llm-2"
+    fault_domain            = null
+    shape                   = "VM.Standard.E5.Flex"
+    ocpus                   = 8
+    memory_in_gbs           = 64
+    boot_volume_size_in_gbs = 100
+    boot_volume_vpus_per_gb = 10
+  }
+
+  validation {
+    condition     = var.instance2.ocpus >= 1 && var.instance2.ocpus <= 32
+    error_message = "instance2.ocpus 請介於 1～32（額度 standard-e5-core-count 為 83，與第一台共用，需自行留意）。"
+  }
+
+  validation {
+    condition     = var.instance2.memory_in_gbs >= var.instance2.ocpus && var.instance2.memory_in_gbs <= var.instance2.ocpus * 64
+    error_message = "E5 Flex 每 OCPU 可配 1～64 GB 記憶體。"
+  }
+}
