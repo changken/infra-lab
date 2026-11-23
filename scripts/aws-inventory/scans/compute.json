@@ -1,0 +1,10 @@
+[
+  { "service": "lambda",         "function": "list_functions",  "result_key": "Functions" },
+  { "service": "cloudformation", "function": "list_stacks",     "result_key": "StackSummaries",
+    "parameters": {
+      "StackStatusFilter": [
+        "CREATE_COMPLETE", "UPDATE_COMPLETE", "ROLLBACK_COMPLETE", "UPDATE_ROLLBACK_COMPLETE"
+      ]
+    }
+  }
+]

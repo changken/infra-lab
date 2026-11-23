@@ -1,0 +1,11 @@
+[
+  { "service": "ec2", "function": "describe_instances",    "result_key": "Reservations" },
+  { "service": "ec2", "function": "describe_volumes",      "result_key": "Volumes" },
+  { "service": "ec2", "function": "describe_addresses",    "result_key": "Addresses" },
+  { "service": "ec2", "function": "describe_nat_gateways", "result_key": "NatGateways" },
+  { "service": "ec2", "function": "describe_vpn_gateways", "result_key": "VpnGateways" },
+  { "service": "elbv2", "function": "describe_load_balancers", "result_key": "LoadBalancers" },
+  { "service": "rds",  "function": "describe_db_instances",   "result_key": "DBInstances" },
+  { "service": "rds",  "function": "describe_db_clusters",    "result_key": "DBClusters" },
+  { "service": "eks",  "function": "list_clusters",           "result_key": "clusters" }
+]

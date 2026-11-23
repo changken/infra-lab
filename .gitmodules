@@ -1,0 +1,3 @@
+[submodule "scripts/aws-inventory/vendor/aws-auto-inventory"]
+	path = scripts/aws-inventory/vendor/aws-auto-inventory
+	url = https://github.com/aws-samples/aws-auto-inventory.git
