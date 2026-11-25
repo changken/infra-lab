@@ -9,9 +9,16 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENDOR_DIR="${SCRIPT_DIR}/vendor/aws-auto-inventory"
 SCAN_PY="${VENDOR_DIR}/scan.py"
+REPORT_PY="${SCRIPT_DIR}/generate_report.py"
+IAM_ACCESS_KEYS_PY="${SCRIPT_DIR}/iam_access_keys.py"
 PYTHON="${VENDOR_DIR}/.venv/bin/python3"
 SCANS_DIR="${SCRIPT_DIR}/scans"
 OUTPUT_BASE="${SCRIPT_DIR}/inventory-output"
+declare -A PROFILE_ACCOUNT_IDS=()
+COST_PROFILE=""
+COST_ACCOUNT_ID=""
+COST_START_MONTH=""
+COST_END_MONTH=""
 
 # -----------------------------------------------------------------------------
 # 顏色
@@ -107,7 +114,20 @@ preflight() {
   fi
   if [[ ! -f "$PYTHON" ]]; then
     error "找不到 venv，請先執行:"
-    error "  cd vendor/aws-auto-inventory && python3 -m venv .venv && .venv/bin/pip install boto3 requests jq"
+    error "  cd vendor/aws-auto-inventory && python3 -m venv .venv && .venv/bin/pip install boto3 requests jq XlsxWriter"
+    exit 1
+  fi
+  if [[ ! -f "$REPORT_PY" ]]; then
+    error "找不到 ${REPORT_PY}"
+    exit 1
+  fi
+  if [[ ! -f "$IAM_ACCESS_KEYS_PY" ]]; then
+    error "找不到 ${IAM_ACCESS_KEYS_PY}"
+    exit 1
+  fi
+  if ! "${PYTHON}" -c 'import boto3, xlsxwriter' &>/dev/null; then
+    error "Python venv 缺少 boto3 或 XlsxWriter，請先執行:"
+    error "  cd vendor/aws-auto-inventory && .venv/bin/pip install boto3 requests jq XlsxWriter"
     exit 1
   fi
   if ! aws --version &>/dev/null; then
@@ -116,11 +136,24 @@ preflight() {
   fi
 }
 
+ensure_sso_login() {
+  local profile="$1"
+  if aws sts get-caller-identity --profile "${profile}" &>/dev/null; then
+    return 0
+  fi
+
+  warn "Profile ${profile} 的 SSO token 無效或已過期，嘗試重新登入..."
+  if ! aws sso login --profile "${profile}"; then
+    return 1
+  fi
+  aws sts get-caller-identity --profile "${profile}" &>/dev/null
+}
+
 # -----------------------------------------------------------------------------
 # 步驟 1：選擇 Profiles
 # -----------------------------------------------------------------------------
 select_profiles() {
-  header "步驟 1/3：選擇要掃描的 AWS Profiles"
+  header "步驟 1/5：選擇要掃描的 AWS Profiles"
   info "讀取 ~/.aws/config ..."
 
   mapfile -t ALL_PROFILES < <(aws configure list-profiles 2>/dev/null | grep -v '^default$' | sort)
@@ -139,10 +172,95 @@ select_profiles() {
 }
 
 # -----------------------------------------------------------------------------
+# 選擇管理帳號 Profile，供 Cost Explorer 查詢整個 Organization
+# -----------------------------------------------------------------------------
+select_cost_profile() {
+  header "步驟 4/5：選擇 Cost Explorer 使用的 Management Account Profile"
+  echo "  （這是 SSO Profile，不是 root 身分）"
+  local _i=1
+  local _profile
+  for _profile in "${ALL_PROFILES[@]}"; do
+    printf "  %d) %s\n" "${_i}" "${_profile}"
+    _i=$((_i + 1))
+  done
+
+  local _choice
+  while true; do
+    read -rp "輸入 Profile 編號: " _choice < /dev/tty
+    if [[ "$_choice" =~ ^[0-9]+$ ]] &&
+      (( _choice >= 1 && _choice <= ${#ALL_PROFILES[@]} )); then
+      COST_PROFILE="${ALL_PROFILES[$((_choice - 1))]}"
+      break
+    fi
+    warn "請輸入有效的編號。"
+  done
+
+  info "Cost Explorer Profile: ${COST_PROFILE}"
+}
+
+authenticate_cost_profile() {
+  if ! ensure_sso_login "${COST_PROFILE}"; then
+    warn "無法驗證 Profile ${COST_PROFILE}；報表仍會產生並記錄費用查詢警告。"
+    return 1
+  fi
+
+  COST_ACCOUNT_ID=$(aws sts get-caller-identity --profile "${COST_PROFILE}" \
+    --query 'Account' --output text 2>/dev/null || true)
+  [[ "$COST_ACCOUNT_ID" == "None" ]] && COST_ACCOUNT_ID=""
+  if [[ -n "$COST_ACCOUNT_ID" ]]; then
+    info "Cost Explorer Account ID: ${COST_ACCOUNT_ID}"
+  else
+    warn "無法取得 Cost Explorer Profile 的 Account ID；報表仍會產生。"
+    return 1
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# 選擇 Cost Explorer 費用查詢月份
+# -----------------------------------------------------------------------------
+select_cost_period() {
+  header "步驟 5/5：輸入 Cost Explorer 費用查詢月份"
+  local _default_start
+  local _default_end
+  local _current_month
+  _default_end=$(date +"%Y-%m")
+  _default_start=$(date -d "${_default_end}-01 -1 month" +"%Y-%m")
+  _current_month="${_default_end}"
+
+  while true; do
+    local _start _end _start_valid _end_valid _range_valid
+    read -rp "起始月份 [${_default_start}]: " _start < /dev/tty
+    read -rp "結束月份 [${_default_end}]: " _end < /dev/tty
+    _start="${_start:-${_default_start}}"
+    _end="${_end:-${_default_end}}"
+
+    _start_valid=$(date -d "${_start}-01" +"%Y-%m" 2>/dev/null || true)
+    _end_valid=$(date -d "${_end}-01" +"%Y-%m" 2>/dev/null || true)
+    _range_valid=false
+    if [[ "$_start" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ &&
+          "$_end" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ &&
+          "$_start_valid" == "$_start" &&
+          "$_end_valid" == "$_end" ]]; then
+      if [[ "$_start" == "$_end" || "$_start" < "$_end" ]] &&
+        [[ "$_end" == "$_current_month" || "$_end" < "$_current_month" ]]; then
+        _range_valid=true
+      fi
+    fi
+    if [[ "$_range_valid" == "true" ]]; then
+      COST_START_MONTH="$_start"
+      COST_END_MONTH="$_end"
+      break
+    fi
+    warn "月份請使用 YYYY-MM；起始月份不得晚於結束月份，且結束月份不能在未來。"
+  done
+  success "費用期間：${COST_START_MONTH} 至 ${COST_END_MONTH}"
+}
+
+# -----------------------------------------------------------------------------
 # 步驟 2：選擇 Regions
 # -----------------------------------------------------------------------------
 select_regions() {
-  header "步驟 2/3：選擇要掃描的 Regions"
+  header "步驟 2/5：選擇要掃描的 Regions"
 
   local ALL_REGIONS=(
     "us-east-1" "us-east-2" "us-west-1" "us-west-2"
@@ -165,7 +283,7 @@ select_regions() {
 # 步驟 3：選擇資源類別
 # -----------------------------------------------------------------------------
 select_categories() {
-  header "步驟 3/3：選擇要掃描的資源類別"
+  header "步驟 3/5：選擇要掃描的資源類別"
   echo "  （各類別對應 scans/ 目錄下的 JSON scan file）"
 
   local ALL_CATS=("billing" "storage" "compute" "security")
@@ -188,23 +306,50 @@ run_scan() {
   local run_ts="$3"
 
   local out_dir="${OUTPUT_BASE}/${run_ts}/${account_id}"
+  local status_file="${OUTPUT_BASE}/${run_ts}/scan-errors.tsv"
   mkdir -p "${out_dir}"
 
   for cat in "${SELECTED_CATS[@]}"; do
     local scan_file="${SCANS_DIR}/${cat}.json"
+    local scan_regions=("${SELECTED_REGIONS[@]}")
     if [[ ! -f "$scan_file" ]]; then
       warn "找不到 ${scan_file}，跳過"
+      printf "%s\t%s\t%s\t%s\t%s\n" \
+        "${profile}" "${account_id}" "${cat}" "設定缺失" \
+        "Scan definition not found: ${scan_file}" >> "${status_file}"
       continue
     fi
 
+    if [[ "$cat" == "security" ]]; then
+      # IAM is global; scanning it once avoids redundant calls for every Region.
+      scan_regions=("us-east-1")
+    fi
+
     info "  掃描類別 [${cat}] ..."
-    AWS_PROFILE="${profile}" "${PYTHON}" "${SCAN_PY}" \
+    if ! AWS_PROFILE="${profile}" "${PYTHON}" "${SCAN_PY}" \
       --scan "${scan_file}" \
-      --regions "${SELECTED_REGIONS[@]}" \
+      --regions "${scan_regions[@]}" \
       --output_dir "${out_dir}/${cat}" \
       --log_level WARNING \
-      2>&1 || true
+      2>&1; then
+      printf "%s\t%s\t%s\t%s\t%s\n" \
+        "${profile}" "${account_id}" "${cat}" "執行失敗" \
+        "Inventory scanner returned a non-zero exit code." >> "${status_file}"
+    fi
   done
+
+  if [[ " ${SELECTED_CATS[*]} " == *" security "* ]]; then
+    info "  掃描 IAM 使用者 Access Keys ..."
+    if ! "${PYTHON}" "${IAM_ACCESS_KEYS_PY}" \
+      --profile "${profile}" \
+      --output-dir "${out_dir}/security" \
+      2>&1; then
+      printf "%s\t%s\t%s\t%s\t%s\n" \
+        "${profile}" "${account_id}" "security" "IAM Access Key 掃描警告" \
+        "See console output for users whose access keys could not be queried." \
+        >> "${status_file}"
+    fi
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -250,20 +395,59 @@ except: print(0)
     done < <(find "${acct_dir}" -name "*.json" | sort)
 
     if [[ "$acct_has_data" == "false" ]]; then
-      echo -e "    ${CYAN}此帳號在所選 Region 內無任何資源${NC}"
+      if grep -rqlE " - ERROR - |AccessDenied|AuthFailure|UnauthorizedOperation" "${acct_dir}" 2>/dev/null; then
+        warn "    此帳號掃描有錯誤，請先檢查報表總覽。"
+      else
+        echo -e "    ${CYAN}此帳號在所選 Region 內未回傳資源${NC}"
+      fi
     fi
     echo ""
   done
 
   if [[ "$found_any" == "false" ]]; then
-    success "所有帳號均無資源，可安全退役。"
+    if [[ -s "${out_base}/scan-errors.tsv" ]] ||
+      grep -rqlE " - ERROR - |AccessDenied|AuthFailure|UnauthorizedOperation" "${out_base}" 2>/dev/null; then
+      warn "未取得資源資料且發現掃描警告；請先檢查報表總覽，不代表帳號沒有資源。"
+    else
+      success "所選掃描範圍內未發現資源。"
+    fi
   fi
 
   warn "S3、IAM 等 Global 服務會出現在每個 Region 目錄下，屬正常現象。"
-  if grep -rql "AccessDenied\|AuthFailure\|UnauthorizedOperation" "${out_base}" 2>/dev/null; then
+  if [[ -s "${out_base}/scan-errors.tsv" ]] ||
+    grep -rqlE " - ERROR - |AccessDenied|AuthFailure|UnauthorizedOperation" "${out_base}" 2>/dev/null; then
     echo ""
-    warn "部分查詢遇到權限不足，請確認 SSO Permission Set 包含對應的 Read 權限。"
+    warn "部分查詢可能失敗，請確認報表總覽的警告及 SSO Permission Set 權限。"
   fi
+}
+
+# -----------------------------------------------------------------------------
+# 產生 Excel 報表
+# -----------------------------------------------------------------------------
+generate_report() {
+  local run_ts="$1"
+  local run_dir="${OUTPUT_BASE}/${run_ts}"
+  local _args=(
+    --run-dir "${run_dir}"
+    --run-timestamp "${run_ts}"
+    --cost-profile "${COST_PROFILE}"
+    --cost-account-id "${COST_ACCOUNT_ID}"
+    --start-month "${COST_START_MONTH}"
+    --end-month "${COST_END_MONTH}"
+  )
+
+  for _profile in "${SELECTED_PROFILES[@]}"; do
+    local _account_id="${PROFILE_ACCOUNT_IDS[$_profile]:-}"
+    [[ -n "$_account_id" ]] && _args+=(--profile-account "${_profile}=${_account_id}")
+  done
+  for _region in "${SELECTED_REGIONS[@]}"; do
+    _args+=(--region "${_region}")
+  done
+  for _category in "${SELECTED_CATS[@]}"; do
+    _args+=(--category "${_category}")
+  done
+
+  "${PYTHON}" "${REPORT_PY}" "${_args[@]}"
 }
 
 # -----------------------------------------------------------------------------
@@ -280,9 +464,12 @@ main() {
   select_profiles
   select_regions
   select_categories
+  select_cost_profile
+  select_cost_period
 
   local RUN_TS
   RUN_TS=$(date +"%Y%m%dT%H%M%S")
+  mkdir -p "${OUTPUT_BASE}/${RUN_TS}"
 
   echo ""
   header "掃描確認"
@@ -290,10 +477,14 @@ main() {
   echo "  Regions   : ${SELECTED_REGIONS[*]}"
   echo "  類別      : ${SELECTED_CATS[*]}"
   echo "  輸出目錄  : ${OUTPUT_BASE}/${RUN_TS}/"
+  echo "  Cost Profile: ${COST_PROFILE}"
+  echo "  費用期間  : ${COST_START_MONTH} 至 ${COST_END_MONTH}"
   echo ""
   # multiselect 用 read -rsn1 吃過 stdin，這裡明確從 /dev/tty 讀確認
   read -rp "確認開始掃描？(y/N) " _confirm < /dev/tty
   [[ "$_confirm" =~ ^[Yy]$ ]] || { info "已取消。"; exit 0; }
+
+  authenticate_cost_profile || true
 
   local _total=${#SELECTED_PROFILES[@]}
   local _idx=0
@@ -302,20 +493,37 @@ main() {
     echo ""
     header "[${_idx}/${_total}] Profile: ${profile}"
 
-    # SSO token 檢查
-    if ! aws sts get-caller-identity --profile "${profile}" &>/dev/null; then
-      warn "SSO token 過期，嘗試重新登入..."
-      aws sso login --profile "${profile}"
+    if ! ensure_sso_login "${profile}"; then
+      warn "無法登入 Profile ${profile}，略過此帳號。"
+      printf "%s\t\t%s\t%s\t%s\n" \
+        "${profile}" "帳號識別" "登入失敗" \
+        "Unable to obtain AWS caller identity." \
+        >> "${OUTPUT_BASE}/${RUN_TS}/scan-errors.tsv"
+      continue
     fi
 
     local account_id
     account_id=$(aws sts get-caller-identity --profile "${profile}" \
-      --query 'Account' --output text 2>/dev/null)
+      --query 'Account' --output text 2>/dev/null || true)
+    if [[ -z "$account_id" || "$account_id" == "None" ]]; then
+      warn "無法取得 Profile ${profile} 的 Account ID，略過此帳號。"
+      printf "%s\t\t%s\t%s\t%s\n" \
+        "${profile}" "帳號識別" "失敗" \
+        "Unable to obtain AWS Account ID." \
+        >> "${OUTPUT_BASE}/${RUN_TS}/scan-errors.tsv"
+      continue
+    fi
+    PROFILE_ACCOUNT_IDS["${profile}"]="${account_id}"
     info "Account ID: ${account_id}"
 
     run_scan "${profile}" "${account_id}" "${RUN_TS}"
     success "Profile ${profile} 掃描完成"
   done
+
+  if ! generate_report "${RUN_TS}"; then
+    error "Excel 報表產生失敗；JSON 掃描結果仍保留在 ${OUTPUT_BASE}/${RUN_TS}/"
+    exit 1
+  fi
 
   print_summary "${RUN_TS}"
 }

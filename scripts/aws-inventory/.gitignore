@@ -1,2 +1,4 @@
 inventory-output/
 vendor/aws-auto-inventory/.venv/
+__pycache__/
+*.py[cod]

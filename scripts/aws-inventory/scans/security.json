@@ -1,6 +1,4 @@
 [
-  { "service": "iam", "function": "list_users",               "result_key": "Users" },
   { "service": "iam", "function": "list_roles",               "result_key": "Roles" },
-  { "service": "iam", "function": "list_access_keys",         "result_key": "AccessKeyMetadata" },
   { "service": "iam", "function": "list_virtual_mfa_devices", "result_key": "VirtualMFADevices" }
 ]
