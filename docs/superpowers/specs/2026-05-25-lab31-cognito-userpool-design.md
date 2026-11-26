@@ -1,7 +1,7 @@
 # Lab 31: Cognito User Pool + App Client + JWT 驗證 — 設計文件
 
 **日期**: 2026-05-25
-**路徑**: `terraform/labs/31-cognito-userpool/`
+**路徑**: `terraform/aws-labs/31-cognito-userpool/`
 **費用**: $0（Cognito 免費額度 50,000 MAU/月）
 **認證覆蓋**: DVA
 

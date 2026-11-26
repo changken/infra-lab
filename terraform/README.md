@@ -19,7 +19,7 @@
 以目前的 EC2 練習為例：
 
 ```bash
-cd 01-ec2-web-server
+cd aws-labs/01-ec2-web-server
 terraform init
 terraform plan
 terraform apply
@@ -28,19 +28,13 @@ terraform apply
 ## 目錄結構
 
 ```
-terraform-aws-labs/
-├── 01-ec2-web-server/     # 練習專案
-├── modules/               # 可重用模組
-│   ├── backend/
-│   ├── compute/
-│   ├── database/
-│   ├── iam-baseline/
-│   ├── networking/
-│   ├── serverless/
-│   └── storage/
-├── docs/                  # 文件與學習路線
-├── .gitignore
-└── README.md
+terraform/
+├── aws-labs/              # AWS 練習專案
+├── azure-labs/            # Azure 練習專案
+├── oci-labs/              # OCI 練習專案
+├── modules/               # 可重用 Terraform modules
+├── envs/                  # 長駐、獨立的 Terraform environments
+└── docs/                  # 學習路線與設計文件
 ```
 
 ## 學習路線圖

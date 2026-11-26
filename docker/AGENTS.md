@@ -1,45 +1,22 @@
-# AI Agent 協作指南 (Docker 篇)
+# Docker 協作規範
 
-本文檔為 AI 助手提供 `docker/` 目錄下的環境背景與協作規範，確保本地開發資料庫環境的一致性與安全性。
+`docker/README.md` 是 Compose stacks 與 Terraform tool images 的目錄索引；處理特定環境時，先讀該目錄的 README 和 Compose 設定。
 
-## 目錄結構
+## 檔案命名
 
-```
-docker/
-├── oracle-db/           # Oracle Database Free (23c)
-├── oracle-xe/           # Oracle Database Express Edition (21c)
-├── postgresql-db/       # PostgreSQL 18
-└── portainer-root/      # Portainer 管理介面
-```
+- 每個 Compose stack 的預設檔名為 `compose.yaml`。
+- 完整替代設定使用 `compose.<purpose>.yaml`，並在 README 記錄 `docker compose -f ...` 指令；避免使用數字序號或版本字樣等不具用途資訊的名稱。
+- 範例環境檔統一使用 `.env.example`。實際 `.env` 僅供本機使用，不進版本控制；不要覆寫既有 `.env`。
+- 新增或修改 image 時固定明確 tag；不要順手更新既有 image 版本。
 
-## AI 協作規範
+## 資料與相容性
 
-### 1. 環境一致性
-- **Image 版本**: 必須固定 Image 版本（如 `postgres:18-alpine`），避免使用 `latest`。
-- **連接埠管理**: 確保不同資料庫間的 Host Port 不衝突。
-    - Oracle Free: `15211`
-    - Oracle XE: `15212`
-    - PostgreSQL: `15432`
-- **Volume 命名**: 統一使用 `external: true` 的具名 Volume，避免容器刪除時遺失資料。
+- Container/service name、host port、bind mount 路徑和 volume name 可能被既有資料或用戶端依賴。修改前確認影響，必要時提供遷移步驟。
+- Stateful stack 使用的 volume 設定各有差異；不要假設所有 volume 都是 external，也不要未經確認就改名或刪除。
+- `docker compose down` 保留資料；`docker compose down -v` 可能刪除 Compose 管理的資料 volumes。不得把刪除 volume 當成一般驗證步驟。
 
-### 2. 安全規範
-- **密鑰處理**: 絕對不要將 `.env` 檔案提交至版本控制。
-- **範例檔案**: 修改配置時，同步更新 `.env.example`。
-- **密碼強度**: 協助用戶產生範例密碼時，應具備基本強度。
+## 驗證與操作
 
-### 3. 操作指令建議
-- **啟動**: 優先推薦使用 `docker compose up -d`。
-- **清理**: 提醒用戶 `docker compose down` 僅停止容器，若要刪除資料需手動刪除 Volume。
-- **初始化**: 指導用戶將 SQL 腳本放置於各資料庫對應的 `init` 目錄中。
-
-## 常見任務
-
-### 新增資料庫環境
-1. 參考現有的 `postgresql-db` 結構。
-2. 建立 `compose.yaml`, `README.md`, `.env.example`。
-3. 確保 `README.md` 包含完整的連接字串範例。
-
-### 疑難排解
-- 檢查 `docker logs <container_name>`。
-- 確認 Volume 是否已事先建立：`docker volume create <volume_name>`。
-- 檢查 Host Port 是否被占用。
+- 在 stack 目錄執行 `docker compose config --quiet` 驗證設定；需要 `.env` 的 stack，先由使用者建立並填妥本機設定。
+- 驗證設定不需要啟動或停止服務；除非使用者要求，不執行 `up`、`down` 或刪除 volume。
+- 初始化 SQL 的掛載位置依各 stack 的 Compose 設定與 README 為準。

@@ -55,7 +55,7 @@ AWS Config
 ## 檔案結構
 
 ```
-terraform/labs/35-cloudtrail-config/
+terraform/aws-labs/35-cloudtrail-config/
 ├── terraform.tf           # AWS provider >= 5.0, terraform >= 1.9
 ├── variables.tf           # aws_region, project_name, environment, alert_email
 ├── locals.tf              # common_tags, account_id (data source)

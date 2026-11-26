@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 建立 `terraform/labs/31-cognito-userpool/` 的填空式 lab 骨架，包含 3 個 TODO 資源（User Pool、App Client、User Pool Domain）、完整 README，以及純 CLI 驗證流程。
+**Goal:** 建立 `terraform/aws-labs/31-cognito-userpool/` 的填空式 lab 骨架，包含 3 個 TODO 資源（User Pool、App Client、User Pool Domain）、完整 README，以及純 CLI 驗證流程。
 
 **Architecture:** 3 個 Terraform 資源（aws_cognito_user_pool、aws_cognito_user_pool_client、aws_cognito_user_pool_domain），resource body 保持空白（`# TODO`），詳細提示寫在 comment block 上方，供使用者自行填寫。
 
@@ -14,26 +14,26 @@
 
 | 檔案 | 動作 | 說明 |
 |------|------|------|
-| `terraform/labs/31-cognito-userpool/terraform.tf` | 建立 | Provider 設定 |
-| `terraform/labs/31-cognito-userpool/variables.tf` | 建立 | 輸入變數 |
-| `terraform/labs/31-cognito-userpool/locals.tf` | 建立 | common_tags |
-| `terraform/labs/31-cognito-userpool/.gitignore` | 建立 | 排除 tfstate、.terraform/、*.tfvars |
-| `terraform/labs/31-cognito-userpool/terraform.tfvars.example` | 建立 | 範例值 |
-| `terraform/labs/31-cognito-userpool/main.tf` | 建立 | 3 個 TODO 資源骨架 |
-| `terraform/labs/31-cognito-userpool/outputs.tf` | 建立 | 6 個輸出值 |
-| `terraform/labs/31-cognito-userpool/README.md` | 建立 | Lab 指南（含完整驗證腳本）|
-| `terraform/labs/31-cognito-userpool/.terraform.lock.hcl` | 產生 | `terraform init` 後提交 |
+| `terraform/aws-labs/31-cognito-userpool/terraform.tf` | 建立 | Provider 設定 |
+| `terraform/aws-labs/31-cognito-userpool/variables.tf` | 建立 | 輸入變數 |
+| `terraform/aws-labs/31-cognito-userpool/locals.tf` | 建立 | common_tags |
+| `terraform/aws-labs/31-cognito-userpool/.gitignore` | 建立 | 排除 tfstate、.terraform/、*.tfvars |
+| `terraform/aws-labs/31-cognito-userpool/terraform.tfvars.example` | 建立 | 範例值 |
+| `terraform/aws-labs/31-cognito-userpool/main.tf` | 建立 | 3 個 TODO 資源骨架 |
+| `terraform/aws-labs/31-cognito-userpool/outputs.tf` | 建立 | 6 個輸出值 |
+| `terraform/aws-labs/31-cognito-userpool/README.md` | 建立 | Lab 指南（含完整驗證腳本）|
+| `terraform/aws-labs/31-cognito-userpool/.terraform.lock.hcl` | 產生 | `terraform init` 後提交 |
 
 ---
 
 ## Task 1：建立基礎設定檔
 
 **Files:**
-- Create: `terraform/labs/31-cognito-userpool/terraform.tf`
-- Create: `terraform/labs/31-cognito-userpool/variables.tf`
-- Create: `terraform/labs/31-cognito-userpool/locals.tf`
-- Create: `terraform/labs/31-cognito-userpool/.gitignore`
-- Create: `terraform/labs/31-cognito-userpool/terraform.tfvars.example`
+- Create: `terraform/aws-labs/31-cognito-userpool/terraform.tf`
+- Create: `terraform/aws-labs/31-cognito-userpool/variables.tf`
+- Create: `terraform/aws-labs/31-cognito-userpool/locals.tf`
+- Create: `terraform/aws-labs/31-cognito-userpool/.gitignore`
+- Create: `terraform/aws-labs/31-cognito-userpool/terraform.tfvars.example`
 
 - [ ] **Step 1: 建立 terraform.tf**
 
@@ -114,11 +114,11 @@ environment = "dev"
 - [ ] **Step 6: Commit**
 
 ```bash
-git add terraform/labs/31-cognito-userpool/terraform.tf \
-        terraform/labs/31-cognito-userpool/variables.tf \
-        terraform/labs/31-cognito-userpool/locals.tf \
-        terraform/labs/31-cognito-userpool/.gitignore \
-        terraform/labs/31-cognito-userpool/terraform.tfvars.example
+git add terraform/aws-labs/31-cognito-userpool/terraform.tf \
+        terraform/aws-labs/31-cognito-userpool/variables.tf \
+        terraform/aws-labs/31-cognito-userpool/locals.tf \
+        terraform/aws-labs/31-cognito-userpool/.gitignore \
+        terraform/aws-labs/31-cognito-userpool/terraform.tfvars.example
 git commit -m "feat(labs): add lab 31 base config files"
 ```
 
@@ -127,7 +127,7 @@ git commit -m "feat(labs): add lab 31 base config files"
 ## Task 2：建立 main.tf（填空式骨架）
 
 **Files:**
-- Create: `terraform/labs/31-cognito-userpool/main.tf`
+- Create: `terraform/aws-labs/31-cognito-userpool/main.tf`
 
 - [ ] **Step 1: 建立 main.tf**
 
@@ -264,7 +264,7 @@ resource "aws_cognito_user_pool_domain" "main" {
 - [ ] **Step 2: 驗證格式**
 
 ```bash
-cd terraform/labs/31-cognito-userpool
+cd terraform/aws-labs/31-cognito-userpool
 terraform fmt -check
 ```
 
@@ -273,7 +273,7 @@ Expected: 無輸出（格式正確），或輸出 `main.tf`（有格式問題則
 - [ ] **Step 3: Commit**
 
 ```bash
-git add terraform/labs/31-cognito-userpool/main.tf
+git add terraform/aws-labs/31-cognito-userpool/main.tf
 git commit -m "feat(labs): add lab 31 main.tf with TODO scaffolds"
 ```
 
@@ -282,7 +282,7 @@ git commit -m "feat(labs): add lab 31 main.tf with TODO scaffolds"
 ## Task 3：建立 outputs.tf
 
 **Files:**
-- Create: `terraform/labs/31-cognito-userpool/outputs.tf`
+- Create: `terraform/aws-labs/31-cognito-userpool/outputs.tf`
 
 - [ ] **Step 1: 建立 outputs.tf**
 
@@ -321,7 +321,7 @@ output "jwks_uri" {
 - [ ] **Step 2: Commit**
 
 ```bash
-git add terraform/labs/31-cognito-userpool/outputs.tf
+git add terraform/aws-labs/31-cognito-userpool/outputs.tf
 git commit -m "feat(labs): add lab 31 outputs.tf"
 ```
 
@@ -330,7 +330,7 @@ git commit -m "feat(labs): add lab 31 outputs.tf"
 ## Task 4：建立 README.md
 
 **Files:**
-- Create: `terraform/labs/31-cognito-userpool/README.md`
+- Create: `terraform/aws-labs/31-cognito-userpool/README.md`
 
 - [ ] **Step 1: 建立 README.md**
 
@@ -629,7 +629,7 @@ terraform destroy -auto-approve
 - [ ] **Step 2: Commit**
 
 ```bash
-git add terraform/labs/31-cognito-userpool/README.md
+git add terraform/aws-labs/31-cognito-userpool/README.md
 git commit -m "docs(labs): add lab 31 README with verification guide"
 ```
 
@@ -638,12 +638,12 @@ git commit -m "docs(labs): add lab 31 README with verification guide"
 ## Task 5：terraform init + terraform fmt + 提交 lock file
 
 **Files:**
-- Generate: `terraform/labs/31-cognito-userpool/.terraform.lock.hcl`
+- Generate: `terraform/aws-labs/31-cognito-userpool/.terraform.lock.hcl`
 
 - [ ] **Step 1: 執行 terraform init**
 
 ```bash
-cd terraform/labs/31-cognito-userpool
+cd terraform/aws-labs/31-cognito-userpool
 terraform init
 ```
 
@@ -670,7 +670,7 @@ Expected: 無輸出（格式已正確），或列出已修正的檔案。
 
 ```bash
 cd ../../../   # 回到 repo root
-git add terraform/labs/31-cognito-userpool/.terraform.lock.hcl
+git add terraform/aws-labs/31-cognito-userpool/.terraform.lock.hcl
 git commit -m "chore(labs): add lab 31 terraform lock file"
 ```
 
@@ -710,7 +710,7 @@ git commit -m "docs(roadmap): mark lab 31 as scaffolded"
 
 完成所有 Task 後確認：
 
-- [ ] `terraform/labs/31-cognito-userpool/` 目錄存在且包含所有 8 個檔案 + lock file
+- [ ] `terraform/aws-labs/31-cognito-userpool/` 目錄存在且包含所有 8 個檔案 + lock file
 - [ ] `main.tf` 的 3 個 resource blocks 均為空 body（只有 `# TODO`）
 - [ ] `outputs.tf` 中 6 個 output 的 `value` 引用了正確的 resource 屬性
 - [ ] README 的驗證指令可以 copy-paste 執行（無 placeholder）

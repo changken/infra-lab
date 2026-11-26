@@ -1,6 +1,6 @@
 # O-06：OKE Cluster（Oracle Kubernetes Engine）
 
-> 在 OCI 建立 OKE 叢集並跑工作負載，對標 AWS 的 [Lab 15 EKS](../../labs/15-eks-cluster/)。節點可選 **A1（ARM，Always Free，常缺貨）** 或 **E4（x86，收費但容量充裕）**。
+> 在 OCI 建立 OKE 叢集並跑工作負載，對標 AWS 的 [Lab 15 EKS](../../aws-labs/15-eks-cluster/)。節點可選 **A1（ARM，Always Free，常缺貨）** 或 **E4（x86，收費但容量充裕）**。
 >
 > 💰 **成本等級：A1 🟢／E4 🟡**（Basic cluster 的 control plane 免費；A1 在 Always Free 額度內，E4 每天約 US$1.6，見「成本」）
 >

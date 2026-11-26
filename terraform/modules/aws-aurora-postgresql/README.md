@@ -41,7 +41,7 @@
 
 ## 🛠️ 模組使用說明 (Usage)
 
-在您獨立的 Lab（例如 `labs/xx-aurora-lab/`）中的 `main.tf` 呼叫此模組：
+在您獨立的 Lab（例如 `aws-labs/xx-aurora-lab/`）中的 `main.tf` 呼叫此模組：
 
 ```hcl
 module "aurora_postgres" {

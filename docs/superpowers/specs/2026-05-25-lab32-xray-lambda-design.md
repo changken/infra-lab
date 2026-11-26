@@ -1,7 +1,7 @@
 # Lab 32: X-Ray + Lambda + API Gateway 分散式追蹤 — 設計文件
 
 **日期**: 2026-05-25
-**路徑**: `terraform/labs/32-xray-lambda/`
+**路徑**: `terraform/aws-labs/32-xray-lambda/`
 **費用**: $0（X-Ray 免費額度 100,000 traces/月、1M subsegments/月）
 **認證覆蓋**: DVA
 

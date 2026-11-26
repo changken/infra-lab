@@ -1,26 +1,26 @@
 # AI Agent 協作指南
 
 本文檔為 AI 助手（Claude、Gemini 等）提供專案背景與協作規範。
-Claude Code 透過 `CLAUDE.md`（symlink）自動載入，Gemini CLI 透過 `GEMINI.md`（symlink）自動載入。
+Claude Code 透過 `CLAUDE.md` 載入協作指南，Gemini CLI 透過 `GEMINI.md` 載入；修改本指南時，需同步更新這兩份入口文件。
 
 ## 專案概覽
 
-**專案名稱**: Terraform AWS Labs
-**專案目標**: 透過填空式實作練習學習 Terraform 和 AWS，從基礎到進階逐步建立能力
-**學習方式**: 每個 lab 獨立運作，練習完立刻 `terraform destroy`
-**預算上限**: $48 / 月（詳見 `docs/roadmap.md`）
+**專案名稱**: Terraform 多雲實驗室（AWS、Azure、OCI）
+**專案目標**: 透過填空式 labs 學習 Terraform；以 AWS 為主要學習路徑，並提供 Azure、OCI 對照練習與跨雲共用 modules
+**學習方式**: `*-labs/` 中的 lab 各自獨立；完成後依該 lab README 清理其建立的資源。`envs/` 是長駐環境，操作時遵循各環境文件與護欄
+**預算上限**: AWS labs 每月 $48（詳見 `docs/roadmap.md`）；Azure 與 OCI 請依各自專屬指南估算與確認費用
 **語言**: 主要文件使用繁體中文，程式碼使用英文
 
 ## 目錄結構
 
 ```
 terraform/
-├── agents.md              # AI 協作指南（CLAUDE.md / GEMINI.md 為 symlink）
-├── CLAUDE.md              # → agents.md（Claude Code 自動載入）
-├── GEMINI.md              # → agents.md（Gemini CLI 自動載入）
+├── agents.md              # AI 協作指南（主文件）
+├── CLAUDE.md              # Claude Code 載入文件（需與主文件同步）
+├── GEMINI.md              # Gemini CLI 載入文件（需與主文件同步）
 ├── docs/
 │   └── roadmap.md         # 完整學習路線圖（含費用估算）
-├── labs/                  # 練習專案（按編號順序）
+├── aws-labs/              # AWS 練習專案（按編號順序）
 │   ├── 01-ec2-web-server/         ✅ 完成
 │   ├── 02-custom-vpc-public-only/ ✅ 完成
 │   ├── 03-s3-static-website/      ✅ 完成

@@ -1,122 +1,59 @@
 # infra-lab
 
-Infrastructure-as-Code playground — Terraform modules, Docker compositions, and technical documentation from my homelab journey.
+Infrastructure-as-Code playground — AWS, Azure, and OCI Terraform labs, reusable infrastructure, Docker stacks, and homelab documentation.
 
-基礎設施即程式碼練習場 — 涵蓋 Terraform 模組、Docker 組合配置，以及 Homelab 建置過程中的技術文件。
+基礎設施即程式碼練習場 — 涵蓋 AWS、Azure、OCI Terraform labs、可重用基礎設施、Docker 環境，以及 Homelab 技術文件。
 
 ---
 
-## Architecture Overview / 架構總覽
+## 專案總覽
 
 ```mermaid
 flowchart TB
     subgraph infra-lab["infra-lab repo"]
-        direction TB
-        subgraph tf["terraform/modules"]
-            aws-k3s["aws-k3s<br/>K3s on EC2"]
-            aws-ec2["aws-ec2<br/>General EC2"]
-            aws-win["aws-windows-spot<br/>Windows Server<br/>+ SSM + CW Agent<br/>+ Spot Instance"]
-            azure-k3s["azure-k3s<br/>K3s on Azure VM"]
-        end
-        subgraph docker["docker/"]
-            pg["PostgreSQL"]
-            oracle["Oracle"]
-        end
-        subgraph docs["docs/"]
-            d1["Hetzner K3s Setup"]
-            d2["Post-Setup Config"]
-            d3["Zeabur Probe Analysis"]
-        end
+        aws["terraform/aws-labs<br/>AWS 學習 labs"]
+        azure["terraform/azure-labs<br/>Azure 學習 labs"]
+        oci["terraform/oci-labs<br/>OCI 學習 labs"]
+        tfshared["terraform/modules + envs<br/>共用 modules 與長駐環境"]
+        docker["docker<br/>Compose 環境與工具映像"]
+        docs["docs + doc<br/>設計文件與 Homelab 指南"]
+        scripts["scripts<br/>AWS 帳號資源盤點工具"]
     end
-
-    subgraph external["Deployed Clusters"]
-        hetzner["Hetzner K3s Cluster<br/>1 CP + 2 ARM Workers"]
-        aws-cluster["AWS K3s Cluster"]
-        azure-cluster["Azure K3s Cluster"]
-    end
-
-    subgraph gitops["k3s-gitops repo"]
-        argo["ArgoCD Manifests"]
-    end
-
-    subgraph apps["Application Repos"]
-        draw["draw-card-app"]
-        wallet["serverless-wallet-api"]
-    end
-
-    tf -- "terraform apply" --> external
-    argo -- "GitOps sync" --> hetzner
-    draw -- "CI/CD deploy" --> hetzner
-    wallet -. "Lambda (standalone)" .-> aws-cluster
 ```
 
 ---
 
-## Repository Structure / 目錄結構
+## 目錄結構
 
 ```
 infra-lab/
+├── docker/                       # 本機 Compose 環境與工具映像
+│   ├── <stack>/                  # 每個 Compose stack 預設使用 compose.yaml
+│   ├── aws-terraform/            # Terraform、AWS CLI 與 SAM 映像
+│   └── azure-terraform/          # Terraform 與 Azure CLI 映像
 ├── terraform/
-│   ├── modules/
-│   │   ├── aws-k3s/              # K3s cluster on AWS EC2
-│   │   │                         # AWS EC2 上建立 K3s 叢集
-│   │   ├── aws-ec2/              # General-purpose EC2 instances
-│   │   │                         # 通用 EC2 執行個體
-│   │   ├── aws-windows-spot/     # Windows Server on Spot + SSM + CloudWatch
-│   │   │                         # Spot 執行個體上的 Windows Server + SSM + CW Agent
-│   │   └── azure-k3s/            # K3s cluster on Azure VM
-│   │                             # Azure VM 上建立 K3s 叢集
-│   └── envs/
-│       ├── dev/                  # Dev environment configs
-│       └── prod/                 # Prod environment configs (template)
-├── docker/
-│   ├── pgsql/                    # PostgreSQL compose stack
-│   └── oracle/                   # Oracle compose stack
-├── docs/
-│   ├── hetzner-k3s-setup.md      # Hetzner K3s cluster bootstrap guide
-│   │                             # Hetzner K3s 叢集建置指南
-│   ├── post-setup-config.md      # Post-install configuration (monitoring, certs, etc.)
-│   │                             # 安裝後組態設定（監控、憑證等）
-│   └── zeabur-probe-analysis.md  # Reverse-engineering Zeabur's health probe mechanism
-│                                 # 逆向分析 Zeabur 健康檢查探針機制
-├── .gitignore
-├── LICENSE
+│   ├── aws-labs/                 # AWS 學習 labs
+│   ├── azure-labs/               # Azure 學習 labs
+│   ├── oci-labs/                 # OCI 學習 labs
+│   ├── modules/                  # 可重用 Terraform modules
+│   ├── envs/                     # 獨立的長駐環境
+│   └── docs/                     # Terraform 學習路線與文件
+├── docs/superpowers/             # 設計規格與實作計畫
+├── doc/                          # Homelab 建置指南
+├── scripts/aws-inventory/        # AWS 帳號資源盤點工具
 └── README.md
 ```
 
 ---
 
-## Modules / 模組說明
+## Terraform 與 Docker 導覽
 
-### `terraform/modules/aws-k3s`
-
-Provisions EC2 instances and bootstraps a K3s cluster via user-data scripts. Supports both control plane and worker node configurations.
-
-在 AWS EC2 上透過 user-data 腳本自動建立 K3s 叢集，支援 control plane 與 worker node 配置。
-
-### `terraform/modules/aws-ec2`
-
-General-purpose EC2 module for experimentation and labs.
-
-通用 EC2 模組，用於實驗與練習。
-
-### `terraform/modules/aws-windows-spot`
-
-Windows Server on Spot Instances with SSM Session Manager (no SSH needed) and CloudWatch Agent for monitoring. Demonstrates cost optimization + secure remote access + observability.
-
-使用 Spot Instance 執行 Windows Server，搭配 SSM Session Manager（免開 SSH）與 CloudWatch Agent 進行監控。展示成本優化 + 安全遠端存取 + 可觀測性。
-
-### `terraform/modules/azure-k3s`
-
-K3s cluster provisioning on Azure VMs. Mirrors the AWS module structure for multi-cloud comparison.
-
-在 Azure VM 上建立 K3s 叢集，結構對應 AWS 模組，方便多雲比較。
-
-### `docker/`
-
-Docker Compose stacks for local database development — PostgreSQL and Oracle.
-
-本機資料庫開發用的 Docker Compose 配置 — PostgreSQL 與 Oracle。
+- **[`terraform/aws-labs/`](terraform/aws-labs/)** — 編號式 AWS 練習；每個 lab 有自己的 README 與 Terraform root。
+- **[`terraform/azure-labs/`](terraform/azure-labs/)** — Azure labs，著重與 AWS 服務對照。
+- **[`terraform/oci-labs/`](terraform/oci-labs/)** — OCI labs，另有需保護的長駐 OCI environments，見 `terraform/envs/oci-*`。
+- **[`terraform/modules/`](terraform/modules/)** — 可重用的 AWS、Azure 等 Terraform modules。
+- **[`terraform/envs/`](terraform/envs/)** — 各自管理 state 的長駐環境；操作前先閱讀 [`terraform/agents.md`](terraform/agents.md) 和該環境現有文件。
+- **[`docker/`](docker/)** — 本機資料庫、開發服務與工具映像；Compose 目錄索引與操作方式見 [`docker/README.md`](docker/README.md)。
 
 ---
 
@@ -135,8 +72,8 @@ Docker Compose stacks for local database development — PostgreSQL and Oracle.
 - **IaC:** Terraform (modularized, multi-cloud)
 - **Container Orchestration:** K3s (Rancher)
 - **GitOps:** ArgoCD
-- **Cloud Providers:** AWS, Azure, Hetzner Cloud
-- **Databases:** PostgreSQL, Oracle
+- **Cloud Providers:** AWS, Azure, OCI, and selected VPS providers
+- **Databases and data services:** PostgreSQL, Oracle, Redis, Doltgres, MinIO, and Supabase
 - **Observability:** Prometheus, Grafana, Loki, CloudWatch
 - **Networking:** MetalLB, Gateway API, cert-manager, Tailscale
 - **CI/CD:** GitHub Actions, GHCR
@@ -155,25 +92,24 @@ Docker Compose stacks for local database development — PostgreSQL and Oracle.
 
 ---
 
-## Getting Started / 快速開始
+## 快速開始
 
 ```bash
-# Clone
+# 複製專案
 git clone https://github.com/changken/infra-lab.git
 cd infra-lab
 
-# Example: deploy AWS K3s cluster
-cd terraform/envs/dev
+# 範例：從第一個 AWS lab 開始
+cd terraform/aws-labs/01-ec2-web-server
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your values
+# 閱讀 lab README，再編輯 terraform.tfvars
 terraform init
+terraform fmt -check
+terraform validate
 terraform plan
-terraform apply
 ```
 
-> ⚠️ Make sure you have valid cloud credentials configured before running `terraform apply`.
->
-> ⚠️ 執行 `terraform apply` 前請確認已正確設定雲端憑證。
+> ⚠️ 執行 `terraform apply` 前，請先閱讀該 lab 的費用估算並檢查 plan；練習結束後清除暫時建立的資源。
 
 ---
 

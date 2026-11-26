@@ -6,7 +6,7 @@
 ## 專案概覽
 
 **目標**：透過 Terraform + AzureRM provider 學習 Azure，以「AWS 對比」方式加速理解
-**前提**：使用者已完成 `terraform/labs/` 中的 AWS labs（01-45）
+**前提**：使用者已完成 `terraform/aws-labs/` 中的 AWS labs（01-45）
 **預算**：Azure Student Credit $100，目標花費 < $15（保留餘裕探索）
 **語言**：文件使用繁體中文，程式碼使用英文
 

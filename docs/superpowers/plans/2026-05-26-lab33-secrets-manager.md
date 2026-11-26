@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 建立 `terraform/labs/33-secrets-manager/` — 一個填空式 lab，讓使用者學習 KMS CMK + Secrets Manager + Lambda 自動輪換。
+**Goal:** 建立 `terraform/aws-labs/33-secrets-manager/` — 一個填空式 lab，讓使用者學習 KMS CMK + Secrets Manager + Lambda 自動輪換。
 
 **Architecture:** 使用 KMS CMK 加密 Secrets Manager 中的資料庫憑證 JSON，並設定 Lambda rotation function 實作 AWS 4 步驟輪換生命週期（createSecret → setSecret → testSecret → finishSecret）。Rotation Lambda 不接真實 RDS，setSecret 為 no-op，降低費用與複雜度。
 
@@ -13,7 +13,7 @@
 ## File Map
 
 ```
-terraform/labs/33-secrets-manager/
+terraform/aws-labs/33-secrets-manager/
 ├── terraform.tf              # Provider 版本鎖定
 ├── variables.tf              # region, project, environment
 ├── locals.tf                 # common_tags
@@ -31,16 +31,16 @@ src/
 ## Task 1: 建立目錄與 boilerplate 檔案
 
 **Files:**
-- Create: `terraform/labs/33-secrets-manager/terraform.tf`
-- Create: `terraform/labs/33-secrets-manager/variables.tf`
-- Create: `terraform/labs/33-secrets-manager/locals.tf`
-- Create: `terraform/labs/33-secrets-manager/terraform.tfvars.example`
-- Create: `terraform/labs/33-secrets-manager/.gitignore`
+- Create: `terraform/aws-labs/33-secrets-manager/terraform.tf`
+- Create: `terraform/aws-labs/33-secrets-manager/variables.tf`
+- Create: `terraform/aws-labs/33-secrets-manager/locals.tf`
+- Create: `terraform/aws-labs/33-secrets-manager/terraform.tfvars.example`
+- Create: `terraform/aws-labs/33-secrets-manager/.gitignore`
 
 - [ ] **Step 1: 建立目錄**
 
 ```bash
-mkdir -p terraform/labs/33-secrets-manager/src
+mkdir -p terraform/aws-labs/33-secrets-manager/src
 ```
 
 - [ ] **Step 2: 建立 terraform.tf**
@@ -121,7 +121,7 @@ src/*.zip
 - [ ] **Step 7: Commit boilerplate**
 
 ```bash
-git add terraform/labs/33-secrets-manager/
+git add terraform/aws-labs/33-secrets-manager/
 git commit -m "chore(labs): add lab 33 boilerplate files"
 ```
 
@@ -130,7 +130,7 @@ git commit -m "chore(labs): add lab 33 boilerplate files"
 ## Task 2: 建立 Rotation Lambda 原始碼
 
 **Files:**
-- Create: `terraform/labs/33-secrets-manager/src/rotation_handler.py`
+- Create: `terraform/aws-labs/33-secrets-manager/src/rotation_handler.py`
 
 此檔案提供完整實作（非 TODO）。原因：rotation 契約邏輯是 AWS 固定格式，讓使用者在 Terraform 端學習資源設定才是本 lab 重點。
 
@@ -243,7 +243,7 @@ def _finish_secret(client, secret_id, token):
 - [ ] **Step 2: Commit rotation handler**
 
 ```bash
-git add terraform/labs/33-secrets-manager/src/rotation_handler.py
+git add terraform/aws-labs/33-secrets-manager/src/rotation_handler.py
 git commit -m "feat(labs): add lab 33 rotation lambda source"
 ```
 
@@ -252,7 +252,7 @@ git commit -m "feat(labs): add lab 33 rotation lambda source"
 ## Task 3: 建立 main.tf（6 個 TODO 填空骨架）
 
 **Files:**
-- Create: `terraform/labs/33-secrets-manager/main.tf`
+- Create: `terraform/aws-labs/33-secrets-manager/main.tf`
 
 - [ ] **Step 1: 建立 main.tf**
 
@@ -482,7 +482,7 @@ resource "aws_secretsmanager_secret_rotation" "db" {
 - [ ] **Step 2: Commit main.tf scaffold**
 
 ```bash
-git add terraform/labs/33-secrets-manager/main.tf
+git add terraform/aws-labs/33-secrets-manager/main.tf
 git commit -m "feat(labs): add lab 33 main.tf with TODO scaffolding"
 ```
 
@@ -491,7 +491,7 @@ git commit -m "feat(labs): add lab 33 main.tf with TODO scaffolding"
 ## Task 4: 建立 outputs.tf
 
 **Files:**
-- Create: `terraform/labs/33-secrets-manager/outputs.tf`
+- Create: `terraform/aws-labs/33-secrets-manager/outputs.tf`
 
 - [ ] **Step 1: 建立 outputs.tf**
 
@@ -530,7 +530,7 @@ output "secrets_console_url" {
 - [ ] **Step 2: Commit outputs.tf**
 
 ```bash
-git add terraform/labs/33-secrets-manager/outputs.tf
+git add terraform/aws-labs/33-secrets-manager/outputs.tf
 git commit -m "feat(labs): add lab 33 outputs.tf"
 ```
 
@@ -539,7 +539,7 @@ git commit -m "feat(labs): add lab 33 outputs.tf"
 ## Task 5: 建立 README.md
 
 **Files:**
-- Create: `terraform/labs/33-secrets-manager/README.md`
+- Create: `terraform/aws-labs/33-secrets-manager/README.md`
 
 - [ ] **Step 1: 建立 README.md**
 
@@ -807,7 +807,7 @@ resource "aws_secretsmanager_secret" "db" {
 - [ ] **Step 2: Commit README.md**
 
 ```bash
-git add terraform/labs/33-secrets-manager/README.md
+git add terraform/aws-labs/33-secrets-manager/README.md
 git commit -m "docs(labs): add lab 33 README with verification guide"
 ```
 
@@ -816,12 +816,12 @@ git commit -m "docs(labs): add lab 33 README with verification guide"
 ## Task 6: 初始化並鎖定 Provider 版本
 
 **Files:**
-- Create: `terraform/labs/33-secrets-manager/.terraform.lock.hcl` (generated)
+- Create: `terraform/aws-labs/33-secrets-manager/.terraform.lock.hcl` (generated)
 
 - [ ] **Step 1: 切換到 lab 目錄並執行 terraform init**
 
 ```bash
-cd terraform/labs/33-secrets-manager
+cd terraform/aws-labs/33-secrets-manager
 terraform init
 ```
 

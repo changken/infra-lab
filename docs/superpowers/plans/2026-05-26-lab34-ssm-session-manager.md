@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 建立 `terraform/labs/34-ssm-session-manager/` — 一個填空式 lab，讓使用者學習 SSM Session Manager（零 SSH 連線）與 Patch Manager（自動掃描修補）。
+**Goal:** 建立 `terraform/aws-labs/34-ssm-session-manager/` — 一個填空式 lab，讓使用者學習 SSM Session Manager（零 SSH 連線）與 Patch Manager（自動掃描修補）。
 
 **Architecture:** EC2（Amazon Linux 2023）放在 Public Subnet + IGW（零 NAT、零 VPC Endpoint，免費出站路徑），Security Group 完全無 inbound 規則（包含無 SSH 22 port），只透過 SSM Session Manager 建立互動式 shell。SSM Patch Manager 建立 Patch Baseline + Maintenance Window（rate 7 days）+ Target（EC2 tag）+ Task（AWS-RunPatchBaseline, Scan 模式），不做真實安裝，只掃描。
 
@@ -13,7 +13,7 @@
 ## File Map
 
 ```
-terraform/labs/34-ssm-session-manager/
+terraform/aws-labs/34-ssm-session-manager/
 ├── terraform.tf              # Provider 版本鎖定
 ├── variables.tf              # region, project, environment
 ├── locals.tf                 # common_tags
@@ -29,16 +29,16 @@ terraform/labs/34-ssm-session-manager/
 ## Task 1: 建立目錄與 boilerplate 檔案
 
 **Files:**
-- Create: `terraform/labs/34-ssm-session-manager/terraform.tf`
-- Create: `terraform/labs/34-ssm-session-manager/variables.tf`
-- Create: `terraform/labs/34-ssm-session-manager/locals.tf`
-- Create: `terraform/labs/34-ssm-session-manager/terraform.tfvars.example`
-- Create: `terraform/labs/34-ssm-session-manager/.gitignore`
+- Create: `terraform/aws-labs/34-ssm-session-manager/terraform.tf`
+- Create: `terraform/aws-labs/34-ssm-session-manager/variables.tf`
+- Create: `terraform/aws-labs/34-ssm-session-manager/locals.tf`
+- Create: `terraform/aws-labs/34-ssm-session-manager/terraform.tfvars.example`
+- Create: `terraform/aws-labs/34-ssm-session-manager/.gitignore`
 
 - [ ] **Step 1: 建立目錄**
 
 ```bash
-mkdir -p terraform/labs/34-ssm-session-manager
+mkdir -p terraform/aws-labs/34-ssm-session-manager
 ```
 
 - [ ] **Step 2: 建立 terraform.tf**
@@ -114,7 +114,7 @@ environment = "dev"
 - [ ] **Step 7: Commit boilerplate**
 
 ```bash
-git add terraform/labs/34-ssm-session-manager/
+git add terraform/aws-labs/34-ssm-session-manager/
 git commit -m "chore(labs): add lab 34 boilerplate files"
 ```
 
@@ -123,7 +123,7 @@ git commit -m "chore(labs): add lab 34 boilerplate files"
 ## Task 2: 建立 main.tf（6 個 TODO 填空骨架）
 
 **Files:**
-- Create: `terraform/labs/34-ssm-session-manager/main.tf`
+- Create: `terraform/aws-labs/34-ssm-session-manager/main.tf`
 
 - [ ] **Step 1: 建立 main.tf**
 
@@ -421,7 +421,7 @@ resource "aws_ssm_maintenance_window_task" "patch_scan" {
 - [ ] **Step 2: Commit main.tf scaffold**
 
 ```bash
-git add terraform/labs/34-ssm-session-manager/main.tf
+git add terraform/aws-labs/34-ssm-session-manager/main.tf
 git commit -m "feat(labs): add lab 34 main.tf with TODO scaffolding"
 ```
 
@@ -430,7 +430,7 @@ git commit -m "feat(labs): add lab 34 main.tf with TODO scaffolding"
 ## Task 3: 建立 outputs.tf
 
 **Files:**
-- Create: `terraform/labs/34-ssm-session-manager/outputs.tf`
+- Create: `terraform/aws-labs/34-ssm-session-manager/outputs.tf`
 
 - [ ] **Step 1: 建立 outputs.tf**
 
@@ -469,7 +469,7 @@ output "ssm_console_url" {
 - [ ] **Step 2: Commit outputs.tf**
 
 ```bash
-git add terraform/labs/34-ssm-session-manager/outputs.tf
+git add terraform/aws-labs/34-ssm-session-manager/outputs.tf
 git commit -m "feat(labs): add lab 34 outputs.tf"
 ```
 
@@ -478,7 +478,7 @@ git commit -m "feat(labs): add lab 34 outputs.tf"
 ## Task 4: 建立 README.md
 
 **Files:**
-- Create: `terraform/labs/34-ssm-session-manager/README.md`
+- Create: `terraform/aws-labs/34-ssm-session-manager/README.md`
 
 - [ ] **Step 1: 建立 README.md**
 
@@ -730,7 +730,7 @@ aws_ssm_maintenance_window_task   → 定義「執行什麼」（Scan or Install
 - [ ] **Step 2: Commit README.md**
 
 ```bash
-git add terraform/labs/34-ssm-session-manager/README.md
+git add terraform/aws-labs/34-ssm-session-manager/README.md
 git commit -m "docs(labs): add lab 34 README with verification guide"
 ```
 
@@ -739,12 +739,12 @@ git commit -m "docs(labs): add lab 34 README with verification guide"
 ## Task 5: 初始化並鎖定 Provider 版本
 
 **Files:**
-- Create: `terraform/labs/34-ssm-session-manager/.terraform.lock.hcl` (generated)
+- Create: `terraform/aws-labs/34-ssm-session-manager/.terraform.lock.hcl` (generated)
 
 - [ ] **Step 1: 切換到 lab 目錄並執行 terraform init**
 
 ```bash
-cd terraform/labs/34-ssm-session-manager
+cd terraform/aws-labs/34-ssm-session-manager
 terraform init
 ```
 

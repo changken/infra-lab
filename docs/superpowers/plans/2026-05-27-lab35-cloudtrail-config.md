@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 建立 `terraform/labs/35-cloudtrail-config/` 填空式骨架，讓用戶透過 6 個 TODO 學習 CloudTrail → CloudWatch Logs → SNS 合規告警鏈路 + AWS Config Managed Rules。
+**Goal:** 建立 `terraform/aws-labs/35-cloudtrail-config/` 填空式骨架，讓用戶透過 6 個 TODO 學習 CloudTrail → CloudWatch Logs → SNS 合規告警鏈路 + AWS Config Managed Rules。
 
 **Architecture:** CloudTrail 記錄 Management Events 同時送至 S3 和 CloudWatch Logs。CloudWatch Metric Filters 偵測 root login 和 SG 變更，觸發 CloudWatch Alarms → SNS Email 告警。AWS Config 並行持續評估 2 個 Managed Rules，快照也送至同一個 S3 Bucket。
 
@@ -13,11 +13,11 @@
 ### Task 1: 建立目錄骨架（terraform.tf / variables.tf / locals.tf / .gitignore / tfvars.example）
 
 **Files:**
-- Create: `terraform/labs/35-cloudtrail-config/terraform.tf`
-- Create: `terraform/labs/35-cloudtrail-config/variables.tf`
-- Create: `terraform/labs/35-cloudtrail-config/locals.tf`
-- Create: `terraform/labs/35-cloudtrail-config/terraform.tfvars.example`
-- Create: `terraform/labs/35-cloudtrail-config/.gitignore`
+- Create: `terraform/aws-labs/35-cloudtrail-config/terraform.tf`
+- Create: `terraform/aws-labs/35-cloudtrail-config/variables.tf`
+- Create: `terraform/aws-labs/35-cloudtrail-config/locals.tf`
+- Create: `terraform/aws-labs/35-cloudtrail-config/terraform.tfvars.example`
+- Create: `terraform/aws-labs/35-cloudtrail-config/.gitignore`
 
 - [ ] **Step 1: 建立 terraform.tf**
 
@@ -98,7 +98,7 @@ alert_email = "your-email@example.com"
 - [ ] **Step 6: Commit**
 
 ```bash
-git add terraform/labs/35-cloudtrail-config/
+git add terraform/aws-labs/35-cloudtrail-config/
 git commit -m "chore(labs): scaffold lab 35 support files"
 ```
 
@@ -107,11 +107,11 @@ git commit -m "chore(labs): scaffold lab 35 support files"
 ### Task 2: 撰寫 main.tf 填空骨架
 
 **Files:**
-- Create: `terraform/labs/35-cloudtrail-config/main.tf`
+- Create: `terraform/aws-labs/35-cloudtrail-config/main.tf`
 
 - [ ] **Step 1: 建立 main.tf**
 
-Write the following content to `terraform/labs/35-cloudtrail-config/main.tf`:
+Write the following content to `terraform/aws-labs/35-cloudtrail-config/main.tf`:
 
 ```hcl
 #==============================================================
@@ -442,7 +442,7 @@ resource "aws_config_rule" "cloudtrail_enabled" {
 - [ ] **Step 2: Commit**
 
 ```bash
-git add terraform/labs/35-cloudtrail-config/main.tf
+git add terraform/aws-labs/35-cloudtrail-config/main.tf
 git commit -m "feat(labs): add lab 35 main.tf with TODO scaffolding"
 ```
 
@@ -451,7 +451,7 @@ git commit -m "feat(labs): add lab 35 main.tf with TODO scaffolding"
 ### Task 3: 撰寫 outputs.tf
 
 **Files:**
-- Create: `terraform/labs/35-cloudtrail-config/outputs.tf`
+- Create: `terraform/aws-labs/35-cloudtrail-config/outputs.tf`
 
 - [ ] **Step 1: 建立 outputs.tf**
 
@@ -495,7 +495,7 @@ output "config_compliance_command" {
 - [ ] **Step 2: Commit**
 
 ```bash
-git add terraform/labs/35-cloudtrail-config/outputs.tf
+git add terraform/aws-labs/35-cloudtrail-config/outputs.tf
 git commit -m "feat(labs): add lab 35 outputs.tf"
 ```
 
@@ -504,7 +504,7 @@ git commit -m "feat(labs): add lab 35 outputs.tf"
 ### Task 4: 撰寫 README.md
 
 **Files:**
-- Create: `terraform/labs/35-cloudtrail-config/README.md`
+- Create: `terraform/aws-labs/35-cloudtrail-config/README.md`
 
 - [ ] **Step 1: 建立 README.md**
 
@@ -748,7 +748,7 @@ aws_config_rule                      → 評估規則（需要 Recorder 在運�
 - [ ] **Step 2: Commit**
 
 ```bash
-git add terraform/labs/35-cloudtrail-config/README.md
+git add terraform/aws-labs/35-cloudtrail-config/README.md
 git commit -m "docs(labs): add lab 35 README with verification guide"
 ```
 
@@ -757,12 +757,12 @@ git commit -m "docs(labs): add lab 35 README with verification guide"
 ### Task 5: 執行 terraform init 產生 lock file
 
 **Files:**
-- Create: `terraform/labs/35-cloudtrail-config/.terraform.lock.hcl`
+- Create: `terraform/aws-labs/35-cloudtrail-config/.terraform.lock.hcl`
 
 - [ ] **Step 1: 執行 terraform init**
 
 ```bash
-cd terraform/labs/35-cloudtrail-config
+cd terraform/aws-labs/35-cloudtrail-config
 terraform init
 ```
 
@@ -774,7 +774,7 @@ Terraform has been successfully initialized!
 - [ ] **Step 2: Commit lock file**
 
 ```bash
-git add terraform/labs/35-cloudtrail-config/.terraform.lock.hcl
+git add terraform/aws-labs/35-cloudtrail-config/.terraform.lock.hcl
 git commit -m "chore(labs): add lab 35 terraform lock file"
 ```
 

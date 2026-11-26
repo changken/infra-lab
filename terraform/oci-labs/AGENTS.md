@@ -1,6 +1,6 @@
 # OCI Labs - AI 協作規範
 
-OCI 學習 labs，對標 AWS（`../labs/`）與 Azure（`../azure-labs/`）。
+OCI 學習 labs，對標 AWS（`../aws-labs/`）與 Azure（`../azure-labs/`）。
 共通規範請見上層 [`../agents.md`](../agents.md)；本文件只記錄 **OCI 專屬** 的差異與護欄。
 
 ## 帳號背景

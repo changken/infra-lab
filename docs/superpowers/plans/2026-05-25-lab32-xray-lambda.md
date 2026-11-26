@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 建立 `terraform/labs/32-xray-lambda/` 的填空式 lab 骨架，包含 5 個 TODO 資源群組（IAM、Lambda、API GW REST API、API GW Deployment/Stage、Lambda Permission）、Lambda 原始碼、完整 README，以及純 CLI 驗證流程。
+**Goal:** 建立 `terraform/aws-labs/32-xray-lambda/` 的填空式 lab 骨架，包含 5 個 TODO 資源群組（IAM、Lambda、API GW REST API、API GW Deployment/Stage、Lambda Permission）、Lambda 原始碼、完整 README，以及純 CLI 驗證流程。
 
 **Architecture:** API Gateway REST API（xray_tracing_enabled）→ Lambda（tracing_config Active），X-Ray 自動建立 Segment 並傳遞 Trace ID。resource body 保持空白（`# TODO`），詳細提示寫在 comment 上方。
 
@@ -14,27 +14,27 @@
 
 | 檔案 | 動作 | 說明 |
 |------|------|------|
-| `terraform/labs/32-xray-lambda/terraform.tf` | 建立 | Provider 設定（aws + archive）|
-| `terraform/labs/32-xray-lambda/variables.tf` | 建立 | 輸入變數 |
-| `terraform/labs/32-xray-lambda/locals.tf` | 建立 | common_tags |
-| `terraform/labs/32-xray-lambda/.gitignore` | 建立 | 含 src/*.zip |
-| `terraform/labs/32-xray-lambda/terraform.tfvars.example` | 建立 | 範例值 |
-| `terraform/labs/32-xray-lambda/src/handler.py` | 建立 | Lambda 程式碼（已完成）|
-| `terraform/labs/32-xray-lambda/main.tf` | 建立 | 5 個 TODO 資源群組骨架 |
-| `terraform/labs/32-xray-lambda/outputs.tf` | 建立 | 4 個輸出值 |
-| `terraform/labs/32-xray-lambda/README.md` | 建立 | Lab 指南（含完整 CLI 驗證腳本）|
-| `terraform/labs/32-xray-lambda/.terraform.lock.hcl` | 產生 | `terraform init` 後提交 |
+| `terraform/aws-labs/32-xray-lambda/terraform.tf` | 建立 | Provider 設定（aws + archive）|
+| `terraform/aws-labs/32-xray-lambda/variables.tf` | 建立 | 輸入變數 |
+| `terraform/aws-labs/32-xray-lambda/locals.tf` | 建立 | common_tags |
+| `terraform/aws-labs/32-xray-lambda/.gitignore` | 建立 | 含 src/*.zip |
+| `terraform/aws-labs/32-xray-lambda/terraform.tfvars.example` | 建立 | 範例值 |
+| `terraform/aws-labs/32-xray-lambda/src/handler.py` | 建立 | Lambda 程式碼（已完成）|
+| `terraform/aws-labs/32-xray-lambda/main.tf` | 建立 | 5 個 TODO 資源群組骨架 |
+| `terraform/aws-labs/32-xray-lambda/outputs.tf` | 建立 | 4 個輸出值 |
+| `terraform/aws-labs/32-xray-lambda/README.md` | 建立 | Lab 指南（含完整 CLI 驗證腳本）|
+| `terraform/aws-labs/32-xray-lambda/.terraform.lock.hcl` | 產生 | `terraform init` 後提交 |
 
 ---
 
 ## Task 1：建立基礎設定檔
 
 **Files:**
-- Create: `terraform/labs/32-xray-lambda/terraform.tf`
-- Create: `terraform/labs/32-xray-lambda/variables.tf`
-- Create: `terraform/labs/32-xray-lambda/locals.tf`
-- Create: `terraform/labs/32-xray-lambda/.gitignore`
-- Create: `terraform/labs/32-xray-lambda/terraform.tfvars.example`
+- Create: `terraform/aws-labs/32-xray-lambda/terraform.tf`
+- Create: `terraform/aws-labs/32-xray-lambda/variables.tf`
+- Create: `terraform/aws-labs/32-xray-lambda/locals.tf`
+- Create: `terraform/aws-labs/32-xray-lambda/.gitignore`
+- Create: `terraform/aws-labs/32-xray-lambda/terraform.tfvars.example`
 
 - [ ] **Step 1: 建立 terraform.tf**
 
@@ -125,11 +125,11 @@ environment = "dev"
 - [ ] **Step 6: Commit**
 
 ```bash
-git add terraform/labs/32-xray-lambda/terraform.tf \
-        terraform/labs/32-xray-lambda/variables.tf \
-        terraform/labs/32-xray-lambda/locals.tf \
-        "terraform/labs/32-xray-lambda/.gitignore" \
-        terraform/labs/32-xray-lambda/terraform.tfvars.example
+git add terraform/aws-labs/32-xray-lambda/terraform.tf \
+        terraform/aws-labs/32-xray-lambda/variables.tf \
+        terraform/aws-labs/32-xray-lambda/locals.tf \
+        "terraform/aws-labs/32-xray-lambda/.gitignore" \
+        terraform/aws-labs/32-xray-lambda/terraform.tfvars.example
 git commit -m "feat(labs): add lab 32 base config files"
 ```
 
@@ -138,7 +138,7 @@ git commit -m "feat(labs): add lab 32 base config files"
 ## Task 2：建立 Lambda 原始碼
 
 **Files:**
-- Create: `terraform/labs/32-xray-lambda/src/handler.py`
+- Create: `terraform/aws-labs/32-xray-lambda/src/handler.py`
 
 - [ ] **Step 1: 建立 src/ 目錄並寫入 handler.py**
 
@@ -162,7 +162,7 @@ def handler(event, context):
 - [ ] **Step 2: Commit**
 
 ```bash
-git add terraform/labs/32-xray-lambda/src/handler.py
+git add terraform/aws-labs/32-xray-lambda/src/handler.py
 git commit -m "feat(labs): add lab 32 lambda handler source"
 ```
 
@@ -171,7 +171,7 @@ git commit -m "feat(labs): add lab 32 lambda handler source"
 ## Task 3：建立 main.tf（填空式骨架）
 
 **Files:**
-- Create: `terraform/labs/32-xray-lambda/main.tf`
+- Create: `terraform/aws-labs/32-xray-lambda/main.tf`
 
 - [ ] **Step 1: 建立 main.tf**
 
@@ -385,7 +385,7 @@ resource "aws_lambda_permission" "apigw" {
 - [ ] **Step 2: 驗證格式**
 
 ```bash
-terraform -chdir=terraform/labs/32-xray-lambda fmt -check
+terraform -chdir=terraform/aws-labs/32-xray-lambda fmt -check
 ```
 
 Expected: 無輸出（格式正確）
@@ -393,7 +393,7 @@ Expected: 無輸出（格式正確）
 - [ ] **Step 3: Commit**
 
 ```bash
-git add terraform/labs/32-xray-lambda/main.tf
+git add terraform/aws-labs/32-xray-lambda/main.tf
 git commit -m "feat(labs): add lab 32 main.tf with TODO scaffolds"
 ```
 
@@ -402,7 +402,7 @@ git commit -m "feat(labs): add lab 32 main.tf with TODO scaffolds"
 ## Task 4：建立 outputs.tf
 
 **Files:**
-- Create: `terraform/labs/32-xray-lambda/outputs.tf`
+- Create: `terraform/aws-labs/32-xray-lambda/outputs.tf`
 
 - [ ] **Step 1: 建立 outputs.tf**
 
@@ -431,7 +431,7 @@ output "xray_console_url" {
 - [ ] **Step 2: Commit**
 
 ```bash
-git add terraform/labs/32-xray-lambda/outputs.tf
+git add terraform/aws-labs/32-xray-lambda/outputs.tf
 git commit -m "feat(labs): add lab 32 outputs.tf"
 ```
 
@@ -440,7 +440,7 @@ git commit -m "feat(labs): add lab 32 outputs.tf"
 ## Task 5：建立 README.md
 
 **Files:**
-- Create: `terraform/labs/32-xray-lambda/README.md`
+- Create: `terraform/aws-labs/32-xray-lambda/README.md`
 
 - [ ] **Step 1: 建立 README.md**
 
@@ -717,7 +717,7 @@ Stage 仍執行舊設定，curl 會收到錯誤回應。
 - [ ] **Step 2: Commit**
 
 ```bash
-git add terraform/labs/32-xray-lambda/README.md
+git add terraform/aws-labs/32-xray-lambda/README.md
 git commit -m "docs(labs): add lab 32 README with verification guide"
 ```
 
@@ -726,12 +726,12 @@ git commit -m "docs(labs): add lab 32 README with verification guide"
 ## Task 6：terraform init + fmt + 提交 lock file
 
 **Files:**
-- Generate: `terraform/labs/32-xray-lambda/.terraform.lock.hcl`
+- Generate: `terraform/aws-labs/32-xray-lambda/.terraform.lock.hcl`
 
 - [ ] **Step 1: 執行 terraform init**
 
 ```bash
-terraform -chdir=terraform/labs/32-xray-lambda init
+terraform -chdir=terraform/aws-labs/32-xray-lambda init
 ```
 
 Expected（節錄）：
@@ -746,7 +746,7 @@ Terraform has been successfully initialized!
 - [ ] **Step 2: 執行 terraform fmt**
 
 ```bash
-terraform -chdir=terraform/labs/32-xray-lambda fmt
+terraform -chdir=terraform/aws-labs/32-xray-lambda fmt
 ```
 
 Expected: 無輸出或列出已修正的檔案。
@@ -754,7 +754,7 @@ Expected: 無輸出或列出已修正的檔案。
 - [ ] **Step 3: 提交 lock file**
 
 ```bash
-git add terraform/labs/32-xray-lambda/.terraform.lock.hcl
+git add terraform/aws-labs/32-xray-lambda/.terraform.lock.hcl
 git commit -m "chore(labs): add lab 32 terraform lock file"
 ```
 
@@ -792,7 +792,7 @@ git commit -m "docs(roadmap): mark lab 32 as scaffolded"
 
 完成所有 Task 後確認：
 
-- [ ] `terraform/labs/32-xray-lambda/` 包含全部 9 個檔案 + lock file
+- [ ] `terraform/aws-labs/32-xray-lambda/` 包含全部 9 個檔案 + lock file
 - [ ] `main.tf` 的 7 個 resource blocks 均為空 body（只有 `# TODO`）
 - [ ] `src/handler.py` 存在且使用標準函式庫（無外部依賴）
 - [ ] `outputs.tf` 中 `api_endpoint` 引用 `aws_api_gateway_stage.dev.invoke_url`

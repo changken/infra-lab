@@ -7,7 +7,7 @@
 
 ## 範圍
 
-建立 `terraform/labs/34-ssm-session-manager/`，涵蓋：
+建立 `terraform/aws-labs/34-ssm-session-manager/`，涵蓋：
 - EC2 + IAM Instance Profile（AmazonSSMManagedInstanceCore）
 - Security Group：無任何 inbound（含無 SSH 22 port）
 - SSM Session Manager 零 SSH 連線

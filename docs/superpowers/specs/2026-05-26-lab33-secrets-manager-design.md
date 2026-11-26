@@ -7,7 +7,7 @@
 
 ## 範圍
 
-建立 `terraform/labs/33-secrets-manager/`，涵蓋：
+建立 `terraform/aws-labs/33-secrets-manager/`，涵蓋：
 - KMS CMK 加密 Secrets Manager Secret
 - 模擬資料庫憑證（username/password JSON）
 - Lambda 自動輪換（4 步驟生命週期）
