@@ -689,12 +689,25 @@ def create_workbook(
             }
         )
     )
+    cost_query_enabled = metadata.get("cost_query_enabled", True)
+    cost_period = (
+        "{} 至 {}".format(
+            metadata.get("cost_start_month", ""),
+            metadata.get("cost_end_month", ""),
+        )
+        if cost_query_enabled
+        else "未查詢（本次執行已停用）"
+    )
     metadata_rows = [
         ("報表產生時間", metadata.get("generated_at", "")),
         ("掃描時間戳", metadata.get("run_timestamp", "")),
         ("掃描 Profiles", profiles_text),
         ("AWS 帳號 ID", account_ids_text),
-        ("Cost Explorer Management Account ID", metadata.get("cost_account_id", "")),
+        (
+            "Cost Explorer Management Account ID",
+            metadata.get("cost_account_id", "")
+            or ("未查詢" if not cost_query_enabled else ""),
+        ),
         ("掃描 Regions", ", ".join(metadata.get("regions", []))),
         (
             "資源類別",
@@ -705,12 +718,13 @@ def create_workbook(
         ),
         (
             "費用查詢期間",
-            "{} 至 {}".format(
-                metadata.get("cost_start_month", ""),
-                metadata.get("cost_end_month", ""),
-            ),
+            cost_period,
         ),
-        ("費用查詢 Profile", metadata.get("cost_profile", "")),
+        (
+            "費用查詢 Profile",
+            metadata.get("cost_profile", "")
+            or ("未使用（未查詢）" if not cost_query_enabled else ""),
+        ),
         ("資源總數", len(resource_rows)),
     ]
     for row_index, (label, value) in enumerate(metadata_rows, start=2):

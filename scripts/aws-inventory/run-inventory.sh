@@ -19,6 +19,7 @@ COST_PROFILE=""
 COST_ACCOUNT_ID=""
 COST_START_MONTH=""
 COST_END_MONTH=""
+COST_QUERY_ENABLED=false
 
 # -----------------------------------------------------------------------------
 # 顏色
@@ -175,7 +176,7 @@ select_profiles() {
 # 選擇管理帳號 Profile，供 Cost Explorer 查詢整個 Organization
 # -----------------------------------------------------------------------------
 select_cost_profile() {
-  header "步驟 4/5：選擇 Cost Explorer 使用的 Management Account Profile"
+  header "選擇 Cost Explorer 使用的 Management Account Profile"
   echo "  （這是 SSO Profile，不是 root 身分）"
   local _i=1
   local _profile
@@ -219,7 +220,7 @@ authenticate_cost_profile() {
 # 選擇 Cost Explorer 費用查詢月份
 # -----------------------------------------------------------------------------
 select_cost_period() {
-  header "步驟 5/5：輸入 Cost Explorer 費用查詢月份"
+  header "輸入 Cost Explorer 費用查詢月份"
   local _default_start
   local _default_end
   local _current_month
@@ -254,6 +255,21 @@ select_cost_period() {
     warn "月份請使用 YYYY-MM；起始月份不得晚於結束月份，且結束月份不能在未來。"
   done
   success "費用期間：${COST_START_MONTH} 至 ${COST_END_MONTH}"
+}
+
+select_cost_query() {
+  header "可選：Cost Explorer 費用查詢"
+  warn 'AWS 帳單顯示每次 API request 為 USD 0.01；逐 Region 查詢及分頁會增加請求數。'
+  local _answer
+  read -rp "本次要查詢費用嗎？(y/N，預設不查) " _answer < /dev/tty
+  if [[ ! "$_answer" =~ ^[Yy]$ ]]; then
+    info "略過 Cost Explorer；本次不會送出 Cost Explorer API request。"
+    return 0
+  fi
+
+  COST_QUERY_ENABLED=true
+  select_cost_profile
+  select_cost_period
 }
 
 # -----------------------------------------------------------------------------
@@ -430,11 +446,17 @@ generate_report() {
   local _args=(
     --run-dir "${run_dir}"
     --run-timestamp "${run_ts}"
-    --cost-profile "${COST_PROFILE}"
-    --cost-account-id "${COST_ACCOUNT_ID}"
-    --start-month "${COST_START_MONTH}"
-    --end-month "${COST_END_MONTH}"
   )
+
+  if [[ "$COST_QUERY_ENABLED" == "true" ]]; then
+    _args+=(
+      --query-costs
+      --cost-profile "${COST_PROFILE}"
+      --cost-account-id "${COST_ACCOUNT_ID}"
+      --start-month "${COST_START_MONTH}"
+      --end-month "${COST_END_MONTH}"
+    )
+  fi
 
   for _profile in "${SELECTED_PROFILES[@]}"; do
     local _account_id="${PROFILE_ACCOUNT_IDS[$_profile]:-}"
@@ -464,8 +486,7 @@ main() {
   select_profiles
   select_regions
   select_categories
-  select_cost_profile
-  select_cost_period
+  select_cost_query
 
   local RUN_TS
   RUN_TS=$(date +"%Y%m%dT%H%M%S")
@@ -477,14 +498,21 @@ main() {
   echo "  Regions   : ${SELECTED_REGIONS[*]}"
   echo "  類別      : ${SELECTED_CATS[*]}"
   echo "  輸出目錄  : ${OUTPUT_BASE}/${RUN_TS}/"
-  echo "  Cost Profile: ${COST_PROFILE}"
-  echo "  費用期間  : ${COST_START_MONTH} 至 ${COST_END_MONTH}"
+  if [[ "$COST_QUERY_ENABLED" == "true" ]]; then
+    echo "  Cost Profile: ${COST_PROFILE}"
+    echo "  費用期間  : ${COST_START_MONTH} 至 ${COST_END_MONTH}"
+    echo "  費用查詢  : 已啟用（將產生 Cost Explorer API requests）"
+  else
+    echo "  費用查詢  : 已略過（不會呼叫 Cost Explorer）"
+  fi
   echo ""
   # multiselect 用 read -rsn1 吃過 stdin，這裡明確從 /dev/tty 讀確認
   read -rp "確認開始掃描？(y/N) " _confirm < /dev/tty
   [[ "$_confirm" =~ ^[Yy]$ ]] || { info "已取消。"; exit 0; }
 
-  authenticate_cost_profile || true
+  if [[ "$COST_QUERY_ENABLED" == "true" ]]; then
+    authenticate_cost_profile || true
+  fi
 
   local _total=${#SELECTED_PROFILES[@]}
   local _idx=0

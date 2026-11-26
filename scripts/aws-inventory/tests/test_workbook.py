@@ -297,6 +297,31 @@ class WorkbookTests(unittest.TestCase):
                     shared_strings(archive),
                 )
 
+    def test_disabled_cost_query_is_explained_in_overview(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir = Path(temp_dir) / "inventory-output" / "20261125T140000"
+            run_dir.mkdir(parents=True)
+            output_path = run_dir / "aws-report-2026-11-25-14-00-00.xlsx"
+
+            create_workbook(
+                run_dir=run_dir,
+                output_path=output_path,
+                metadata={
+                    "run_timestamp": "20261125T140000",
+                    "profiles": [],
+                    "regions": [],
+                    "categories": [],
+                    "cost_query_enabled": False,
+                },
+                cost_rows=[],
+                cost_warnings=[],
+            )
+
+            with zipfile.ZipFile(output_path) as archive:
+                strings = shared_strings(archive)
+                self.assertIn("未查詢（本次執行已停用）", strings)
+                self.assertIn("未使用（未查詢）", strings)
+
 
 if __name__ == "__main__":
     unittest.main()

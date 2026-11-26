@@ -53,10 +53,10 @@ chmod +x run-inventory.sh
 1. **Profiles** — 從 `~/.aws/config` 動態列出，全部不預選
 2. **Regions** — 預設勾 `us-east-1`、`us-west-2`、`ap-northeast-1`、`ap-east-1`
 3. **資源類別** — 預設全勾（`billing`、`storage`、`compute`、`security`）
-4. **Cost Explorer Profile** — 選擇 management account 的 SSO Profile（不是 root Profile）
-5. **費用期間** — 輸入起訖月份，格式 `YYYY-MM`；預設上個月至本月
+4. **Cost Explorer（選擇性）** — 預設略過，不會呼叫 Cost Explorer。只有明確輸入 `y` 才會選擇 management account 的 SSO Profile 和查詢月份。
 
 確認後開始掃描。資源 JSON 存在 `inventory-output/<timestamp>/<account_id>/<category>/`，Excel 報表則直接放在該次 `<timestamp>/` 目錄下。
+費用 API 依 request 計費；目前帳單顯示 USD 0.01/request，逐 Region 查詢與分頁會增加請求數。因此費用查詢預設關閉，啟用前會再次提示。
 
 ## Excel 報表
 
@@ -64,14 +64,14 @@ chmod +x run-inventory.sh
 
 - **總覽** — 掃描範圍、帳號與類別資源數、費用摘要及掃描警告。
 - **資源清單** — 每個資源一列，具 Excel Table 篩選功能；依類別套用淡色底。Global 資源去重並標示為 `Global`。
-- **費用明細** — 依月份、帳號、服務和 Region 列出 `UnblendedCost`、幣別及估算狀態。Cost Explorer 會查詢該費用期間有資料的 Regions，不受資源盤點時勾選的 Region 限制。
+- **費用明細** — 明確啟用 Cost Explorer 後，依月份、帳號、服務和 Region 列出 `UnblendedCost`、幣別及估算狀態；略過時工作表會是空表，總覽會註明「未查詢」。
 
 JSON 原始結果仍獨立保存；「資源清單」的「原始 JSON」欄提供相對路徑連結。即使掃描沒有資源或部分查詢失敗，也會產生報表並在總覽列出警告。
 IAM 為 Global 服務，僅掃描一次；會明確輸出 IAM Users（即使結果為空），再逐一查詢各使用者的 Access Key 中繼資料，並顯示使用者與金鑰數量。
 
-### Cost Explorer 權限
+### Cost Explorer 權限（選擇性）
 
-費用查詢由 management account 的 SSO Profile 執行；若 AWS Organization 尚未啟用 Cost Explorer，需由 management account 管理者一次啟用。將 AWS 受管政策 `AWSBillingReadOnlyAccess` 指派給 management account 使用的 IAM Identity Center Permission Set。程式不使用 root 憑證，也不需要為 API 查詢開啟 Billing Console 的 `Activate IAM Access`。
+只有明確啟用費用查詢時，才需要 management account 的 SSO Profile；若 AWS Organization 尚未啟用 Cost Explorer，需由 management account 管理者一次啟用。將 AWS 受管政策 `AWSBillingReadOnlyAccess` 指派給 management account 使用的 IAM Identity Center Permission Set。程式不使用 root 憑證，也不需要為 API 查詢開啟 Billing Console 的 `Activate IAM Access`。
 
 成本以 Cost Explorer 回傳的 `UnblendedCost` 呈現；當月資料若尚未結算，報表會標示為估算值。費用是依帳號、服務、Region 彙總，並非逐資源成本。
 

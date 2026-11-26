@@ -32,21 +32,23 @@ def generate_report(
     profile_accounts,
     regions,
     categories,
-    cost_profile,
-    cost_account_id,
-    start_month,
-    end_month,
+    cost_profile="",
+    cost_account_id="",
+    start_month="",
+    end_month="",
+    query_costs_enabled=False,
 ):
     run_dir = Path(run_dir)
     cost_rows = []
     cost_warnings = []
 
-    try:
-        session = boto3.Session(profile_name=cost_profile)
-        client = session.client("ce", region_name="us-east-1")
-        cost_rows, cost_warnings = query_costs(client, start_month, end_month)
-    except Exception as error:
-        cost_warnings.append("Cost Explorer 查詢失敗：{}".format(error))
+    if query_costs_enabled:
+        try:
+            session = boto3.Session(profile_name=cost_profile)
+            client = session.client("ce", region_name="us-east-1")
+            cost_rows, cost_warnings = query_costs(client, start_month, end_month)
+        except Exception as error:
+            cost_warnings.append("Cost Explorer 查詢失敗：{}".format(error))
 
     generated_at = datetime.now().astimezone().isoformat(timespec="seconds")
     metadata = {
@@ -59,6 +61,7 @@ def generate_report(
         "cost_account_id": cost_account_id,
         "cost_start_month": start_month,
         "cost_end_month": end_month,
+        "cost_query_enabled": query_costs_enabled,
     }
     output_path = _report_path(run_dir, run_timestamp)
     create_workbook(
@@ -83,11 +86,19 @@ def main(argv=None):
     )
     parser.add_argument("--region", action="append", default=[])
     parser.add_argument("--category", action="append", default=[])
-    parser.add_argument("--cost-profile", required=True)
+    parser.add_argument("--query-costs", action="store_true")
+    parser.add_argument("--cost-profile")
     parser.add_argument("--cost-account-id", default="")
-    parser.add_argument("--start-month", required=True)
-    parser.add_argument("--end-month", required=True)
+    parser.add_argument("--start-month")
+    parser.add_argument("--end-month")
     args = parser.parse_args(argv)
+
+    if args.query_costs and not all(
+        (args.cost_profile, args.start_month, args.end_month)
+    ):
+        parser.error(
+            "--query-costs requires --cost-profile, --start-month, and --end-month."
+        )
 
     output_path = generate_report(
         run_dir=args.run_dir,
@@ -95,10 +106,11 @@ def main(argv=None):
         profile_accounts=args.profile_account,
         regions=args.region,
         categories=args.category,
-        cost_profile=args.cost_profile,
+        cost_profile=args.cost_profile or "",
         cost_account_id=args.cost_account_id,
-        start_month=args.start_month,
-        end_month=args.end_month,
+        start_month=args.start_month or "",
+        end_month=args.end_month or "",
+        query_costs_enabled=args.query_costs,
     )
     print("[OK] Excel 報表：{}".format(output_path))
     return 0
