@@ -1,0 +1,7 @@
+region   = "nrt"
+plan     = "vc2-1c-1gb"
+os_id    = 1743
+hostname = "vultr-tokyo-exit"
+
+enable_ipv6                = true
+allow_tailscale_udp_41641 = false

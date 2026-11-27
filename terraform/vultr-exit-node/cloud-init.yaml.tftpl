@@ -1,0 +1,21 @@
+#cloud-config
+hostname: ${hostname}
+package_update: true
+package_upgrade: false
+packages:
+  - ethtool
+
+write_files:
+  - path: /etc/sysctl.d/99-tailscale.conf
+    permissions: "0644"
+    content: |
+      net.ipv4.ip_forward = 1
+      net.ipv6.conf.all.forwarding = 1
+
+runcmd:
+  - sysctl --system
+  - curl -fsSL https://tailscale.com/install.sh | sh
+  # Best-effort UDP GRO tuning; failure does not stop setup.
+  - 'NETDEV=$(ip -o route get 8.8.8.8 | cut -f 5 -d " "); ethtool -K "$NETDEV" rx-udp-gro-forwarding on rx-gro-list off || true'
+  - ufw allow 41641/udp || true
+  - "tailscale up --auth-key='${tailscale_auth_key}' --advertise-exit-node --ssh --accept-dns=false --hostname='${hostname}'"
